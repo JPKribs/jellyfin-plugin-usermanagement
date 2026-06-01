@@ -1,53 +1,87 @@
-<div align="center">
-  <img src="Jellyfin.Plugin.UserManagement/Assets/Logo.png" alt="User Management" width="160" />
-  <h1>Jellyfin User Management</h1>
-  <p>Group policy templates, account lifecycle, and password hygiene for users who already exist on your server.</p>
-</div>
+# ![User Management](Jellyfin.Plugin.UserManagement/Assets/Logo.png)
+
+A Jellyfin plugin for managing the users you already have: define reusable permission groups, hand out self-service signup invites, and enforce password requirements — all from the dashboard, with no second process or extra port.
 
 ---
 
-## What it does
+## How It Works
+User Management adds a **User Management** page to your Jellyfin dashboard with three tabs. **Groups** are permission templates: for each permission you choose whether the group *overrides* it (the value is pushed onto every member) or *inherits* it (left as the user has it), and a scheduled sync keeps members in line. **Invites** generate a shareable signup link — protected by a PIN, with an expiry and a usage limit — that lets a new person create their own account. **Settings** holds the default group for new users, the public invite URL, and password requirements you can enforce on the users you choose. Administrators are never modified by the plugin, so a group can't strip your own rights.
 
-User Management brings the *management* half of tools like JFA-Go inside the Jellyfin dashboard — no second process, no extra port, no reverse proxy. It manages accounts that already exist; self-service invites are deliberately out of scope.
+## Use At Your Own Risk
+This plugin changes user permissions, can create user accounts, and (optionally) takes over the authentication provider for the users you enroll in password rules. While extensively tested, I cannot account for every server configuration or edge case. **Always maintain backups of your Jellyfin data and configuration.** By using this plugin, you accept full responsibility for any account or access changes that may occur.
 
-Three jobs:
+---
 
-1. **Policy** — named **Groups** carry a `UserPolicy` shape (library access, max sessions, download/transcode flags, admin flag). Members inherit it, and a scheduled sync re-applies edits to every member — real enforcement, not a one-shot stamp.
-2. **Lifecycle** — per-user **account expiry** (temp accounts) and **auto-disable of inactive users**. Accounts are disabled, never deleted.
-3. **Password hygiene** — enforce length and character-class **requirements**, optionally **lock** password changes, and optionally reject breached passwords via **HaveIBeenPwned** (k-anonymity — only a SHA-1 prefix ever leaves the server).
+## Getting Started
 
-Everything is administered from **Dashboard → Plugins → User Management** plus the plugin's own REST endpoints.
+### 1. Groups
+Create permission templates and assign members.
 
-## Admin exemption (lockout safety)
+1. On the **Groups** tab, click **New** and give the group a name.
+2. Expand a permission section and flip **Override** on a permission to have the group control it; leave it off to inherit the user's existing setting.
+3. Under **Members**, tick the users this group applies to. A user can only be in one group at a time, and administrators can't be added.
+4. Click **Save** — the group's managed permissions are applied to its members immediately, and a scheduled task keeps them reconciled.
 
-Plugin-enforced restrictions never apply to administrators by default (`ExemptAdministrators = true`). This is a lockout-prevention hatch, not a convenience toggle — flip it off to enforce strictly once you trust your configuration.
+> Removing a user from a group stops future syncs but does **not** revert permissions already applied to them.
 
-## Architecture
+### 2. Invites
+Hand out self-service signup links.
 
-One assembly, organized into feature modules so each area is built, reasoned about, and ported in isolation:
+1. On the **Invites** tab, set an optional **PIN**, **expiry**, **max uses**, and a **group** for new accounts, then click **Create Invite**.
+2. Copy the generated link and share it. Opening it shows a signup page where the person enters the PIN and chooses a username and password.
+3. New accounts are added to the invite's group and are **never** administrators. The invite locks itself after too many wrong PIN attempts, and stops working once it expires or is fully used.
 
-| Module | Seam | Risk |
-|--------|------|------|
-| `Groups`, `Lifecycle`, `Api`, `Common` | own REST controller + `IScheduledTask` + `IEventConsumer`, writing to `UserPolicy` | Low — sanctioned APIs |
-| `Passwords` | `IAuthenticationProvider` | Medium — owns login for assigned users |
+### 3. Settings
+General configuration, grouped into collapsible sections.
 
-The version-sensitive surface (`User` entity, `ICryptoProvider`) is isolated inside `Passwords/` so a future Jellyfin major port is a small diff, not a rewrite.
+- **Default Group** — the group new users are automatically placed in.
+- **Invites** — the public base URL used to build invite links (set this to the address your users reach the server at, e.g. through a reverse proxy).
+- **Password Requirements** — minimum length and required character classes, whether empty passwords are allowed, whether new users are enrolled automatically, and a per-user list of exactly who the rules apply to. Rules are always enforced on invite signups; for existing users they apply to whoever you enroll here. A **Revert** button returns everyone to Jellyfin's built-in provider.
 
-## Building
+---
 
-```bash
-./build.sh            # Release build + zip + md5 in ./dist
-dotnet build -c Release
+## Installation
+
+### Step 1: Add Plugin Repository
+
+* Open Jellyfin and navigate to Dashboard → Plugins → Repositories
+* Click Add Repository
+* Enter the following repository URL: `https://raw.githubusercontent.com/JPKribs/jellyfin-plugin-usermanagement/master/manifest.json`
+* Click Save
+
+### Step 2: Install Plugin
+
+* Go to the Catalog tab in the Plugins section
+* Find User Management in the catalog
+* Click Install
+* Wait for installation to complete
+
+### Step 3: Restart Jellyfin
+
+* Restart your Jellyfin server completely
+* Wait for Jellyfin to fully start up
+
+### Verification Check
+
+* After restart, navigate to Dashboard → Plugins → User Management to confirm the plugin configuration page loads properly.
+
+---
+
+## Versioning
+
+Releases use a four-part version, `JJ.JJ.F.B`, that matches the supported Jellyfin version with the plugin's own feature/bug count:
+
+```
+10.11.1.2
+└───┘ └┬┘
+  │    └── 1 = Plugin feature release
+  │        2 = Plugin bug/patch release within that feature
+  │
+  └─── 10.11 = Jellyfin version this build was tested/released for
 ```
 
 Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
 
-## Installing (dev)
+## AI Disclaimer
 
-Drop `Jellyfin.Plugin.UserManagement.dll` into the Jellyfin `plugins/` folder and restart, or install from a plugin repo manifest pointing at `manifest.json`.
-
-> **Note:** Implementing `IAuthenticationProvider` only makes it *available*. The plugin migrates existing users' `AuthenticationProviderId` at startup and catches new users via `UserCreatedEventArgs`, so password rules actually run.
-
-## License
-
-See [LICENSE](LICENSE).
+Claude Code was used extensively to build this plugin — application code, documentation, and build scripts. All changes were reviewed and tested by a human before release.
