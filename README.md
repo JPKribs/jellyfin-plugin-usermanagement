@@ -84,4 +84,4 @@ Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
 
 ## AI Disclaimer
 
-Claude Code was used extensively to build this plugin — application code, documentation, and build scripts. All changes were reviewed and tested by a human before release.
+Claude Code was used extensively to build this plugin. At this time, it is **NOT RECOMMENDED FOR USAGE!**
