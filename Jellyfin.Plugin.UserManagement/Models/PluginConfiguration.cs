@@ -1,0 +1,29 @@
+using System;
+using System.Collections.Generic;
+using MediaBrowser.Model.Plugins;
+
+namespace Jellyfin.Plugin.UserManagement.Models;
+
+/// <summary>
+/// Single configuration object for the plugin. XML-serialized by Jellyfin.
+/// </summary>
+public class PluginConfiguration : BasePluginConfiguration
+{
+    /// <summary>Gets or sets the group new users are automatically placed in, or null for none.</summary>
+    public Guid? DefaultGroupId { get; set; }
+
+    /// <summary>
+    /// Gets or sets an external base URL used when building invite links (e.g. https://jellyfin.example.com).
+    /// When empty, the server's own address is used.
+    /// </summary>
+    public string InviteBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the defined permission-template groups.</summary>
+    public List<GroupDefinition> Groups { get; set; } = new();
+
+    /// <summary>Gets or sets the self-service signup invites.</summary>
+    public List<Invite> Invites { get; set; } = new();
+
+    /// <summary>Gets or sets the number of wrong PIN attempts before an invite locks itself.</summary>
+    public int MaxPinAttempts { get; set; } = 5;
+}

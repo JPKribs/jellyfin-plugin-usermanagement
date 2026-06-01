@@ -1,4 +1,4 @@
-namespace Jellyfin.Plugin.UserManagement.Invites;
+namespace Jellyfin.Plugin.UserManagement.Models;
 
 /// <summary>
 /// The outcome of an invite redemption attempt.

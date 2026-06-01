@@ -1,6 +1,6 @@
 using System;
 
-namespace Jellyfin.Plugin.UserManagement.Api;
+namespace Jellyfin.Plugin.UserManagement.Models;
 
 /// <summary>Admin request to create an invite.</summary>
 public class CreateInviteRequest
@@ -11,7 +11,10 @@ public class CreateInviteRequest
     /// <summary>Gets or sets the PIN required to redeem (empty for none).</summary>
     public string Pin { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the group new accounts are placed in, or null.</summary>
+    /// <summary>Gets or sets a value indicating whether new accounts go to the server's default group.</summary>
+    public bool UseDefaultGroup { get; set; } = true;
+
+    /// <summary>Gets or sets the explicit group new accounts are placed in when not using the default group.</summary>
     public Guid? GroupId { get; set; }
 
     /// <summary>Gets or sets when the invite expires, or null for never.</summary>
@@ -19,13 +22,6 @@ public class CreateInviteRequest
 
     /// <summary>Gets or sets the maximum number of accounts (0 = unlimited).</summary>
     public int MaxUses { get; set; }
-}
-
-/// <summary>The exact set of users that should be enrolled in password-rule enforcement.</summary>
-public class PasswordEnrollmentRequest
-{
-    /// <summary>Gets or sets the user IDs to enroll (all others currently enrolled are reverted).</summary>
-    public System.Collections.Generic.List<System.Guid> UserIds { get; set; } = new();
 }
 
 /// <summary>Public request body to redeem an invite.</summary>

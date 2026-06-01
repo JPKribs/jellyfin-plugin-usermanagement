@@ -42,12 +42,11 @@
                         <!-- Members (inline checklist) -->
                         <div class="collapsibleSection">
                             <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="membersContent">
-                                <span class="collapsibleTitle">Members</span>
+                                <span class="collapsibleTitle">Membership</span>
                                 <span class="collapsibleIcon">&#9660;</span>
                             </button>
                             <div id="membersContent" class="collapsibleContent">
-                                <div class="fieldDescription">Tick users to add them to this group. A user can only be in one group. Removing a user stops future syncs but does <strong>not</strong> revert permissions already applied to them.</div>
-                                <input is="emby-input" type="text" id="memberSearch" placeholder="Search users..." style="margin-top: 8px;" />
+                                <input is="emby-input" type="text" id="memberSearch" placeholder="Search users..." />
                                 <div id="memberSummary" class="um-member-summary"></div>
                                 <div id="memberList" class="um-member-panel"></div>
                             </div>
@@ -55,6 +54,80 @@
 
                         <!-- Permission sections (rendered by JS) -->
                         <div id="permissionSections"></div>
+
+                        <!-- Password Requirements (per group) -->
+                        <div class="collapsibleSection">
+                            <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpPwContent">
+                                <span class="collapsibleTitle">Password Requirements</span>
+                                <span class="collapsibleIcon">&#9660;</span>
+                            </button>
+                            <div id="grpPwContent" class="collapsibleContent collapsed">
+                                <div class="checkboxContainer checkboxContainer-withDescription">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
+                                        <span class="checkboxLabel">Enforce password requirements for this group's members</span>
+                                    </label>
+                                    <div class="fieldDescription checkboxFieldDescription">
+                                        When enabled, members are enrolled in password-rule enforcement: these rules apply to their
+                                        password changes and to invite signups into this group. Administrators are never affected.
+                                    </div>
+                                </div>
+                                <div class="inputContainer">
+                                    <label for="grpPwLength">Minimum length:</label>
+                                    <input is="emby-input" type="number" id="grpPwLength" min="1" />
+                                </div>
+                                <div class="checkboxContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
+                                        <span class="checkboxLabel">Disallow empty passwords</span>
+                                    </label>
+                                </div>
+                                <div class="checkboxContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpPwUpper" />
+                                        <span class="checkboxLabel">Require a capital letter</span>
+                                    </label>
+                                </div>
+                                <div class="checkboxContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpPwNumber" />
+                                        <span class="checkboxLabel">Require a number</span>
+                                    </label>
+                                </div>
+                                <div class="checkboxContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpPwSymbol" />
+                                        <span class="checkboxLabel">Require a symbol</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expiry (per group) -->
+                        <div class="collapsibleSection">
+                            <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpExpiryContent">
+                                <span class="collapsibleTitle">Expiry</span>
+                                <span class="collapsibleIcon">&#9660;</span>
+                            </button>
+                            <div id="grpExpiryContent" class="collapsibleContent collapsed">
+                                <div class="fieldDescription" style="margin-bottom: 12px;">
+                                    Optionally expire this group's members on a date. Administrators are never affected.
+                                </div>
+                                <div class="inputContainer">
+                                    <label for="grpExpiryDate">Expiry date (leave blank to never expire):</label>
+                                    <input is="emby-input" type="date" id="grpExpiryDate" />
+                                </div>
+                                <div class="selectContainer">
+                                    <label class="selectLabel" for="grpExpiryAction">When the group expires:</label>
+                                    <select is="emby-select" id="grpExpiryAction" class="emby-select-withcolor">
+                                        <option value="Disable">Disable member accounts</option>
+                                        <option value="Delete">Delete member accounts (permanent)</option>
+                                    </select>
+                                    <div class="fieldDescription">Disable is reversible. Delete permanently removes the accounts and cannot be undone.</div>
+                                    <div class="selectArrowContainer"><div style="display:none;">0</div><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Save -->
                         <div class="inputContainer" style="margin-top: 16px;">

@@ -561,6 +561,88 @@
     color: var(--um-status-disabled-color);
 }
 
+/* ===== Tag editor (per-group permission rows) ===== */
+.um-tags {
+    margin-top: 4px;
+}
+.um-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.um-tag-list:empty {
+    display: none;
+}
+.um-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--um-status-admin-bg);
+    color: #fff;
+    border: 1px solid rgba(52, 152, 219, 0.5);
+    border-radius: 14px;
+    padding: 3px 4px 3px 12px;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+.perm-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 1em;
+    line-height: 1;
+    cursor: pointer;
+}
+.perm-tag-remove:hover {
+    background: var(--um-status-disabled-color);
+}
+.um-tag-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.um-tag-add-row .perm-tag-input {
+    flex: 1;
+    max-width: 280px;
+    margin: 0;
+}
+
+/* ===== Access schedule editor (per-group permission rows) ===== */
+.um-schedules {
+    margin-top: 4px;
+}
+.perm-sched-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+.perm-sched-row select {
+    margin: 0;
+    min-width: 120px;
+}
+.perm-sched-row .perm-sched-day {
+    min-width: 140px;
+}
+.perm-sched-sep {
+    opacity: 0.6;
+}
+.perm-sched-row .perm-sched-remove {
+    margin-left: auto;
+}
+
 /* ===== Dialog / Modal ===== */
 .um-dialog {
     position: fixed;

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Database.Implementations.Entities;
@@ -70,14 +71,13 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        var config = Plugin.Instance?.Configuration;
         var isAdmin = user.HasPermission(PermissionKind.IsAdministrator);
 
-        // Validate for non-admins. The validator decides how to treat an empty password
-        // (allowed, or rejected when "disallow empty" is on). Admin accounts are accepted as-is.
-        if (config is not null && !isAdmin)
+        if (!isAdmin)
         {
-            var errors = PasswordValidator.Validate(newPassword, config);
+            var policy = Plugin.Instance?.ReadConfiguration(c =>
+                c.Groups.FirstOrDefault(g => g.MemberIds.Contains(user.Id))?.Password);
+            var errors = PasswordValidator.Validate(newPassword, policy);
             if (errors.Count > 0)
             {
                 _logger.LogInformation("Rejected password change for {UserId}: requirements not met", user.Id);

@@ -23,7 +23,13 @@ public class Invite
     /// </summary>
     public string PinHash { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the group new accounts are placed in, or null for none.</summary>
+    /// <summary>
+    /// Gets or sets a value indicating whether new accounts are placed in the server's default group.
+    /// When true, <see cref="GroupId"/> is ignored and the current default group is resolved at redeem time.
+    /// </summary>
+    public bool UseDefaultGroup { get; set; } = true;
+
+    /// <summary>Gets or sets the explicit group new accounts are placed in when not using the default group.</summary>
     public Guid? GroupId { get; set; }
 
     /// <summary>Gets or sets the moment the invite stops working. Null = never expires.</summary>

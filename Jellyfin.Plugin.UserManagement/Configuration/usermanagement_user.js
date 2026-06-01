@@ -14,59 +14,103 @@ export default function (view) {
     var currentGroupId = null;
     var allUsers = [];
     var allLibraries = [];
-    var serverBitrate = 0; // server-wide RemoteClientBitrateLimit in bps (0 = unlimited)
-    var _snapshot = null;  // JSON of fullConfig at last save/load, for unsaved-changes detection
+    var allDevices = [];
+    var parentalRatings = [];
+    var _snapshot = null;
     var _dirty = false;
 
-    // Permission schema: drives both the rendered rows and the load/collect mapping.
+    var UNRATED_ITEMS = [
+        ['Book', 'Books'], ['ChannelContent', 'Channels'], ['LiveTvChannel', 'Live TV'],
+        ['Movie', 'Movies'], ['Music', 'Music'], ['Trailer', 'Trailers'], ['Series', 'Shows']
+    ];
+
+    var DAY_OPTIONS = ['Everyday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Weekday', 'Weekend'];
+
     var PERMISSIONS = [
-        { title: 'Administration', perms: [
-            { key: 'IsHidden', label: 'Hidden from login screen', type: 'bool' },
-            { key: 'IsDisabled', label: 'Disabled', type: 'bool' },
-            { key: 'EnableCollectionManagement', label: 'Allow collection management', type: 'bool' },
-            { key: 'EnableSubtitleManagement', label: 'Allow subtitle management', type: 'bool' },
-            { key: 'EnableLyricManagement', label: 'Allow lyric management', type: 'bool' }
-        ] },
         { title: 'Library Access', perms: [
-            { key: 'LibraryAccess', label: 'Library access', type: 'library' },
-            { key: 'ChannelAccess', label: 'Channel access', type: 'channels' }
+            { key: 'LibraryAccess', label: '', type: 'library',
+                desc: 'Select the libraries to share with this user. Administrators will be able to edit all folders using the metadata manager.' },
+            { key: 'ChannelAccess', label: 'Channels', type: 'channels' }
         ] },
-        { title: 'Playback & Transcoding', perms: [
+        { title: 'Device Access', perms: [
+            { key: 'DeviceAccess', label: '', type: 'devices' }
+        ] },
+        { title: 'Media Deletion', perms: [
+            { key: 'EnableContentDeletion', label: '', type: 'deletion' }
+        ] },
+        { title: 'Media Playback', perms: [
             { key: 'EnableMediaPlayback', label: 'Allow media playback', type: 'bool' },
-            { key: 'EnableAudioPlaybackTranscoding', label: 'Allow audio transcoding', type: 'bool' },
-            { key: 'EnableVideoPlaybackTranscoding', label: 'Allow video transcoding', type: 'bool' },
-            { key: 'EnablePlaybackRemuxing', label: 'Allow remuxing', type: 'bool' },
-            { key: 'ForceRemoteSourceTranscoding', label: 'Force remote-source transcoding', type: 'bool' },
-            { key: 'EnableMediaConversion', label: 'Allow media conversion', type: 'bool' },
-            { key: 'EnableSyncTranscoding', label: 'Allow sync transcoding', type: 'bool' }
-        ] },
-        { title: 'Remote & Sessions', perms: [
-            { key: 'EnableRemoteAccess', label: 'Allow remote access', type: 'bool' },
-            { key: 'EnableRemoteControlOfOtherUsers', label: 'Allow remote control of other users', type: 'bool' },
-            { key: 'EnableSharedDeviceControl', label: 'Allow shared device control', type: 'bool' },
-            { key: 'MaxActiveSessions', label: 'Max active sessions (0 = unlimited)', type: 'int' },
-            { key: 'RemoteClientBitrateLimit', label: 'Remote bitrate limit (bps, 0 = unlimited)', type: 'int' }
-        ] },
-        { title: 'Downloads & Deletion', perms: [
-            { key: 'EnableContentDownloading', label: 'Allow downloads', type: 'bool' },
-            { key: 'EnableContentDeletion', label: 'Allow content deletion', type: 'deletion' }
+            { key: 'EnableAudioPlaybackTranscoding', label: 'Allow audio playback that requires transcoding', type: 'bool' },
+            { key: 'EnableVideoPlaybackTranscoding', label: 'Allow video playback that requires transcoding', type: 'bool' },
+            { key: 'EnablePlaybackRemuxing', label: 'Allow video playback that requires conversion without re-encoding', type: 'bool' },
+            { key: 'ForceRemoteSourceTranscoding', label: 'Force transcoding of remote media sources such as Live TV', type: 'bool',
+                desc: 'Restricting access to transcoding may cause playback failures in clients due to unsupported media formats.' },
+            { key: 'RemoteClientBitrateLimit', label: 'Internet streaming bitrate limit (Mbps)', type: 'bitrate',
+                desc: 'An optional per-stream bitrate limit for all out of network devices. This is useful to prevent devices from requesting a higher bitrate than your internet connection can handle. This may result in increased CPU load on your server in order to transcode videos on the fly to a lower bitrate.' },
+            { key: 'SyncPlayAccess', label: 'SyncPlay access', type: 'enum',
+                desc: 'The SyncPlay feature enables to sync playback with other devices. Select the level of access this user has to the SyncPlay.',
+                options: [
+                    ['CreateAndJoinGroups', 'Allow user to create and join groups'],
+                    ['JoinGroups', 'Allow user to join groups'],
+                    ['None', 'Disabled for this user']
+                ] }
         ] },
         { title: 'Live TV', perms: [
             { key: 'EnableLiveTvAccess', label: 'Allow Live TV access', type: 'bool' },
-            { key: 'EnableLiveTvManagement', label: 'Allow Live TV management', type: 'bool' }
+            { key: 'EnableLiveTvManagement', label: 'Allow Live TV recording management', type: 'bool' }
+        ] },
+        { title: 'Remote Control', perms: [
+            { key: 'EnableRemoteControlOfOtherUsers', label: 'Allow remote control of other users', type: 'bool' },
+            { key: 'EnableSharedDeviceControl', label: 'Allow remote control of shared devices', type: 'bool',
+                desc: 'DLNA devices are considered shared until a user begins controlling them.' }
+        ] },
+        { title: 'Parental Control', perms: [
+            { key: 'MaxParentalRating', label: 'Maximum allowed parental rating', type: 'rating',
+                desc: 'Content with a higher rating will be hidden from this user.' },
+            { key: 'BlockUnratedItems', label: 'Block items with no or unrecognized rating information', type: 'unrated' },
+            { key: 'AllowedTags', label: 'Allow items with tags', type: 'tags',
+                desc: 'Only show media with at least one of the specified tags.' },
+            { key: 'BlockedTags', label: 'Block items with tags', type: 'tags',
+                desc: 'Hide media with at least one of the specified tags.' },
+            { key: 'AccessSchedules', label: 'Access Schedule', type: 'schedule',
+                desc: 'Create an access schedule to limit access to certain hours.' }
+        ] },
+        { title: 'Profile', perms: [
+            { key: 'EnableRemoteAccess', label: 'Allow remote connections to this server', type: 'bool',
+                desc: 'If unchecked, all remote connections will be blocked.' },
+            { key: 'EnableCollectionManagement', label: 'Allow this user to manage collections', type: 'bool' },
+            { key: 'EnableSubtitleManagement', label: 'Allow this user to edit subtitles', type: 'bool' }
         ] },
         { title: 'Other', perms: [
-            { key: 'EnableUserPreferenceAccess', label: 'Allow user preference access', type: 'bool' },
-            { key: 'EnablePublicSharing', label: 'Allow public sharing', type: 'bool' },
-            { key: 'SyncPlayAccess', label: 'SyncPlay access', type: 'enum', options: [
-                ['CreateAndJoinGroups', 'Create and join groups'],
-                ['JoinGroups', 'Join groups'],
-                ['None', 'None']
-            ] }
+            { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
+                desc: 'Users can download media and store it on their devices. This is not the same as a sync feature. Book libraries require this enabled to function properly.' },
+            { key: 'IsDisabled', label: 'Disable this user', type: 'bool',
+                desc: 'The server will not allow any connections from this user. Existing connections will be abruptly ended.' },
+            { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool',
+                desc: 'Useful for private or hidden administrator accounts. The user will need to sign in manually by entering their username and password.' },
+            { key: 'LoginAttemptsBeforeLockout', label: 'Failed login tries before user is locked out', type: 'int', min: -1,
+                desc: 'A value of zero means inheriting the default of three tries for normal users and five for administrators. Setting this to -1 will disable the feature.' },
+            { key: 'MaxActiveSessions', label: 'Maximum number of simultaneous user sessions', type: 'int',
+                desc: 'A value of 0 will disable the feature.' }
         ] }
     ];
 
-    // ── Loading ──────────────────────────────────────────────
+    function fetchDevices() {
+        try {
+            return ApiClient.getJSON(ApiClient.getUrl('Devices'))
+                .then(function (r) { return (r && r.Items) || []; })
+                .catch(function () { return []; });
+        } catch (e) { return Promise.resolve([]); }
+    }
+
+    function fetchRatings() {
+        try {
+            if (ApiClient.getParentalRatings) {
+                return ApiClient.getParentalRatings().then(function (r) { return r || []; }).catch(function () { return []; });
+            }
+        } catch (e) { /* fall through */ }
+        return Promise.resolve([]);
+    }
 
     function loadAll() {
         Dashboard.showLoadingMsg();
@@ -74,12 +118,14 @@ export default function (view) {
             ApiClient.getPluginConfiguration(pluginId),
             ApiClient.getUsers(),
             ApiClient.getVirtualFolders(),
-            ApiClient.getServerConfiguration()
+            fetchDevices(),
+            fetchRatings()
         ]).then(function (results) {
             fullConfig = results[0];
             allUsers = results[1] || [];
             allLibraries = results[2] || [];
-            serverBitrate = (results[3] && results[3].RemoteClientBitrateLimit) || 0;
+            allDevices = results[3] || [];
+            parentalRatings = results[4] || [];
             if (!fullConfig.Groups) fullConfig.Groups = [];
 
             renderSections();
@@ -92,7 +138,17 @@ export default function (view) {
         });
     }
 
-    // ── Section rendering (schema-driven) ────────────────────
+    function ratingScore(r) {
+        var rs = r.RatingScore || r.ratingScore;
+        if (rs) return rs.Score != null ? rs.Score : rs.score;
+        return r.Value != null ? r.Value : r.value;
+    }
+    function ratingSubScore(r) {
+        var rs = r.RatingScore || r.ratingScore;
+        if (rs) return rs.SubScore != null ? rs.SubScore : rs.subScore;
+        return null;
+    }
+    function ratingName(r) { return r.Name || r.name || ''; }
 
     function renderSections() {
         var container = view.querySelector('#permissionSections');
@@ -120,37 +176,32 @@ export default function (view) {
         bindPermRows();
     }
 
-    function folderGrid(gridClass, itemClass) {
+    function checkGrid(gridClass, itemClass, items, valueOf, nameOf) {
         var esc = Shared.escapeHtml;
         return '<div class="um-folder-grid ' + gridClass + '">'
-            + allLibraries.map(function (lib) {
+            + items.map(function (it) {
                 return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="' + itemClass + '" value="'
-                    + esc(lib.ItemId) + '" /><span class="checkboxLabel">' + esc(lib.Name) + '</span></label>';
+                    + esc(valueOf(it)) + '" /><span class="checkboxLabel">' + esc(nameOf(it)) + '</span></label>';
             }).join('')
             + '</div>';
     }
 
-    function bitrateHintText() {
-        if (!serverBitrate || serverBitrate <= 0) {
-            return '0 = use the server limit (currently unlimited).';
-        }
-        var mbps = Math.round((serverBitrate / 1000000) * 10) / 10;
-        return '0 = use the server limit (currently ' + mbps + ' Mbps).';
+    function libraryGrid(itemClass) {
+        return checkGrid('perm-folders', itemClass, allLibraries,
+            function (l) { return l.ItemId; }, function (l) { return l.Name; });
     }
 
     function renderPermRow(p) {
         var esc = Shared.escapeHtml;
         var control = '';
-        var desc = '';
 
         if (p.type === 'bool') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
                 + '<span class="checkboxLabel">Enabled</span></label>';
         } else if (p.type === 'int') {
-            control = '<input is="emby-input" type="number" min="0" class="perm-value um-edit-input" />';
-            if (p.key === 'RemoteClientBitrateLimit') {
-                desc = '<div class="fieldDescription" id="bitrateHint">' + esc(bitrateHintText()) + '</div>';
-            }
+            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value um-edit-input" />';
+        } else if (p.type === 'bitrate') {
+            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value um-edit-input" />';
         } else if (p.type === 'enum') {
             var opts = (p.options || []).map(function (o) {
                 return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
@@ -158,43 +209,168 @@ export default function (view) {
             control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + opts + '</select>';
         } else if (p.type === 'library') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-allfolders" />'
-                + '<span class="checkboxLabel">All libraries</span></label>'
-                + folderGrid('perm-folders', 'perm-folder');
+                + '<span class="checkboxLabel">Enable access to all libraries</span></label>'
+                + libraryGrid('perm-folder');
         } else if (p.type === 'deletion') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-alldelete" />'
-                + '<span class="checkboxLabel">Allow deletion from all libraries</span></label>'
-                + folderGrid('perm-delete-folders', 'perm-delete-folder');
+                + '<span class="checkboxLabel">All libraries</span></label>'
+                + checkGrid('perm-delete-folders', 'perm-delete-folder', allLibraries,
+                    function (l) { return l.ItemId; }, function (l) { return l.Name; });
         } else if (p.type === 'channels') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-allchannels" />'
-                + '<span class="checkboxLabel">All channels</span></label>';
+                + '<span class="checkboxLabel">Enable access to all channels</span></label>';
+        } else if (p.type === 'devices') {
+            control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-alldevices" />'
+                + '<span class="checkboxLabel">Enable access from all devices</span></label>'
+                + checkGrid('perm-devices', 'perm-device', allDevices,
+                    function (d) { return d.Id; }, function (d) { return d.Name || d.AppName || d.Id; });
+        } else if (p.type === 'rating') {
+            var ropts = '<option value=""></option>';
+            parentalRatings.forEach(function (r, i) {
+                ropts += '<option value="' + i + '">' + esc(ratingName(r)) + '</option>';
+            });
+            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + ropts + '</select>';
+        } else if (p.type === 'unrated') {
+            control = '<div class="um-folder-grid perm-unrated-grid">' + UNRATED_ITEMS.map(function (u) {
+                return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-unrated" value="'
+                    + esc(u[0]) + '" /><span class="checkboxLabel">' + esc(u[1]) + '</span></label>';
+            }).join('') + '</div>';
+        } else if (p.type === 'tags') {
+            control = '<div class="um-tags"><div class="perm-tag-list um-tag-list"></div>'
+                + '<div class="um-tag-add-row">'
+                + '<input is="emby-input" type="text" class="perm-tag-input um-edit-input" placeholder="Tag" />'
+                + '<button is="emby-button" type="button" class="raised button-small perm-tag-add"><span>Add</span></button>'
+                + '</div></div>';
+        } else if (p.type === 'schedule') {
+            control = '<div class="um-schedules"><div class="perm-sched-list"></div>'
+                + '<button is="emby-button" type="button" class="raised button-small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
+                + '</div>';
         }
+
+        var desc = p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '';
+        var labelHtml = p.label ? '<div class="um-perm-label">' + esc(p.label) + '</div>' : '';
 
         return '<div class="um-perm-row inherited" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '">'
             + '<label class="emby-checkbox-label um-perm-toggle" title="Override this permission for the group">'
             + '<input type="checkbox" is="emby-checkbox" class="perm-manage" />'
             + '<span class="checkboxLabel">Override</span></label>'
             + '<div class="um-perm-main">'
-            + '<div class="um-perm-label">' + esc(p.label) + '</div>'
+            + labelHtml
             + '<div class="um-perm-control">' + control + '</div>'
             + desc
             + '</div></div>';
     }
 
+    function renderTagChips(row, tags) {
+        var esc = Shared.escapeHtml;
+        var list = row.querySelector('.perm-tag-list');
+        list.innerHTML = (tags || []).map(function (t) {
+            return '<span class="um-tag-chip" data-tag="' + esc(t) + '">' + esc(t)
+                + ' <button type="button" class="perm-tag-remove" aria-label="Remove">&times;</button></span>';
+        }).join('');
+    }
+
+    function rowTags(row) {
+        var tags = [];
+        row.querySelectorAll('.um-tag-chip').forEach(function (c) { tags.push(c.getAttribute('data-tag')); });
+        return tags;
+    }
+
+    function formatHour(h) {
+        h = Number(h) || 0;
+        var ampm = h % 24 < 12 ? 'AM' : 'PM';
+        var hr = h % 12; if (hr === 0) hr = 12;
+        return hr + ':00 ' + ampm;
+    }
+
+    function schedRowHtml(s) {
+        var esc = Shared.escapeHtml;
+        var days = DAY_OPTIONS.map(function (d) {
+            return '<option value="' + d + '"' + (s.DayOfWeek === d ? ' selected' : '') + '>' + esc(d) + '</option>';
+        }).join('');
+        var hrs = function (sel) {
+            var o = '';
+            for (var h = 0; h <= 24; h++) {
+                o += '<option value="' + h + '"' + (Number(sel) === h ? ' selected' : '') + '>' + formatHour(h) + '</option>';
+            }
+            return o;
+        };
+        return '<div class="perm-sched-row">'
+            + '<select is="emby-select" class="perm-sched-day emby-select-withcolor">' + days + '</select>'
+            + '<select is="emby-select" class="perm-sched-start emby-select-withcolor">' + hrs(s.StartHour) + '</select>'
+            + '<span class="perm-sched-sep">&ndash;</span>'
+            + '<select is="emby-select" class="perm-sched-end emby-select-withcolor">' + hrs(s.EndHour) + '</select>'
+            + '<button is="emby-button" type="button" class="raised button-small button-destructive perm-sched-remove"><span>Remove</span></button>'
+            + '</div>';
+    }
+
+    function renderSchedules(row, schedules) {
+        var list = row.querySelector('.perm-sched-list');
+        list.innerHTML = (schedules || []).map(schedRowHtml).join('');
+    }
+
+    function rowSchedules(row) {
+        var out = [];
+        row.querySelectorAll('.perm-sched-row').forEach(function (r) {
+            out.push({
+                DayOfWeek: r.querySelector('.perm-sched-day').value,
+                StartHour: parseFloat(r.querySelector('.perm-sched-start').value) || 0,
+                EndHour: parseFloat(r.querySelector('.perm-sched-end').value) || 0
+            });
+        });
+        return out;
+    }
+
     function bindPermRows() {
         view.querySelectorAll('.um-perm-row').forEach(function (row) {
-            var manage = row.querySelector('.perm-manage');
-            manage.addEventListener('change', function () { updateRowInherited(row); });
+            var type = row.getAttribute('data-type');
+            row.querySelector('.perm-manage').addEventListener('change', function () { updateRowInherited(row); });
 
-            row.querySelectorAll('.perm-allfolders, .perm-alldelete').forEach(function (toggle) {
+            row.querySelectorAll('.perm-allfolders, .perm-alldelete, .perm-alldevices').forEach(function (toggle) {
                 toggle.addEventListener('change', function () { updateFolderVisibility(row); });
             });
+
+            if (type === 'tags') {
+                var add = function () {
+                    var input = row.querySelector('.perm-tag-input');
+                    var v = (input.value || '').trim();
+                    if (!v) return;
+                    var tags = rowTags(row);
+                    if (tags.indexOf(v) === -1) { tags.push(v); renderTagChips(row, tags); }
+                    input.value = '';
+                    checkDirty();
+                };
+                row.querySelector('.perm-tag-add').addEventListener('click', add);
+                row.querySelector('.perm-tag-input').addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); add(); }
+                });
+                row.querySelector('.perm-tag-list').addEventListener('click', function (e) {
+                    var btn = e.target.closest('.perm-tag-remove');
+                    if (!btn) return;
+                    btn.closest('.um-tag-chip').remove();
+                    checkDirty();
+                });
+            } else if (type === 'schedule') {
+                row.querySelector('.perm-sched-add').addEventListener('click', function () {
+                    var list = row.querySelector('.perm-sched-list');
+                    list.insertAdjacentHTML('beforeend', schedRowHtml({ DayOfWeek: 'Everyday', StartHour: 0, EndHour: 24 }));
+                    updateRowInherited(row);
+                    checkDirty();
+                });
+                row.querySelector('.perm-sched-list').addEventListener('click', function (e) {
+                    var btn = e.target.closest('.perm-sched-remove');
+                    if (!btn) return;
+                    btn.closest('.perm-sched-row').remove();
+                    checkDirty();
+                });
+            }
         });
     }
 
     function updateRowInherited(row) {
         var managed = row.querySelector('.perm-manage').checked;
         row.classList.toggle('inherited', !managed);
-        row.querySelectorAll('.perm-value, .perm-allfolders, .perm-folder, .perm-allchannels, .perm-alldelete, .perm-delete-folder')
+        row.querySelectorAll('.um-perm-control input, .um-perm-control select, .um-perm-control button')
             .forEach(function (el) { el.disabled = !managed; });
         if (managed) updateFolderVisibility(row);
     }
@@ -202,7 +378,8 @@ export default function (view) {
     function updateFolderVisibility(row) {
         var pairs = [
             ['.perm-allfolders', '.perm-folders'],
-            ['.perm-alldelete', '.perm-delete-folders']
+            ['.perm-alldelete', '.perm-delete-folders'],
+            ['.perm-alldevices', '.perm-devices']
         ];
         pairs.forEach(function (pair) {
             var all = row.querySelector(pair[0]);
@@ -212,8 +389,6 @@ export default function (view) {
             }
         });
     }
-
-    // ── Dropdown ─────────────────────────────────────────────
 
     function populateDropdown() {
         var select = view.querySelector('#selectGroup');
@@ -252,8 +427,6 @@ export default function (view) {
         return fullConfig.Groups.find(function (g) { return g.Id === currentGroupId; });
     }
 
-    // ── Unsaved-changes tracking ─────────────────────────────
-
     function snapshot() {
         if (currentGroupId) collectCurrentGroup();
         _snapshot = JSON.stringify(fullConfig);
@@ -272,9 +445,6 @@ export default function (view) {
         Shared.setVisible('unsavedIndicator', _dirty);
     }
 
-    // Persist only the groups this page owns, re-fetching the latest config first so we never clobber
-    // server-side state this page doesn't manage (Invites, the default group set in Settings, etc.).
-    // If the configured default group was just deleted here, clear that dangling reference.
     function persistGroups() {
         return ApiClient.getPluginConfiguration(pluginId).then(function (latest) {
             latest.Groups = fullConfig.Groups;
@@ -289,8 +459,6 @@ export default function (view) {
         });
     }
 
-    // ── Load / collect permissions ───────────────────────────
-
     function loadCurrentGroup() {
         var group = getCurrentGroup();
         if (!group) return;
@@ -303,12 +471,9 @@ export default function (view) {
 
             if (type === 'library') {
                 manage.checked = perms.ManageLibraryAccess === true;
-                var allF = row.querySelector('.perm-allfolders');
-                allF.checked = perms.EnableAllFolders !== false;
+                row.querySelector('.perm-allfolders').checked = perms.EnableAllFolders !== false;
                 var enabled = perms.EnabledFolders || [];
-                row.querySelectorAll('.perm-folder').forEach(function (cb) {
-                    cb.checked = enabled.indexOf(cb.value) !== -1;
-                });
+                row.querySelectorAll('.perm-folder').forEach(function (cb) { cb.checked = enabled.indexOf(cb.value) !== -1; });
             } else if (type === 'channels') {
                 manage.checked = perms.ManageChannelAccess === true;
                 row.querySelector('.perm-allchannels').checked = perms.EnableAllChannels !== false;
@@ -316,9 +481,38 @@ export default function (view) {
                 manage.checked = perms.ManageEnableContentDeletion === true;
                 row.querySelector('.perm-alldelete').checked = perms.EnableContentDeletion === true;
                 var delFolders = perms.EnableContentDeletionFromFolders || [];
-                row.querySelectorAll('.perm-delete-folder').forEach(function (cb) {
-                    cb.checked = delFolders.indexOf(cb.value) !== -1;
-                });
+                row.querySelectorAll('.perm-delete-folder').forEach(function (cb) { cb.checked = delFolders.indexOf(cb.value) !== -1; });
+            } else if (type === 'devices') {
+                manage.checked = perms.ManageDeviceAccess === true;
+                row.querySelector('.perm-alldevices').checked = perms.EnableAllDevices !== false;
+                var devs = perms.EnabledDevices || [];
+                row.querySelectorAll('.perm-device').forEach(function (cb) { cb.checked = devs.indexOf(cb.value) !== -1; });
+            } else if (type === 'rating') {
+                manage.checked = perms.ManageMaxParentalRating === true;
+                var sel = row.querySelector('.perm-value');
+                sel.value = '';
+                if (perms.MaxParentalRating != null) {
+                    for (var i = 0; i < parentalRatings.length; i++) {
+                        var sub = ratingSubScore(parentalRatings[i]);
+                        if (ratingScore(parentalRatings[i]) === perms.MaxParentalRating
+                            && (sub == null ? null : sub) === (perms.MaxParentalSubRating == null ? null : perms.MaxParentalSubRating)) {
+                            sel.value = String(i); break;
+                        }
+                    }
+                }
+            } else if (type === 'unrated') {
+                manage.checked = perms.ManageBlockUnratedItems === true;
+                var blocked = perms.BlockUnratedItems || [];
+                row.querySelectorAll('.perm-unrated').forEach(function (cb) { cb.checked = blocked.indexOf(cb.value) !== -1; });
+            } else if (type === 'tags') {
+                manage.checked = perms['Manage' + key] === true;
+                renderTagChips(row, perms[key] || []);
+            } else if (type === 'schedule') {
+                manage.checked = perms.ManageAccessSchedules === true;
+                renderSchedules(row, perms.AccessSchedules || []);
+            } else if (type === 'bitrate') {
+                manage.checked = perms.ManageRemoteClientBitrateLimit === true;
+                row.querySelector('.perm-value').value = (perms.RemoteClientBitrateLimit || 0) / 1000000 || '';
             } else {
                 manage.checked = perms['Manage' + key] === true;
                 var val = row.querySelector('.perm-value');
@@ -334,7 +528,49 @@ export default function (view) {
             updateRowInherited(row);
         });
 
+        loadGroupExtras(group);
         renderMembers();
+    }
+
+    function loadGroupExtras(group) {
+        var pw = group.Password || {};
+        var el = view.querySelector.bind(view);
+        if (el('#grpPwEnabled')) el('#grpPwEnabled').checked = pw.Enabled === true;
+        if (el('#grpPwLength')) el('#grpPwLength').value = pw.MinLength || 8;
+        if (el('#grpPwNoEmpty')) el('#grpPwNoEmpty').checked = pw.DisallowEmpty === true;
+        if (el('#grpPwUpper')) el('#grpPwUpper').checked = pw.RequireUppercase === true;
+        if (el('#grpPwNumber')) el('#grpPwNumber').checked = pw.RequireNumber === true;
+        if (el('#grpPwSymbol')) el('#grpPwSymbol').checked = pw.RequireSymbol === true;
+        updatePwEnabledState();
+
+        if (el('#grpExpiryDate')) el('#grpExpiryDate').value = group.ExpiresOn ? String(group.ExpiresOn).slice(0, 10) : '';
+        if (el('#grpExpiryAction')) el('#grpExpiryAction').value = group.ExpiryAction || 'Disable';
+    }
+
+    function collectGroupExtras(group) {
+        var el = view.querySelector.bind(view);
+        var len = parseInt((el('#grpPwLength') || {}).value, 10);
+        group.Password = {
+            Enabled: !!(el('#grpPwEnabled') || {}).checked,
+            MinLength: isNaN(len) || len < 1 ? 8 : len,
+            DisallowEmpty: !!(el('#grpPwNoEmpty') || {}).checked,
+            RequireUppercase: !!(el('#grpPwUpper') || {}).checked,
+            RequireNumber: !!(el('#grpPwNumber') || {}).checked,
+            RequireSymbol: !!(el('#grpPwSymbol') || {}).checked
+        };
+
+        var dateVal = (el('#grpExpiryDate') || {}).value || '';
+        group.ExpiresOn = dateVal ? dateVal + 'T00:00:00' : null;
+        group.ExpiryAction = (el('#grpExpiryAction') || {}).value || 'Disable';
+    }
+
+    function updatePwEnabledState() {
+        var el = view.querySelector.bind(view);
+        var on = !!(el('#grpPwEnabled') || {}).checked;
+        ['#grpPwLength', '#grpPwNoEmpty', '#grpPwUpper', '#grpPwNumber', '#grpPwSymbol'].forEach(function (sel) {
+            var node = el(sel);
+            if (node) node.disabled = !on;
+        });
     }
 
     function collectCurrentGroup() {
@@ -363,6 +599,39 @@ export default function (view) {
                 var delFolders = [];
                 row.querySelectorAll('.perm-delete-folder:checked').forEach(function (cb) { delFolders.push(cb.value); });
                 perms.EnableContentDeletionFromFolders = delFolders;
+            } else if (type === 'devices') {
+                perms.ManageDeviceAccess = managed;
+                perms.EnableAllDevices = row.querySelector('.perm-alldevices').checked;
+                var devs = [];
+                row.querySelectorAll('.perm-device:checked').forEach(function (cb) { devs.push(cb.value); });
+                perms.EnabledDevices = devs;
+            } else if (type === 'rating') {
+                perms.ManageMaxParentalRating = managed;
+                var sel = row.querySelector('.perm-value');
+                if (sel.value === '' || parentalRatings[sel.value] === undefined) {
+                    perms.MaxParentalRating = null;
+                    perms.MaxParentalSubRating = null;
+                } else {
+                    var r = parentalRatings[parseInt(sel.value, 10)];
+                    perms.MaxParentalRating = ratingScore(r);
+                    var sub = ratingSubScore(r);
+                    perms.MaxParentalSubRating = sub == null ? null : sub;
+                }
+            } else if (type === 'unrated') {
+                perms.ManageBlockUnratedItems = managed;
+                var items = [];
+                row.querySelectorAll('.perm-unrated:checked').forEach(function (cb) { items.push(cb.value); });
+                perms.BlockUnratedItems = items;
+            } else if (type === 'tags') {
+                perms['Manage' + key] = managed;
+                perms[key] = rowTags(row);
+            } else if (type === 'schedule') {
+                perms.ManageAccessSchedules = managed;
+                perms.AccessSchedules = rowSchedules(row);
+            } else if (type === 'bitrate') {
+                perms.ManageRemoteClientBitrateLimit = managed;
+                var mbps = parseFloat(row.querySelector('.perm-value').value);
+                perms.RemoteClientBitrateLimit = isNaN(mbps) || mbps < 0 ? 0 : Math.round(mbps * 1000000);
             } else {
                 perms['Manage' + key] = managed;
                 var val = row.querySelector('.perm-value');
@@ -375,9 +644,9 @@ export default function (view) {
                 }
             }
         });
-    }
 
-    // ── Members (inline checklist) ───────────────────────────
+        collectGroupExtras(group);
+    }
 
     function otherGroupOf(userId) {
         var found = null;
@@ -405,8 +674,6 @@ export default function (view) {
             var isAdmin = !!(u.Policy && u.Policy.IsAdministrator);
             var other = inThis ? null : otherGroupOf(u.Id);
 
-            // Admins are exempt from group enforcement, and a user already in another group
-            // must be removed there first — both are shown disabled with the reason.
             var disabled = isAdmin || (!inThis && !!other);
             var note = '';
             if (isAdmin) {
@@ -445,7 +712,6 @@ export default function (view) {
         var group = getCurrentGroup();
         if (!group) return;
         if (checked) {
-            // One group at a time: drop from every group, then add to this one.
             fullConfig.Groups.forEach(function (g) {
                 g.MemberIds = (g.MemberIds || []).filter(function (x) { return x !== userId; });
             });
@@ -453,15 +719,13 @@ export default function (view) {
         } else {
             group.MemberIds = (group.MemberIds || []).filter(function (x) { return x !== userId; });
         }
-        renderMembers(); // refresh the "in <group>" notes after a move
+        renderMembers();
         checkDirty();
     }
 
     function filterMembers() {
         renderMembers();
     }
-
-    // ── Input modal (name) ───────────────────────────────────
 
     function showInputModal(title, value, callback) {
         var modal = view.querySelector('#inputModal');
@@ -500,8 +764,6 @@ export default function (view) {
             return g.Id !== exceptId && (g.Name || '').toLowerCase() === name.toLowerCase();
         });
     }
-
-    // ── CRUD ─────────────────────────────────────────────────
 
     function newGroup() {
         showInputModal('New Group', '', function (name) {
@@ -545,13 +807,18 @@ export default function (view) {
         });
     }
 
-    // ── Save ─────────────────────────────────────────────────
-
     function save() {
         if (currentGroupId) collectCurrentGroup();
+
+        var cur = getCurrentGroup();
+        if (cur && cur.ExpiresOn && cur.ExpiryAction === 'Delete'
+            && !confirm('Group "' + (cur.Name || '') + '" is set to DELETE its members on ' + String(cur.ExpiresOn).slice(0, 10)
+                + '. This permanently removes those accounts and cannot be undone. Save anyway?')) {
+            return;
+        }
+
         Dashboard.showLoadingMsg();
         persistGroups().then(function () {
-            // Push managed permissions onto members now.
             return Shared.apiRequest('Apply', 'POST');
         }).then(function () {
             Dashboard.hideLoadingMsg();
@@ -563,8 +830,6 @@ export default function (view) {
             Shared.setStatus('groupStatus', 'Save failed.', true);
         });
     }
-
-    // ── Event listeners ──────────────────────────────────────
 
     function onBeforeUnload(e) {
         if (_dirty) {
@@ -602,7 +867,9 @@ export default function (view) {
 
         view.querySelector('#memberSearch').addEventListener('input', filterMembers);
 
-        // Any edit inside the form flips the unsaved-changes indicator.
+        var pwEnabled = view.querySelector('#grpPwEnabled');
+        if (pwEnabled) pwEnabled.addEventListener('change', updatePwEnabledState);
+
         var form = view.querySelector('#UserManagementGroupsForm');
         if (form) {
             form.addEventListener('change', checkDirty);

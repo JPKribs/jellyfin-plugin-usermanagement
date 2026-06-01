@@ -25,7 +25,6 @@ public sealed class InviteService : IDisposable
     private readonly ICryptoProvider _crypto;
     private readonly ILogger<InviteService> _logger;
 
-    // Serializes redemptions so usage counts and PIN-attempt counters can't race.
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
@@ -46,7 +45,7 @@ public sealed class InviteService : IDisposable
     /// <summary>
     /// Creates and stores a new invite, hashing the PIN (the plaintext is never persisted).
     /// </summary>
-    public Invite Create(string? label, string? pin, Guid? groupId, DateTime? expiresAt, int maxUses)
+    public Invite Create(string? label, string? pin, bool useDefaultGroup, Guid? groupId, DateTime? expiresAt, int maxUses)
     {
         var trimmedPin = pin?.Trim() ?? string.Empty;
         var invite = new Invite
@@ -55,7 +54,8 @@ public sealed class InviteService : IDisposable
             Token = GenerateToken(),
             Label = (label ?? string.Empty).Trim(),
             PinHash = trimmedPin.Length == 0 ? string.Empty : _crypto.CreatePasswordHash(trimmedPin).ToString(),
-            GroupId = groupId,
+            UseDefaultGroup = useDefaultGroup,
+            GroupId = useDefaultGroup ? null : groupId,
             ExpiresAt = expiresAt,
             MaxUses = maxUses < 0 ? 0 : maxUses,
             UsedCount = 0,
@@ -142,7 +142,6 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("This invite has already been fully used.");
             }
 
-            // PIN check with lockout.
             if (!string.IsNullOrEmpty(invite.PinHash) && !VerifyPin(invite, pin))
             {
                 var locked = false;
@@ -167,7 +166,6 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Incorrect PIN.");
             }
 
-            // Account details.
             username = username?.Trim() ?? string.Empty;
             if (username.Length == 0)
             {
@@ -179,7 +177,11 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Please choose a password.");
             }
 
-            var passwordErrors = PasswordValidator.Validate(password, plugin.Configuration);
+            var targetGroup = invite.UseDefaultGroup
+                ? _groupService.GetDefaultGroup()
+                : (invite.GroupId is { } gid ? _groupService.FindGroup(gid) : null);
+
+            var passwordErrors = PasswordValidator.Validate(password, targetGroup?.Password);
             if (passwordErrors.Count > 0)
             {
                 return InviteRedeemResult.Fail(string.Join(" ", passwordErrors));
@@ -202,10 +204,6 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("That username isn't allowed. Try a different one.");
             }
 
-            // Creating the user fires UserCreated, which our own group event consumer handles on
-            // another thread — it can update the new user's policy concurrently. So set the password
-            // against a freshly-loaded user and retry on optimistic-concurrency conflicts. If it still
-            // fails, roll the account back so we never leave a passwordless orphan.
             try
             {
                 await WithUserRetryAsync(userId, u => _userManager.ChangePassword(u, password)).ConfigureAwait(false);
@@ -225,8 +223,6 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Could not create the account. Please try again.");
             }
 
-            // The account exists with a password — consume the invite now so it can't be over-used,
-            // even if a best-effort step below hiccups.
             plugin.MutateConfiguration(_ =>
             {
                 invite.UsedCount++;
@@ -234,35 +230,54 @@ public sealed class InviteService : IDisposable
                 return true;
             });
 
-            // Group assignment (invite's group wins; one group at a time). Best-effort.
-            if (invite.GroupId is { } groupId)
+            if (targetGroup is not null)
             {
-                var group = _groupService.FindGroup(groupId);
-                if (group is not null)
+                plugin.MutateConfiguration(cfg =>
                 {
-                    plugin.MutateConfiguration(cfg =>
+                    foreach (var g in cfg.Groups)
                     {
-                        foreach (var g in cfg.Groups)
-                        {
-                            g.MemberIds.Remove(userId);
-                        }
+                        g.MemberIds.Remove(userId);
+                    }
 
-                        group.MemberIds.Add(userId);
-                        return true;
-                    });
+                    var stored = cfg.Groups.FirstOrDefault(g => g.Id.Equals(targetGroup.Id));
+                    (stored ?? targetGroup).MemberIds.Add(userId);
+                    return true;
+                });
 
+                try
+                {
+                    await WithUserRetryAsync(userId, u => _groupService.ApplyGroupAsync(u, targetGroup)).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to apply invite group to {UserId}", userId);
+                }
+
+                if (targetGroup.Password is { Enabled: true })
+                {
                     try
                     {
-                        await WithUserRetryAsync(userId, u => _groupService.ApplyGroupAsync(u, group)).ConfigureAwait(false);
+                        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
+                        await WithUserRetryAsync(userId, async u =>
+                        {
+                            if (!string.Equals(u.AuthenticationProviderId, providerId, StringComparison.Ordinal))
+                            {
+                                u.AuthenticationProviderId = providerId;
+                                await _userManager.UpdateUserAsync(u).ConfigureAwait(false);
+                            }
+                        }).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to apply invite group to {UserId}", userId);
+                        _logger.LogWarning(ex, "Failed to enroll invited user {UserId} in password rules", userId);
                     }
                 }
             }
+            else
+            {
+                _logger.LogWarning("Invite {InviteId} resolved to no group; new user {UserId} left unassigned", invite.Id, userId);
+            }
 
-            // Hard rule: an invited account is never an administrator, whatever a group says.
             try
             {
                 await WithUserRetryAsync(userId, async u =>
@@ -289,8 +304,6 @@ public sealed class InviteService : IDisposable
         }
     }
 
-    // Runs an action against a freshly-loaded user, retrying on optimistic-concurrency conflicts
-    // (the type is matched by name to avoid a hard EF Core reference).
     private async Task WithUserRetryAsync(Guid userId, Func<User, Task> action)
     {
         for (var attempt = 1; ; attempt++)
@@ -327,7 +340,6 @@ public sealed class InviteService : IDisposable
         return false;
     }
 
-    // Verifies a PIN against the stored salted hash. Fails closed on any malformed hash.
     private bool VerifyPin(Invite invite, string? pin)
     {
         if (string.IsNullOrEmpty(invite.PinHash))

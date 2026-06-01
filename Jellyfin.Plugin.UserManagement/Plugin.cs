@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Jellyfin.Plugin.UserManagement.Configuration;
+using Jellyfin.Plugin.UserManagement.Models;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -45,8 +45,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// </summary>
     public static Plugin? Instance { get; private set; }
 
-    // Serializes all configuration access so concurrent writers (invite redemption, the user-created
-    // event consumer, scheduled tasks) can't mutate/serialize the same collections at once.
     private static readonly object ConfigLock = new();
 
     /// <summary>
@@ -85,7 +83,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         var ns = typeof(Plugin).Namespace;
 
-        // Groups page (anchor feature, shown in the main menu)
         yield return new PluginPageInfo
         {
             Name = "usermanagement_user",
@@ -101,7 +98,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_user.js"
         };
 
-        // Invites page
         yield return new PluginPageInfo
         {
             Name = "usermanagement_invites",
@@ -114,7 +110,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_invites.js"
         };
 
-        // Settings page
         yield return new PluginPageInfo
         {
             Name = "usermanagement_settings",
@@ -127,7 +122,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_settings.js"
         };
 
-        // Shared resources
         yield return new PluginPageInfo
         {
             Name = "usermanagement_shared.css",

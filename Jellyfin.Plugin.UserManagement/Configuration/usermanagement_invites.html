@@ -17,21 +17,23 @@
                     </div>
 
                     <!-- Create invite -->
-                    <div class="sectionTitleContainer flex align-items-center">
-                        <h1 class="sectionTitle">New Invite</h1>
-                    </div>
-                    <div>
+                    <div class="collapsibleSection">
+                        <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="newInviteContent">
+                            <span class="collapsibleTitle">New Invite</span>
+                            <span class="collapsibleIcon">&#9660;</span>
+                        </button>
+                        <div id="newInviteContent" class="collapsibleContent">
                             <div class="inputContainer">
-                                <label for="txtLabel">Label (for your reference):</label>
+                                <label for="txtLabel">Label:</label>
                                 <input is="emby-input" type="text" id="txtLabel" placeholder="e.g. Family &amp; friends" />
                             </div>
                             <div class="inputContainer">
-                                <label for="txtPin">PIN (optional):</label>
+                                <label for="txtPin">PIN:</label>
                                 <input is="emby-input" type="text" id="txtPin" inputmode="numeric" placeholder="Leave blank for no PIN" />
                                 <div class="fieldDescription">A short code the invitee must enter. The invite locks itself after too many wrong tries.</div>
                             </div>
                             <div class="inputContainer">
-                                <label for="dateExpiry">Expires (date &amp; time, optional):</label>
+                                <label for="dateExpiry">Expires:</label>
                                 <input is="emby-input" type="datetime-local" id="dateExpiry" />
                                 <div class="fieldDescription">Leave blank to never expire. Time is in this server's local time zone.</div>
                             </div>
@@ -39,26 +41,36 @@
                                 <label for="txtMaxUses">Max uses (0 = unlimited):</label>
                                 <input is="emby-input" type="number" id="txtMaxUses" min="0" value="1" />
                             </div>
-                            <div class="selectContainer">
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkUseDefaultGroup" checked />
+                                    <span class="checkboxLabel">Add new users to the server's default group</span>
+                                </label>
+                            </div>
+                            <div class="selectContainer" id="groupSelectRow" style="display:none;">
                                 <label class="selectLabel" for="selGroup">Add new users to group:</label>
-                                <select is="emby-select" id="selGroup" class="emby-select-withcolor">
-                                    <option value="">None</option>
-                                </select>
+                                <select is="emby-select" id="selGroup" class="emby-select-withcolor"></select>
                                 <div class="selectArrowContainer"><div style="display:none;">0</div><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
                             </div>
                             <button is="emby-button" type="button" id="btnCreateInvite" class="raised button-submit" style="margin-top: 12px;">
                                 <span>Create Invite</span>
                             </button>
+                        </div>
                     </div>
 
                     <!-- Existing invites -->
-                    <div class="sectionTitleContainer flex align-items-center" style="margin-top: 1.5em;">
-                        <h1 class="sectionTitle">Active Invites</h1>
-                    </div>
-                    <span id="inviteStatus" class="um-status-text"></span>
-                    <div class="pt-wrapper">
-                        <div class="pt-body" id="inviteList"></div>
-                        <div class="pt-footer" id="inviteFooter"></div>
+                    <div class="collapsibleSection">
+                        <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="activeInvitesContent">
+                            <span class="collapsibleTitle">Active Invites</span>
+                            <span class="collapsibleIcon">&#9660;</span>
+                        </button>
+                        <div id="activeInvitesContent" class="collapsibleContent">
+                            <span id="inviteStatus" class="um-status-text"></span>
+                            <div class="pt-wrapper">
+                                <div class="pt-body" id="inviteList"></div>
+                                <div class="pt-footer" id="inviteFooter"></div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

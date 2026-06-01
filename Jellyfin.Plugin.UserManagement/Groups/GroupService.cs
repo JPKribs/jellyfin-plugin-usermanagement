@@ -4,10 +4,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data;
+using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.UserManagement.Common;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Passwords;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Users;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,8 @@ namespace Jellyfin.Plugin.UserManagement.Groups;
 /// </summary>
 public class GroupService
 {
+    private const string DefaultProviderId = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider";
+
     private readonly IUserManager _userManager;
     private readonly ILogger<GroupService> _logger;
 
@@ -66,7 +70,6 @@ public class GroupService
             var assigned = config.Groups.SelectMany(g => g.MemberIds).ToHashSet();
             foreach (var user in _userManager.Users)
             {
-                // Admins are exempt from enforcement, so never auto-assign them to a group.
                 if (user.HasPermission(PermissionKind.IsAdministrator))
                 {
                     continue;
@@ -106,8 +109,6 @@ public class GroupService
             return false;
         }
 
-        // Administrators are never modified by group sync — their policy (including the admin flag)
-        // is left untouched, which is what prevents a group from ever locking you out.
         if (AdminExemption.IsExempt(user))
         {
             _logger.LogDebug("Skipping group sync for admin {UserId}", user.Id);
@@ -115,7 +116,7 @@ public class GroupService
         }
 
         var policy = _userManager.GetUserDto(user, string.Empty).Policy;
-        Merge(group.Permissions, policy);
+        Merge(group.Permissions, policy, user.Id);
 
         await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
         return true;
@@ -133,8 +134,6 @@ public class GroupService
             return;
         }
 
-        // Snapshot the (group, user) work list under the config lock and dedupe by user
-        // (first group wins) so a user accidentally in two groups gets a deterministic result.
         var work = plugin.ReadConfiguration(config =>
         {
             var seen = new HashSet<Guid>();
@@ -171,20 +170,137 @@ public class GroupService
             processed++;
             progress?.Report(processed * 100.0 / work.Count);
         }
+
+        await ReconcileEnrollmentAsync().ConfigureAwait(false);
     }
 
-    // Overwrites only the permissions the group manages. Groups can never manage the administrator
-    // flag (it isn't part of GroupPermissions), so sync can neither grant nor remove admin.
-    private static void Merge(GroupPermissions p, UserPolicy policy)
+    /// <summary>
+    /// Aligns password-rule enrollment with group membership: every non-admin member of a group that
+    /// enforces password rules is put on the plugin's auth provider, and anyone on that provider who is
+    /// no longer in an enforcing group is reverted to the built-in default provider. Enrollment is driven
+    /// entirely by group membership — there is no separate per-user enrollment.
+    /// </summary>
+    public async Task ReconcileEnrollmentAsync()
     {
-        if (p.ManageIsHidden)
+        var plugin = Plugin.Instance;
+        if (plugin is null)
         {
-            policy.IsHidden = p.IsHidden;
+            return;
         }
 
-        if (p.ManageIsDisabled)
+        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
+        var enforced = plugin.ReadConfiguration(config => config.Groups
+            .Where(g => g.Password is { Enabled: true })
+            .SelectMany(g => g.MemberIds)
+            .ToHashSet());
+
+        foreach (var user in _userManager.Users)
         {
-            policy.IsDisabled = p.IsDisabled;
+            if (AdminExemption.IsExempt(user))
+            {
+                continue;
+            }
+
+            var shouldEnroll = enforced.Contains(user.Id);
+            var onOurProvider = string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal);
+
+            try
+            {
+                if (shouldEnroll && !onOurProvider)
+                {
+                    user.AuthenticationProviderId = providerId;
+                    await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+                }
+                else if (!shouldEnroll && onOurProvider)
+                {
+                    user.AuthenticationProviderId = DefaultProviderId;
+                    await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to reconcile password enrollment for {UserId}", user.Id);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies each group's expiry action (disable or delete) to its non-admin members once the
+    /// group's expiry date has been reached. Admins are never disabled or deleted.
+    /// </summary>
+    public async Task ExpireGroupsAsync(IProgress<double>? progress, CancellationToken cancellationToken)
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            progress?.Report(100);
+            return;
+        }
+
+        var today = DateTime.Now.Date;
+        var work = plugin.ReadConfiguration(config => config.Groups
+            .Where(g => g.ExpiresOn is { } due && due.Date <= today)
+            .Select(g => (g.Id, g.ExpiryAction, Members: g.MemberIds.ToList()))
+            .ToList());
+
+        if (work.Count == 0)
+        {
+            progress?.Report(100);
+            return;
+        }
+
+        var total = work.Sum(w => w.Members.Count);
+        if (total == 0)
+        {
+            progress?.Report(100);
+            return;
+        }
+
+        var processed = 0;
+        foreach (var (groupId, action, members) in work)
+        {
+            foreach (var userId in members)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var user = _userManager.GetUserById(userId);
+                if (user is not null && !AdminExemption.IsExempt(user))
+                {
+                    try
+                    {
+                        if (action == GroupExpiryAction.Delete)
+                        {
+                            await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
+                            _logger.LogInformation("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
+                        }
+                        else
+                        {
+                            var policy = _userManager.GetUserDto(user, string.Empty).Policy;
+                            if (!policy.IsDisabled)
+                            {
+                                policy.IsDisabled = true;
+                                await _userManager.UpdatePolicyAsync(userId, policy).ConfigureAwait(false);
+                                _logger.LogInformation("Disabled expired user {UserId} from group {GroupId}", userId, groupId);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to expire user {UserId} from group {GroupId}", userId, groupId);
+                    }
+                }
+
+                processed++;
+                progress?.Report(processed * 100.0 / total);
+            }
+        }
+    }
+
+    private static void Merge(GroupPermissions p, UserPolicy policy, Guid userId)
+    {
+        if (p.ManageEnableRemoteAccess)
+        {
+            policy.EnableRemoteAccess = p.EnableRemoteAccess;
         }
 
         if (p.ManageEnableCollectionManagement)
@@ -197,21 +313,14 @@ public class GroupService
             policy.EnableSubtitleManagement = p.EnableSubtitleManagement;
         }
 
-        if (p.ManageEnableLyricManagement)
+        if (p.ManageEnableLiveTvAccess)
         {
-            policy.EnableLyricManagement = p.EnableLyricManagement;
+            policy.EnableLiveTvAccess = p.EnableLiveTvAccess;
         }
 
-        if (p.ManageLibraryAccess)
+        if (p.ManageEnableLiveTvManagement)
         {
-            policy.EnableAllFolders = p.EnableAllFolders;
-            policy.EnabledFolders = p.EnabledFolders.ToArray();
-        }
-
-        if (p.ManageChannelAccess)
-        {
-            policy.EnableAllChannels = p.EnableAllChannels;
-            policy.EnabledChannels = p.EnabledChannels.ToArray();
+            policy.EnableLiveTvManagement = p.EnableLiveTvManagement;
         }
 
         if (p.ManageEnableMediaPlayback)
@@ -239,19 +348,21 @@ public class GroupService
             policy.ForceRemoteSourceTranscoding = p.ForceRemoteSourceTranscoding;
         }
 
-        if (p.ManageEnableMediaConversion)
+        if (p.ManageRemoteClientBitrateLimit)
         {
-            policy.EnableMediaConversion = p.EnableMediaConversion;
+            policy.RemoteClientBitrateLimit = p.RemoteClientBitrateLimit;
         }
 
-        if (p.ManageEnableSyncTranscoding)
+        if (p.ManageSyncPlayAccess
+            && Enum.TryParse<SyncPlayUserAccessType>(p.SyncPlayAccess, out var access))
         {
-            policy.EnableSyncTranscoding = p.EnableSyncTranscoding;
+            policy.SyncPlayAccess = access;
         }
 
-        if (p.ManageEnableRemoteAccess)
+        if (p.ManageEnableContentDeletion)
         {
-            policy.EnableRemoteAccess = p.EnableRemoteAccess;
+            policy.EnableContentDeletion = p.EnableContentDeletion;
+            policy.EnableContentDeletionFromFolders = p.EnableContentDeletionFromFolders.ToArray();
         }
 
         if (p.ManageEnableRemoteControlOfOtherUsers)
@@ -264,51 +375,84 @@ public class GroupService
             policy.EnableSharedDeviceControl = p.EnableSharedDeviceControl;
         }
 
-        if (p.ManageMaxActiveSessions)
-        {
-            policy.MaxActiveSessions = p.MaxActiveSessions;
-        }
-
-        if (p.ManageRemoteClientBitrateLimit)
-        {
-            policy.RemoteClientBitrateLimit = p.RemoteClientBitrateLimit;
-        }
-
         if (p.ManageEnableContentDownloading)
         {
             policy.EnableContentDownloading = p.EnableContentDownloading;
         }
 
-        if (p.ManageEnableContentDeletion)
+        if (p.ManageIsDisabled)
         {
-            policy.EnableContentDeletion = p.EnableContentDeletion;
-            policy.EnableContentDeletionFromFolders = p.EnableContentDeletionFromFolders.ToArray();
+            policy.IsDisabled = p.IsDisabled;
         }
 
-        if (p.ManageEnableLiveTvAccess)
+        if (p.ManageIsHidden)
         {
-            policy.EnableLiveTvAccess = p.EnableLiveTvAccess;
+            policy.IsHidden = p.IsHidden;
         }
 
-        if (p.ManageEnableLiveTvManagement)
+        if (p.ManageLoginAttemptsBeforeLockout)
         {
-            policy.EnableLiveTvManagement = p.EnableLiveTvManagement;
+            policy.LoginAttemptsBeforeLockout = p.LoginAttemptsBeforeLockout;
         }
 
-        if (p.ManageEnableUserPreferenceAccess)
+        if (p.ManageMaxActiveSessions)
         {
-            policy.EnableUserPreferenceAccess = p.EnableUserPreferenceAccess;
+            policy.MaxActiveSessions = p.MaxActiveSessions;
         }
 
-        if (p.ManageEnablePublicSharing)
+        if (p.ManageLibraryAccess)
         {
-            policy.EnablePublicSharing = p.EnablePublicSharing;
+            policy.EnableAllFolders = p.EnableAllFolders;
+            policy.EnabledFolders = p.EnabledFolders.ToArray();
         }
 
-        if (p.ManageSyncPlayAccess
-            && Enum.TryParse<SyncPlayUserAccessType>(p.SyncPlayAccess, out var access))
+        if (p.ManageChannelAccess)
         {
-            policy.SyncPlayAccess = access;
+            policy.EnableAllChannels = p.EnableAllChannels;
+            policy.EnabledChannels = p.EnabledChannels.ToArray();
+        }
+
+        if (p.ManageDeviceAccess)
+        {
+            policy.EnableAllDevices = p.EnableAllDevices;
+            policy.EnabledDevices = p.EnabledDevices.ToArray();
+        }
+
+        if (p.ManageMaxParentalRating)
+        {
+            policy.MaxParentalRating = p.MaxParentalRating;
+            policy.MaxParentalSubRating = p.MaxParentalSubRating;
+        }
+
+        if (p.ManageBlockUnratedItems)
+        {
+            policy.BlockUnratedItems = p.BlockUnratedItems
+                .Select(name => Enum.TryParse<UnratedItem>(name, out var item) ? (UnratedItem?)item : null)
+                .Where(item => item.HasValue)
+                .Select(item => item!.Value)
+                .ToArray();
+        }
+
+        if (p.ManageAllowedTags)
+        {
+            policy.AllowedTags = p.AllowedTags.ToArray();
+        }
+
+        if (p.ManageBlockedTags)
+        {
+            policy.BlockedTags = p.BlockedTags.ToArray();
+        }
+
+        if (p.ManageAccessSchedules)
+        {
+            policy.AccessSchedules = p.AccessSchedules
+                .Where(s => Enum.IsDefined(typeof(DynamicDayOfWeek), s.DayOfWeek))
+                .Select(s => new AccessSchedule(
+                    Enum.Parse<DynamicDayOfWeek>(s.DayOfWeek),
+                    s.StartHour,
+                    s.EndHour,
+                    userId))
+                .ToArray();
         }
     }
 }

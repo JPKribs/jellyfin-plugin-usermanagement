@@ -4,13 +4,9 @@ using System.Linq;
 using System.Net.Mime;
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Data;
-using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Groups;
 using Jellyfin.Plugin.UserManagement.Invites;
 using Jellyfin.Plugin.UserManagement.Models;
-using Jellyfin.Plugin.UserManagement.Passwords;
-using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -28,12 +24,8 @@ namespace Jellyfin.Plugin.UserManagement.Api;
 [Produces(MediaTypeNames.Application.Json)]
 public class UserManagementController : ControllerBase
 {
-    // The built-in provider users fall back to when not enforcing rules.
-    private const string DefaultProviderId = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider";
-
     private readonly GroupService _groupService;
     private readonly InviteService _inviteService;
-    private readonly IUserManager _userManager;
     private readonly ILogger<UserManagementController> _logger;
 
     /// <summary>
@@ -42,17 +34,16 @@ public class UserManagementController : ControllerBase
     public UserManagementController(
         GroupService groupService,
         InviteService inviteService,
-        IUserManager userManager,
         ILogger<UserManagementController> logger)
     {
         _groupService = groupService;
         _inviteService = inviteService;
-        _userManager = userManager;
         _logger = logger;
     }
 
     /// <summary>
-    /// Reconciles every group member to their group's managed permissions immediately.
+    /// Reconciles every group member to their group's managed permissions and password-rule
+    /// enrollment immediately.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>Success status.</returns>
@@ -62,6 +53,7 @@ public class UserManagementController : ControllerBase
     {
         try
         {
+            _groupService.AssignUnassignedToDefault();
             await _groupService.SyncAllAsync(null, cancellationToken).ConfigureAwait(false);
             return Ok(new { Success = true });
         }
@@ -71,8 +63,6 @@ public class UserManagementController : ControllerBase
             return StatusCode(500, new { Error = "An internal error occurred. Check server logs for details." });
         }
     }
-
-    // ===== Invites (admin) =====
 
     /// <summary>Lists all invites.</summary>
     /// <returns>The invites.</returns>
@@ -103,9 +93,28 @@ public class UserManagementController : ControllerBase
             return BadRequest(new { Error = "Missing request body." });
         }
 
+        if (request.UseDefaultGroup)
+        {
+            var hasDefault = plugin.ReadConfiguration(c =>
+                c.DefaultGroupId is { } id && c.Groups.Any(g => g.Id.Equals(id)));
+            if (!hasDefault)
+            {
+                return BadRequest(new { Error = "No default group is configured. Set one in Settings, or choose a specific group for this invite." });
+            }
+        }
+        else
+        {
+            var validGroup = request.GroupId is { } gid && plugin.ReadConfiguration(c => c.Groups.Any(g => g.Id.Equals(gid)));
+            if (!validGroup)
+            {
+                return BadRequest(new { Error = "Choose a group for this invite." });
+            }
+        }
+
         var invite = _inviteService.Create(
             request.Label,
             request.Pin,
+            request.UseDefaultGroup,
             request.GroupId,
             request.ExpiresAt,
             request.MaxUses);
@@ -139,80 +148,5 @@ public class UserManagementController : ControllerBase
             return true;
         });
         return Ok(new { Success = true });
-    }
-
-    // ===== Password rule enforcement (auth provider assignment) =====
-
-    /// <summary>
-    /// Sets exactly which users are enrolled in password-rule enforcement: the listed (non-admin)
-    /// users are enrolled, and any user currently enrolled but not listed is reverted to the default
-    /// provider. Administrators and users on other custom providers are never touched.
-    /// </summary>
-    /// <param name="request">The desired enrolled set.</param>
-    /// <returns>How many users were enrolled and reverted.</returns>
-    [HttpPost("Passwords/Enrollment")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult> SetPasswordEnrollment([FromBody] PasswordEnrollmentRequest request)
-    {
-        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
-        var desired = new HashSet<Guid>(request?.UserIds ?? new List<Guid>());
-        var enrolled = 0;
-        var reverted = 0;
-
-        foreach (var user in _userManager.Users)
-        {
-            // Never enroll administrators.
-            if (user.HasPermission(PermissionKind.IsAdministrator))
-            {
-                continue;
-            }
-
-            var onOurProvider = string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal);
-
-            if (desired.Contains(user.Id))
-            {
-                if (!onOurProvider)
-                {
-                    user.AuthenticationProviderId = providerId;
-                    await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
-                    enrolled++;
-                }
-            }
-            else if (onOurProvider)
-            {
-                // Only revert users we manage; leave users on other providers alone.
-                user.AuthenticationProviderId = DefaultProviderId;
-                await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
-                reverted++;
-            }
-        }
-
-        _logger.LogInformation("Password enrollment updated: {Enrolled} enrolled, {Reverted} reverted", enrolled, reverted);
-        return Ok(new { Enrolled = enrolled, Reverted = reverted });
-    }
-
-    /// <summary>
-    /// Reverts all users from the password-rule provider back to the built-in default provider.
-    /// </summary>
-    /// <returns>The number of users reverted.</returns>
-    [HttpPost("Passwords/Unassign")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult> UnassignPasswordProvider()
-    {
-        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
-        var reverted = 0;
-
-        foreach (var user in _userManager.Users)
-        {
-            if (string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal))
-            {
-                user.AuthenticationProviderId = DefaultProviderId;
-                await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
-                reverted++;
-            }
-        }
-
-        _logger.LogInformation("Reverted {Count} user(s) to the default provider", reverted);
-        return Ok(new { Reverted = reverted });
     }
 }

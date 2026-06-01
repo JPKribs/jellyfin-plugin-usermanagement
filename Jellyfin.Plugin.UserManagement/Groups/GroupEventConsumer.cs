@@ -43,13 +43,11 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
 
         var user = eventArgs.Argument;
 
-        // Admins are never managed: no group, no enrollment.
         if (user.HasPermission(PermissionKind.IsAdministrator))
         {
             return;
         }
 
-        // 1. Default group assignment (only if a default group is configured).
         var defaultGroup = _groupService.GetDefaultGroup();
         if (defaultGroup is not null)
         {
@@ -79,8 +77,7 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
             }
         }
 
-        // 2. Auto-enroll in password-rule enforcement (only if enabled).
-        if (plugin.Configuration.PasswordRulesApplyToNewUsers)
+        if (defaultGroup is { Password.Enabled: true })
         {
             try
             {
@@ -93,7 +90,7 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to auto-enroll new user {UserId} in password rules", user.Id);
+                _logger.LogWarning(ex, "Failed to enroll new user {UserId} in password rules", user.Id);
             }
         }
     }

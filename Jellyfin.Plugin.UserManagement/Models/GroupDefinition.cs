@@ -21,4 +21,16 @@ public class GroupDefinition
 
     /// <summary>Gets or sets the permission shape applied to members.</summary>
     public GroupPermissions Permissions { get; set; } = new();
+
+    /// <summary>Gets or sets the password complexity rules enforced on enrolled members of this group.</summary>
+    public PasswordPolicy Password { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the date this group expires, or null for never. Only the date matters (time is
+    /// ignored). On or after this date the <see cref="ExpiryAction"/> is applied to every non-admin member.
+    /// </summary>
+    public DateTime? ExpiresOn { get; set; }
+
+    /// <summary>Gets or sets what happens to members once the group expires.</summary>
+    public GroupExpiryAction ExpiryAction { get; set; } = GroupExpiryAction.Disable;
 }

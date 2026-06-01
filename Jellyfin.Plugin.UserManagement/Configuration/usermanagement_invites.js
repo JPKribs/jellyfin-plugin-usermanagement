@@ -31,8 +31,6 @@ export default function (view) {
         return { cls: 'Active', text: 'Active' };
     }
 
-    // ── Loading ──────────────────────────────────────────────
-
     function loadAll() {
         _sharedPromise.then(function () {
             Promise.all([
@@ -43,6 +41,7 @@ export default function (view) {
                 _groups = (results[1] && results[1].Groups) || [];
                 _base = (results[1] && results[1].InviteBaseUrl) || '';
                 populateGroups();
+                syncGroupRow();
                 renderInvites();
             }).catch(function () {
                 _invites = [];
@@ -54,7 +53,7 @@ export default function (view) {
     function populateGroups() {
         var sel = Shared.getEl('selGroup');
         if (!sel) return;
-        while (sel.options.length > 1) sel.remove(1);
+        sel.innerHTML = '';
         _groups.forEach(function (g) {
             var opt = document.createElement('option');
             opt.value = g.Id;
@@ -63,7 +62,11 @@ export default function (view) {
         });
     }
 
-    // ── Rendering ────────────────────────────────────────────
+    function syncGroupRow() {
+        var useDefault = (Shared.getEl('chkUseDefaultGroup') || {}).checked;
+        var row = Shared.getEl('groupSelectRow');
+        if (row) row.style.display = useDefault ? 'none' : '';
+    }
 
     function renderInvites() {
         var body = view.querySelector('#inviteList');
@@ -84,7 +87,8 @@ export default function (view) {
             var uses = (inv.UsedCount || 0) + (inv.MaxUses > 0 ? ' / ' + inv.MaxUses : ' / ∞');
             var meta = [];
             meta.push('Uses: ' + uses);
-            if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
+            if (inv.UseDefaultGroup) meta.push('Group: Default');
+            else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
             if (inv.PinHash) meta.push('PIN set');
             if (inv.ExpiresAt) meta.push('Expires ' + esc(Shared.formatDate(inv.ExpiresAt)));
 
@@ -130,15 +134,22 @@ export default function (view) {
         }
     }
 
-    // ── Actions ──────────────────────────────────────────────
-
     function createInvite() {
         var expVal = (Shared.getEl('dateExpiry') || {}).value || '';
         var maxUses = parseInt(Shared.getEl('txtMaxUses').value, 10);
+        var useDefault = Shared.getEl('chkUseDefaultGroup').checked;
+        var groupId = Shared.getEl('selGroup').value || null;
+
+        if (!useDefault && !groupId) {
+            Shared.setStatus('inviteStatus', 'Choose a group for this invite.', true);
+            return;
+        }
+
         var payload = {
             Label: Shared.getEl('txtLabel').value || '',
             Pin: Shared.getEl('txtPin').value || '',
-            GroupId: Shared.getEl('selGroup').value || null,
+            UseDefaultGroup: useDefault,
+            GroupId: useDefault ? null : groupId,
             ExpiresAt: expVal ? new Date(expVal).toISOString() : null,
             MaxUses: isNaN(maxUses) || maxUses < 0 ? 0 : maxUses
         };
@@ -168,8 +179,6 @@ export default function (view) {
             });
     }
 
-    // ── Listeners ────────────────────────────────────────────
-
     view.addEventListener('viewshow', function () {
         _sharedPromise.then(function () {
             LibraryMenu.setTabs('usermanagement', 1, getTabs);
@@ -181,5 +190,7 @@ export default function (view) {
         Shared.initCollapsibles();
         var btn = Shared.getEl('btnCreateInvite');
         if (btn) btn.addEventListener('click', createInvite);
+        var chk = Shared.getEl('chkUseDefaultGroup');
+        if (chk) chk.addEventListener('change', syncGroupRow);
     });
 }
