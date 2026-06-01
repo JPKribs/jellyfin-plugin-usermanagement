@@ -14,8 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.UserManagement.Api;
 
 /// <summary>
-/// Admin REST surface for the User Management plugin (group apply + invite management). All actions
-/// require elevation. Anonymous invite redemption lives in <see cref="InviteController"/>.
+/// Admin REST surface for the User Management plugin such as group apply & invite management.
 /// </summary>
 [ApiController]
 [Authorize(Policy = "RequiresElevation")]
@@ -41,8 +40,7 @@ public class UserManagementController : ControllerBase
     }
 
     /// <summary>
-    /// Reconciles every group member to their group's managed permissions and password-rule
-    /// enrollment immediately.
+    /// Reconciles every member to their group's permissions and password-rule enrollment on apply.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>Success status.</returns>
@@ -73,7 +71,7 @@ public class UserManagementController : ControllerBase
         return Ok(invites);
     }
 
-    /// <summary>Creates an invite and returns it (including its token).</summary>
+    /// <summary>Creates an invite and returns it.</summary>
     /// <param name="request">The invite parameters.</param>
     /// <returns>The created invite.</returns>
     [HttpPost("Invites")]

@@ -93,8 +93,7 @@ public class GroupService
     }
 
     /// <summary>
-    /// Applies a group's managed permissions to a single user. Administrators are always skipped,
-    /// and the global "allow overrides" switch is honored.
+    /// Applies a group's managed (Override) permissions to a single user. Administrators are always skipped.
     /// </summary>
     /// <returns><c>true</c> if the policy was applied; <c>false</c> if the user was skipped.</returns>
     public async Task<bool> ApplyGroupAsync(User user, GroupDefinition group)
@@ -102,8 +101,7 @@ public class GroupService
         ArgumentNullException.ThrowIfNull(user);
         ArgumentNullException.ThrowIfNull(group);
 
-        var config = Plugin.Instance?.Configuration;
-        if (config is null)
+        if (Plugin.Instance is null)
         {
             return false;
         }

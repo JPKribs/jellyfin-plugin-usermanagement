@@ -10,9 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Jellyfin.Plugin.UserManagement.Api;
 
 /// <summary>
-/// Anonymous, public-facing invite redemption surface. This is the only un-authenticated entry
-/// point in the plugin: it serves the signup page and validates/redeems invites server-side. Every
-/// action is explicitly <see cref="AllowAnonymousAttribute"/>; no admin action lives here.
+/// Anonymous, public-facing invite redemption surface.
 /// </summary>
 [ApiController]
 [Route("UserManagement/Invite")]
@@ -62,7 +60,7 @@ public class InviteController : ControllerBase
         });
     }
 
-    /// <summary>Redeems an invite, creating a new (non-admin) account on success.</summary>
+    /// <summary>Redeems an invite, creating a new account on success.</summary>
     /// <param name="token">The invite token.</param>
     /// <param name="request">The PIN, username, and password.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
