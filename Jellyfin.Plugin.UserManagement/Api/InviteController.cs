@@ -1,7 +1,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Plugin.UserManagement.Invites;
+using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

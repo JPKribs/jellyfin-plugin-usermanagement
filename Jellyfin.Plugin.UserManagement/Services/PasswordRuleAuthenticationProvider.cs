@@ -8,7 +8,7 @@ using MediaBrowser.Controller.Authentication;
 using MediaBrowser.Model.Cryptography;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.UserManagement.Passwords;
+namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
 /// Authentication provider that enforces the configured password requirements on password changes

@@ -6,15 +6,14 @@ using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
-using Jellyfin.Plugin.UserManagement.Common;
+using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
-using Jellyfin.Plugin.UserManagement.Passwords;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Users;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.UserManagement.Groups;
+namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
 /// Applies <see cref="GroupDefinition"/> templates onto member <see cref="UserPolicy"/> objects,

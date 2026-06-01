@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Tasks;
+using Jellyfin.Plugin.UserManagement.Services;
 
-namespace Jellyfin.Plugin.UserManagement.Groups;
+namespace Jellyfin.Plugin.UserManagement.Tasks;
 
 /// <summary>
 /// Scheduled task that adds users who are not yet in any group to the default group, so new

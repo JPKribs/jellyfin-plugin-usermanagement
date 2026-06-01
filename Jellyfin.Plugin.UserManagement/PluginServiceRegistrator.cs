@@ -1,7 +1,5 @@
 using Jellyfin.Data.Events.Users;
-using Jellyfin.Plugin.UserManagement.Groups;
-using Jellyfin.Plugin.UserManagement.Invites;
-using Jellyfin.Plugin.UserManagement.Passwords;
+using Jellyfin.Plugin.UserManagement.Services;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Authentication;
 using MediaBrowser.Controller.Events;

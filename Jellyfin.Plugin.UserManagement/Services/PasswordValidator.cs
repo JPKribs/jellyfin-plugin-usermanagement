@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Jellyfin.Plugin.UserManagement.Models;
 
-namespace Jellyfin.Plugin.UserManagement.Passwords;
+namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
 /// Checks a candidate password against a group's password policy. Each rule is checked

@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Data.Events.Users;
 using Jellyfin.Database.Implementations.Enums;
-using Jellyfin.Plugin.UserManagement.Passwords;
+using Jellyfin.Plugin.UserManagement.Services;
 using MediaBrowser.Controller.Events;
 using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.UserManagement.Groups;
+namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
 /// Reacts to user creation: places the new (non-admin) user in the default group, and optionally

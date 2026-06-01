@@ -4,14 +4,13 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Database.Implementations.Entities;
-using Jellyfin.Plugin.UserManagement.Groups;
+using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Models;
-using Jellyfin.Plugin.UserManagement.Passwords;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Cryptography;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.UserManagement.Invites;
+namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
 /// Creates and redeems self-service signup invites. Redemption is the only anonymous-reachable
