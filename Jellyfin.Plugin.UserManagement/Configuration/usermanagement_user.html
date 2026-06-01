@@ -1,0 +1,101 @@
+<div id="UserManagementGroupsPage" data-role="page"
+     class="page type-interior pluginConfigurationPage withTabs"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
+     data-controller="__plugin/usermanagement_user.js">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="UserManagementGroupsForm">
+                <div class="verticalSection verticalSection-extrabottompadding">
+
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h1 class="sectionTitle">Groups</h1>
+                    </div>
+
+                    <div class="fieldDescription" style="margin-bottom: 12px;">
+                        A group is a permission template. For each permission you choose whether the group
+                        <strong>overrides</strong> it (the value is applied to every member) or
+                        <strong>inherits</strong> it (left as the user has it). A user belongs to one group at a time.
+                    </div>
+
+                    <!-- Group selector -->
+                    <div class="um-selector">
+                        <select is="emby-select" id="selectGroup" class="um-selector-dropdown"></select>
+                        <div class="um-selector-actions">
+                            <button is="emby-button" type="button" id="btnNewGroup" class="raised icon-btn button-submit" title="New">
+                                <span class="material-icons" aria-hidden="true">add</span>
+                                <span class="icon-btn-label">New</span>
+                            </button>
+                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised icon-btn" title="Rename">
+                                <span class="material-icons" aria-hidden="true">edit</span>
+                                <span class="icon-btn-label">Rename</span>
+                            </button>
+                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised icon-btn button-destructive" title="Delete">
+                                <span class="material-icons" aria-hidden="true">delete</span>
+                                <span class="icon-btn-label">Delete</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="emptyState" class="pt-empty hidden">No groups yet. Click <strong>New</strong> to create one.</div>
+
+                    <div id="groupEditor">
+                        <!-- Members (inline checklist) -->
+                        <div class="collapsibleSection">
+                            <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="membersContent">
+                                <span class="collapsibleTitle">Members</span>
+                                <span class="collapsibleIcon">&#9660;</span>
+                            </button>
+                            <div id="membersContent" class="collapsibleContent">
+                                <div class="fieldDescription">Tick users to add them to this group. A user can only be in one group. Removing a user stops future syncs but does <strong>not</strong> revert permissions already applied to them.</div>
+                                <input is="emby-input" type="text" id="memberSearch" placeholder="Search users..." style="margin-top: 8px;" />
+                                <div id="memberSummary" class="um-member-summary"></div>
+                                <div id="memberList" class="um-member-panel"></div>
+                            </div>
+                        </div>
+
+                        <!-- Permission sections (rendered by JS) -->
+                        <div id="permissionSections"></div>
+
+                        <!-- Save -->
+                        <div class="inputContainer" style="margin-top: 16px;">
+                            <button is="emby-button" type="button" id="btnSaveGroups" data-theme="b" class="raised button-submit block">
+                                <span>Save</span>
+                            </button>
+                            <span id="unsavedIndicator" class="um-unsaved hidden">
+                                <span class="um-unsaved-dot"></span> Unsaved changes
+                            </span>
+                            <span id="groupStatus" class="um-status-text"></span>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Input Modal (name) -->
+    <div id="inputModal" class="um-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
+        <div class="um-dialog-content um-dialog-content-narrow">
+            <div class="um-dialog-header">
+                <h2 id="inputModalTitle"></h2>
+                <button type="button" id="btnCloseInputModal" class="um-dialog-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="um-dialog-body">
+                <div class="inputContainer">
+                    <label for="inputModalField">Name:</label>
+                    <input is="emby-input" type="text" id="inputModalField" />
+                </div>
+            </div>
+            <div class="um-dialog-footer">
+                <button is="emby-button" type="button" id="btnCancelInputModal" class="raised">
+                    <span>Cancel</span>
+                </button>
+                <button is="emby-button" type="button" id="btnConfirmInputModal" class="raised button-submit">
+                    <span>OK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="configurationpage?name=usermanagement_shared.css">
+</div>

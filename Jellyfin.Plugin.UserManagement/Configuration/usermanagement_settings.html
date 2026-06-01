@@ -1,0 +1,123 @@
+<div id="UserManagementSettingsPage" data-role="page"
+     class="page type-interior pluginConfigurationPage withTabs"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
+     data-controller="__plugin/usermanagement_settings.js">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="UserManagementSettingsForm">
+                <div class="verticalSection verticalSection-extrabottompadding">
+
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h1 class="sectionTitle">Settings</h1>
+                    </div>
+
+                    <!-- Default Group -->
+                    <div class="collapsibleSection">
+                        <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpSyncContent">
+                            <span class="collapsibleTitle">Default Group</span>
+                            <span class="collapsibleIcon">&#9660;</span>
+                        </button>
+                        <div id="grpSyncContent" class="collapsibleContent collapsed">
+                            <div class="selectContainer">
+                                <label class="selectLabel" for="selDefaultGroup">Default group for new users:</label>
+                                <select is="emby-select" id="selDefaultGroup" class="emby-select-withcolor">
+                                    <option value="">None</option>
+                                </select>
+                                <div class="fieldDescription">New accounts are added to this group and receive its permissions.</div>
+                                <div class="selectArrowContainer"><div style="display:none;">0</div><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invites -->
+                    <div class="collapsibleSection">
+                        <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="invitesContent">
+                            <span class="collapsibleTitle">Invites</span>
+                            <span class="collapsibleIcon">&#9660;</span>
+                        </button>
+                        <div id="invitesContent" class="collapsibleContent collapsed">
+                            <div class="inputContainer">
+                                <label for="txtInviteBaseUrl">Invite base URL:</label>
+                                <input is="emby-input" type="text" id="txtInviteBaseUrl" placeholder="https://jellyfin.example.com" />
+                                <div class="fieldDescription">
+                                    Public address used to build invite links (e.g. through a reverse proxy or domain).
+                                    Leave blank to use the server's own address.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Password Requirements -->
+                    <div class="collapsibleSection">
+                        <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="pwContent">
+                            <span class="collapsibleTitle">Password Requirements</span>
+                            <span class="collapsibleIcon">&#9660;</span>
+                        </button>
+                        <div id="pwContent" class="collapsibleContent collapsed">
+                            <div class="fieldDescription" style="margin-bottom: 12px;">
+                                Enforced on invite signups, and on password changes for the users you enroll below.
+                            </div>
+
+                            <div class="inputContainer">
+                                <label for="txtPwLength">Minimum length:</label>
+                                <input is="emby-input" type="number" id="txtPwLength" min="1" />
+                            </div>
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkPwNoEmpty" />
+                                    <span class="checkboxLabel">Disallow empty passwords</span>
+                                </label>
+                            </div>
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkPwUpper" />
+                                    <span class="checkboxLabel">Require a capital letter</span>
+                                </label>
+                            </div>
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkPwNumber" />
+                                    <span class="checkboxLabel">Require a number</span>
+                                </label>
+                            </div>
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkPwSymbol" />
+                                    <span class="checkboxLabel">Require a symbol</span>
+                                </label>
+                            </div>
+
+                            <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top: 12px;">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkPwApplyNew" />
+                                    <span class="checkboxLabel">Apply to new users automatically</span>
+                                </label>
+                                <div class="fieldDescription checkboxFieldDescription">
+                                    New non-admin accounts are enrolled when created (administrators are always excluded).
+                                </div>
+                            </div>
+
+                            <label style="margin-top: 12px; display: block;">Apply rules to these users:</label>
+                            <div class="fieldDescription">Tick a user to enforce the rules on their password changes. Admins can't be enrolled.</div>
+                            <input is="emby-input" type="text" id="pwUserSearch" placeholder="Search users..." style="margin-top: 8px;" />
+                            <div id="pwUserSummary" class="um-member-summary"></div>
+                            <div id="pwUserList" class="um-member-panel"></div>
+
+                            <button is="emby-button" type="button" id="btnPwRevertAll" class="raised button-destructive button-small" style="margin-top: 12px;">
+                                <span>Revert everyone to default provider</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button is="emby-button" type="button" id="btnSaveSettings" class="raised button-submit block" style="margin-top: 16px;">
+                        <span>Save</span>
+                    </button>
+                    <span id="settingsStatus" class="um-status-text"></span>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="configurationpage?name=usermanagement_shared.css">
+</div>

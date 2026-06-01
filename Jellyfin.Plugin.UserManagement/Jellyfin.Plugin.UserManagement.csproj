@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.UserManagement</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    <CodeAnalysisRuleSet>../jellyfin.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>NU1605;CA1002;CA2227;CA1305</NoWarn>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.0">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Jellyfin.Model" Version="10.11.0">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Groups page -->
+    <EmbeddedResource Include="Configuration\usermanagement_user.html" />
+    <EmbeddedResource Include="Configuration\usermanagement_user.js" />
+    <!-- Invites page -->
+    <EmbeddedResource Include="Configuration\usermanagement_invites.html" />
+    <EmbeddedResource Include="Configuration\usermanagement_invites.js" />
+    <!-- Public invite redemption page (served by InviteController, not a dashboard page) -->
+    <EmbeddedResource Include="Configuration\usermanagement_invite_public.html" />
+    <!-- Settings page -->
+    <EmbeddedResource Include="Configuration\usermanagement_settings.html" />
+    <EmbeddedResource Include="Configuration\usermanagement_settings.js" />
+    <!-- Shared resources -->
+    <EmbeddedResource Include="Configuration\usermanagement_shared.css" />
+    <EmbeddedResource Include="Configuration\usermanagement_shared.js" />
+  </ItemGroup>
+
+</Project>
