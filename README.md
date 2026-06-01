@@ -8,7 +8,7 @@ A Jellyfin plugin for managing the users you already have: define reusable permi
 User Management adds a **User Management** page to your Jellyfin dashboard with three tabs. **Groups** are permission templates: for each permission you choose whether the group *overrides* it (the value is pushed onto every member) or *inherits* it (left as the user has it), and a scheduled sync keeps members in line. **Invites** generate a shareable signup link — protected by a PIN, with an expiry and a usage limit — that lets a new person create their own account. **Settings** holds the default group for new users, the public invite URL, and password requirements you can enforce on the users you choose. Administrators are never modified by the plugin, so a group can't strip your own rights.
 
 ## Use At Your Own Risk
-This plugin changes user permissions, can create user accounts, and (optionally) takes over the authentication provider for the users you enroll in password rules. While extensively tested, I cannot account for every server configuration or edge case. **Always maintain backups of your Jellyfin data and configuration.** By using this plugin, you accept full responsibility for any account or access changes that may occur.
+This plugin is still very early and much of the scaffolding was created by Claude Code. **This is not ready for usage and should not be used in a production environment!**
 
 ---
 
