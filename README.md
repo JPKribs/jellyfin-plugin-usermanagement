@@ -5,7 +5,7 @@ A Jellyfin plugin for managing the users using bulk tooling. This includes, reus
 ---
 
 ## How It Works
-User Management adds a page to your dashboard with two tabs — Groups and Invites. Everything runs inside Jellyfin itself, with no extra service or port, and administrators are never touched, so a group can't lock you out of your own server.
+User Management adds a page to your dashboard with **Groups** and **Invites** configuration. Everything runs inside Jellyfin itself, with no extra service or port, and administrators are never touched, so a group can't lock you out of your own server.
 
 ### Groups
 A group is a set of permissions and settings applied to many users at once. Each setting is either an **override** — forced onto every member — or left alone, so the member keeps whatever they already have. Members re-sync when you save and on a schedule, correcting any manual drift.
