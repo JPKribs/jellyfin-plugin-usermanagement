@@ -24,6 +24,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the self-service signup invites.</summary>
     public List<Invite> Invites { get; set; } = new();
 
+    /// <summary>Gets or sets the original authentication provider for each user currently enrolled in password rules.</summary>
+    public List<ProviderEnrollment> ProviderEnrollments { get; set; } = new();
+
     /// <summary>Gets or sets the number of wrong PIN attempts before an invite locks itself.</summary>
     public int MaxPinAttempts { get; set; } = 5;
 }

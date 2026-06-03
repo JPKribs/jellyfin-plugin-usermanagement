@@ -1,44 +1,84 @@
 # ![User Management](Jellyfin.Plugin.UserManagement/Assets/Logo.png)
 
-A Jellyfin plugin for managing the users you already have: define reusable permission groups, hand out self-service signup invites, and enforce password requirements — all from the dashboard, with no second process or extra port.
+A Jellyfin plugin that brings group permission templates, account lifecycle, and password hygiene to the users you already have. Define reusable permission groups with live sync, hand out self-service signup invites, and enforce password requirements — all from the dashboard, with no second process or extra port.
 
 ---
 
 ## How It Works
-User Management adds a **User Management** page to your Jellyfin dashboard with three tabs. **Groups** are permission templates: for each permission you choose whether the group *overrides* it (the value is pushed onto every member) or *inherits* it (left as the user has it), and a scheduled sync keeps members in line. **Invites** generate a shareable signup link — protected by a PIN, with an expiry and a usage limit — that lets a new person create their own account. **Settings** holds the default group for new users, the public invite URL, and password requirements you can enforce on the users you choose. Administrators are never modified by the plugin, so a group can't strip your own rights.
+User Management adds a **User Management** page to your Jellyfin dashboard with three tabs. Groups push a chosen set of permissions onto their members and keep them reconciled on a schedule. Invites let new people create their own non-administrator accounts behind a PIN. Password requirements are enforced through a dedicated authentication provider on the members you choose.
+
+Policy is applied directly inside Jellyfin as a set of services and scheduled tasks. Administrators are never modified, so a group can never strip your own rights.
 
 ## Use At Your Own Risk
-This plugin is still very early and much of the scaffolding was created by Claude Code. **This is not ready for usage and should not be used in a production environment!**
+This plugin modifies user policies, password enrollment, and can disable or permanently delete accounts in your Jellyfin server. While it is built to leave administrators untouched and to validate every change, I cannot account for every server configuration or edge case. **Always maintain backups of your Jellyfin data and configuration.** By using this plugin, you accept full responsibility for any account changes or issues that may occur.
 
 ---
 
-## Getting Started
+## Features
 
-### 1. Groups
-Create permission templates and assign members.
+### Groups
+Reusable permission templates applied to existing accounts.
 
-1. On the **Groups** tab, click **New** and give the group a name.
-2. Expand a permission section and flip **Override** on a permission to have the group control it; leave it off to inherit the user's existing setting.
-3. Under **Members**, tick the users this group applies to. A user can only be in one group at a time, and administrators can't be added.
-4. Click **Save** — the group's managed permissions are applied to its members immediately, and a scheduled task keeps them reconciled.
+Each permission in a group is either *overridden* (the group's value is pushed onto every member) or *inherited* (left exactly as the user has it), so a group only touches what you tell it to. Members are reconciled back to the template on a schedule, repairing any drift from manual dashboard edits. A user belongs to at most one group at a time, and administrators can never be added.
 
-> Removing a user from a group stops future syncs but does **not** revert permissions already applied to them.
+**Group Expiry:**
+- **Disable**: on the group's expiry date, member accounts are disabled
+- **Delete**: on the group's expiry date, member accounts are permanently removed
 
-### 2. Invites
-Hand out self-service signup links.
+### Invites
+Shareable, self-service signup links.
 
-1. On the **Invites** tab, set an optional **PIN**, **expiry**, **max uses**, and a **group** for new accounts, then click **Create Invite**.
-2. Copy the generated link and share it. Opening it shows a signup page where the person enters the PIN and chooses a username and password.
-3. New accounts are added to the invite's group and are **never** administrators. The invite locks itself after too many wrong PIN attempts, and stops working once it expires or is fully used.
+Generate a link that lets a new person create their own account, optionally protected by a PIN, with an expiry date and a usage limit. New accounts are placed in the invite's group and are **never** administrators. The invite locks itself after too many wrong PIN attempts and stops working once it expires or is fully used.
 
-### 3. Settings
-General configuration, grouped into collapsible sections.
+**PIN Handling:**
+- **Hashed**: the PIN is stored only as a salted hash, never in plaintext
+- **Locked**: the invite disables itself after a configurable number of wrong attempts
 
-- **Default Group** — the group new users are automatically placed in.
-- **Invites** — the public base URL used to build invite links (set this to the address your users reach the server at, e.g. through a reverse proxy).
-- **Password Requirements** — minimum length and required character classes, whether empty passwords are allowed, whether new users are enrolled automatically, and a per-user list of exactly who the rules apply to. Rules are always enforced on invite signups; for existing users they apply to whoever you enroll here. A **Revert** button returns everyone to Jellyfin's built-in provider.
+### Settings
+Server-wide configuration.
 
----
+- **Default Group**: the group new users, and accounts created outside an invite, are automatically placed in
+- **Invite URL**: the public base URL used to build invite links, for when users reach the server through a reverse proxy
+- **Password Requirements**: minimum length and required character classes, enforced on invite signups and on the members of any password-enabled group
+
+## Enforcement Architecture
+
+User Management applies policy through four cooperating pieces, so changes stay consistent whether they come from the dashboard, an invite, or a background task:
+
+### Layer 1: Group Templates (Override / Inherit)
+The source of truth for permissions. Each group records, per permission, whether it is managed (overridden) or inherited. Only managed permissions are ever written to a member's policy; everything else is left exactly as the user has it.
+
+### Layer 2: Scheduled Reconciliation
+Background tasks keep reality in line with the templates.
+
+**Tasks:**
+- **Apply group permissions**: re-pushes each group's managed permissions to its members (default: every 12 hours)
+- **Add users to groups**: places any account not yet in a group into the default group (default: every 12 hours)
+- **Apply group expiry**: disables or deletes members of groups that have reached their expiry date (default: every 24 hours)
+
+### Layer 3: Password-Rule Enforcement
+Members of a password-enabled group are moved to a dedicated authentication provider that validates new passwords against the group's rules. Login verification is unchanged — it delegates to Jellyfin's built-in cryptography — and a user's original provider is recorded so it can be restored exactly when they leave the enforcing group.
+
+### Layer 4: Self-Service Invites
+The only anonymous, public-facing surface. All validation — token, PIN, expiry, usage — happens server-side, redemption is single-threaded to prevent double-use, and every created account is forced to be a non-administrator.
+
+### Reconciliation Pipeline
+Administrators are exempt at every layer, and configuration is read and written under a process-wide lock, so concurrent dashboard edits and background tasks can't corrupt each other. The modular design makes it straightforward to add new managed permissions or lifecycle actions.
+
+## Versioning
+
+Releases use a four-part version, `JJ.JJ.F.B`, that matches the supported Jellyfin version with the plugin's own feature/bug count:
+
+```
+10.11.1.2
+└───┘ └┬┘
+  │    └── 1 = Plugin feature release
+  │        2 = Plugin bug/patch release within that feature
+  │
+  └─── 10.11 = Jellyfin version this build was tested/released for
+```
+
+Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
 
 ## Installation
 
@@ -67,21 +107,8 @@ General configuration, grouped into collapsible sections.
 
 ---
 
-## Versioning
-
-Releases use a four-part version, `JJ.JJ.F.B`, that matches the supported Jellyfin version with the plugin's own feature/bug count:
-
-```
-10.11.1.2
-└───┘ └┬┘
-  │    └── 1 = Plugin feature release
-  │        2 = Plugin bug/patch release within that feature
-  │
-  └─── 10.11 = Jellyfin version this build was tested/released for
-```
-
-Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
-
 ## AI Disclaimer
 
-Claude Code was used extensively to build this plugin. At this time, it is **NOT RECOMMENDED FOR USAGE!**
+Claude Code was utilized in the creation of this project and first drafts of documentation. All code has been manually reviewed and revised after its generation.
+
+**All code was reviewed and tested by humans.**

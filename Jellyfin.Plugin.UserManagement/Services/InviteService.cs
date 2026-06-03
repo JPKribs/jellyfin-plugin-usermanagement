@@ -21,7 +21,7 @@ public sealed class InviteService : IDisposable
 {
     private readonly IUserManager _userManager;
     private readonly GroupService _groupService;
-    private readonly ICryptoProvider _crypto;
+    private readonly ICryptoProvider _cryptoProvider;
     private readonly ILogger<InviteService> _logger;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -32,12 +32,12 @@ public sealed class InviteService : IDisposable
     public InviteService(
         IUserManager userManager,
         GroupService groupService,
-        ICryptoProvider crypto,
+        ICryptoProvider cryptoProvider,
         ILogger<InviteService> logger)
     {
         _userManager = userManager;
         _groupService = groupService;
-        _crypto = crypto;
+        _cryptoProvider = cryptoProvider;
         _logger = logger;
     }
 
@@ -52,7 +52,7 @@ public sealed class InviteService : IDisposable
             Id = Guid.NewGuid(),
             Token = GenerateToken(),
             Label = (label ?? string.Empty).Trim(),
-            PinHash = trimmedPin.Length == 0 ? string.Empty : _crypto.CreatePasswordHash(trimmedPin).ToString(),
+            PinHash = trimmedPin.Length == 0 ? string.Empty : _cryptoProvider.CreatePasswordHash(trimmedPin).ToString(),
             UseDefaultGroup = useDefaultGroup,
             GroupId = useDefaultGroup ? null : groupId,
             ExpiresAt = expiresAt,
@@ -77,7 +77,7 @@ public sealed class InviteService : IDisposable
     public static string GenerateToken()
         => Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();
 
-    /// <summary>Finds an invite by its token (constant work; tokens are unguessable).</summary>
+    /// <summary>Finds an invite by its token.</summary>
     public Invite? FindByToken(string? token)
     {
         if (string.IsNullOrEmpty(token))
@@ -256,15 +256,7 @@ public sealed class InviteService : IDisposable
                 {
                     try
                     {
-                        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
-                        await WithUserRetryAsync(userId, async u =>
-                        {
-                            if (!string.Equals(u.AuthenticationProviderId, providerId, StringComparison.Ordinal))
-                            {
-                                u.AuthenticationProviderId = providerId;
-                                await _userManager.UpdateUserAsync(u).ConfigureAwait(false);
-                            }
-                        }).ConfigureAwait(false);
+                        await WithUserRetryAsync(userId, u => _groupService.EnrollAsync(u)).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -348,7 +340,7 @@ public sealed class InviteService : IDisposable
 
         try
         {
-            return _crypto.Verify(PasswordHash.Parse(invite.PinHash), (pin ?? string.Empty).Trim());
+            return _cryptoProvider.Verify(PasswordHash.Parse(invite.PinHash), (pin ?? string.Empty).Trim());
         }
         catch (FormatException)
         {

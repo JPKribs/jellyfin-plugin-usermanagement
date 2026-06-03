@@ -63,10 +63,17 @@ public class GroupService
             return 0;
         }
 
+        var defaultGroupId = defaultGroup.Id;
         var added = 0;
-        plugin.MutateConfiguration(config =>
+        plugin.MutateConfiguration(cfg =>
         {
-            var assigned = config.Groups.SelectMany(g => g.MemberIds).ToHashSet();
+            var group = cfg.Groups.FirstOrDefault(g => g.Id.Equals(defaultGroupId));
+            if (group is null)
+            {
+                return false;
+            }
+
+            var assigned = cfg.Groups.SelectMany(g => g.MemberIds).ToHashSet();
             foreach (var user in _userManager.Users)
             {
                 if (user.HasPermission(PermissionKind.IsAdministrator))
@@ -74,9 +81,9 @@ public class GroupService
                     continue;
                 }
 
-                if (!assigned.Contains(user.Id))
+                if (assigned.Add(user.Id))
                 {
-                    defaultGroup.MemberIds.Add(user.Id);
+                    group.MemberIds.Add(user.Id);
                     added++;
                 }
             }
@@ -86,7 +93,7 @@ public class GroupService
 
         if (added > 0)
         {
-            _logger.LogInformation("Added {Count} unassigned user(s) to default group {GroupId}", added, defaultGroup.Id);
+            _logger.LogInformation("Added {Count} unassigned user(s) to default group {GroupId}", added, defaultGroupId);
         }
 
         return added;
@@ -131,10 +138,10 @@ public class GroupService
             return;
         }
 
-        var work = plugin.ReadConfiguration(config =>
+        var work = plugin.ReadConfiguration(c =>
         {
             var seen = new HashSet<Guid>();
-            return config.Groups
+            return c.Groups
                 .SelectMany(g => g.MemberIds.Select(id => (Group: g, UserId: id)))
                 .Where(x => seen.Add(x.UserId))
                 .ToList();
@@ -172,10 +179,9 @@ public class GroupService
     }
 
     /// <summary>
-    /// Aligns password-rule enrollment with group membership: every non-admin member of a group that
-    /// enforces password rules is put on the plugin's auth provider, and anyone on that provider who is
-    /// no longer in an enforcing group is reverted to the built-in default provider. Enrollment is driven
-    /// entirely by group membership — there is no separate per-user enrollment.
+    /// Aligns password-rule enrollment with group membership. Enrollment is driven entirely by group
+    /// membership: non-admin members of a password-enforcing group are enrolled, and anyone enrolled
+    /// who is no longer in such a group is reverted to their original provider.
     /// </summary>
     public async Task ReconcileEnrollmentAsync()
     {
@@ -185,8 +191,7 @@ public class GroupService
             return;
         }
 
-        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
-        var enforced = plugin.ReadConfiguration(config => config.Groups
+        var enforced = plugin.ReadConfiguration(c => c.Groups
             .Where(g => g.Password is { Enabled: true })
             .SelectMany(g => g.MemberIds)
             .ToHashSet());
@@ -198,20 +203,15 @@ public class GroupService
                 continue;
             }
 
-            var shouldEnroll = enforced.Contains(user.Id);
-            var onOurProvider = string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal);
-
             try
             {
-                if (shouldEnroll && !onOurProvider)
+                if (enforced.Contains(user.Id))
                 {
-                    user.AuthenticationProviderId = providerId;
-                    await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+                    await EnrollAsync(user).ConfigureAwait(false);
                 }
-                else if (!shouldEnroll && onOurProvider)
+                else
                 {
-                    user.AuthenticationProviderId = DefaultProviderId;
-                    await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+                    await UnenrollAsync(user).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -219,6 +219,82 @@ public class GroupService
                 _logger.LogWarning(ex, "Failed to reconcile password enrollment for {UserId}", user.Id);
             }
         }
+    }
+
+    /// <summary>
+    /// Enrolls a user in password-rule enforcement, recording their original authentication provider so
+    /// it can be restored later. No-op if the user is already enrolled.
+    /// </summary>
+    public async Task EnrollAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return;
+        }
+
+        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
+        if (string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var original = user.AuthenticationProviderId;
+        plugin.MutateConfiguration(cfg =>
+        {
+            if (cfg.ProviderEnrollments.Any(e => e.UserId.Equals(user.Id)))
+            {
+                return false;
+            }
+
+            cfg.ProviderEnrollments.Add(new ProviderEnrollment { UserId = user.Id, OriginalProviderId = original });
+            return true;
+        });
+
+        user.AuthenticationProviderId = providerId;
+        await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Reverts a user from password-rule enforcement back to the authentication provider they had before
+    /// enrollment, falling back to the built-in default if none was recorded. No-op if not enrolled.
+    /// </summary>
+    public async Task UnenrollAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return;
+        }
+
+        var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
+        if (!string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var restore = DefaultProviderId;
+        plugin.MutateConfiguration(cfg =>
+        {
+            var record = cfg.ProviderEnrollments.FirstOrDefault(e => e.UserId.Equals(user.Id));
+            if (record is null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(record.OriginalProviderId))
+            {
+                restore = record.OriginalProviderId;
+            }
+
+            cfg.ProviderEnrollments.RemoveAll(e => e.UserId.Equals(user.Id));
+            return true;
+        });
+
+        user.AuthenticationProviderId = restore;
+        await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -234,8 +310,8 @@ public class GroupService
             return;
         }
 
-        var today = DateTime.Now.Date;
-        var work = plugin.ReadConfiguration(config => config.Groups
+        var today = DateTime.UtcNow.Date;
+        var work = plugin.ReadConfiguration(c => c.Groups
             .Where(g => g.ExpiresOn is { } due && due.Date <= today)
             .Select(g => (g.Id, g.ExpiryAction, Members: g.MemberIds.ToList()))
             .ToList());
@@ -253,6 +329,7 @@ public class GroupService
             return;
         }
 
+        var deleted = new List<Guid>();
         var processed = 0;
         foreach (var (groupId, action, members) in work)
         {
@@ -268,6 +345,7 @@ public class GroupService
                         if (action == GroupExpiryAction.Delete)
                         {
                             await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
+                            deleted.Add(userId);
                             _logger.LogInformation("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
                         }
                         else
@@ -291,9 +369,23 @@ public class GroupService
                 progress?.Report(processed * 100.0 / total);
             }
         }
+
+        if (deleted.Count > 0)
+        {
+            plugin.MutateConfiguration(cfg =>
+            {
+                foreach (var group in cfg.Groups)
+                {
+                    group.MemberIds.RemoveAll(id => deleted.Contains(id));
+                }
+
+                cfg.ProviderEnrollments.RemoveAll(e => deleted.Contains(e.UserId));
+                return true;
+            });
+        }
     }
 
-    private static void Merge(GroupPermissions p, UserPolicy policy, Guid userId)
+    internal static void Merge(GroupPermissions p, UserPolicy policy, Guid userId)
     {
         if (p.ManageEnableRemoteAccess)
         {

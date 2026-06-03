@@ -5,7 +5,6 @@ using Jellyfin.Data.Events.Users;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Services;
 using MediaBrowser.Controller.Events;
-using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.UserManagement.Services;
@@ -17,16 +16,14 @@ namespace Jellyfin.Plugin.UserManagement.Services;
 public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
 {
     private readonly GroupService _groupService;
-    private readonly IUserManager _userManager;
     private readonly ILogger<GroupEventConsumer> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GroupEventConsumer"/> class.
     /// </summary>
-    public GroupEventConsumer(GroupService groupService, IUserManager userManager, ILogger<GroupEventConsumer> logger)
+    public GroupEventConsumer(GroupService groupService, ILogger<GroupEventConsumer> logger)
     {
         _groupService = groupService;
-        _userManager = userManager;
         _logger = logger;
     }
 
@@ -81,12 +78,7 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
         {
             try
             {
-                var providerId = typeof(PasswordRuleAuthenticationProvider).FullName!;
-                if (!string.Equals(user.AuthenticationProviderId, providerId, StringComparison.Ordinal))
-                {
-                    user.AuthenticationProviderId = providerId;
-                    await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
-                }
+                await _groupService.EnrollAsync(user).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

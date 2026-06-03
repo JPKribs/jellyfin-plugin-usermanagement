@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Jellyfin.Plugin.UserManagement.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.11.0">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
