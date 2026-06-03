@@ -1,26 +1,26 @@
 # ![User Management](Jellyfin.Plugin.UserManagement/Assets/Logo.png)
 
-A Jellyfin plugin that brings group permission templates, account lifecycle, and password hygiene to the users you already have. Define reusable permission groups with live sync, hand out self-service signup invites, and enforce password requirements — all from the dashboard, with no second process or extra port.
+A Jellyfin plugin for managing the users you already have — reusable permission groups, self-service signup invites, password rules, and account expiration, all from the dashboard with no second process or extra port.
 
 ---
 
 ## How It Works
-User Management adds a **User Management** page to your Jellyfin dashboard with two tabs — Groups and Invites. Everything is applied directly inside Jellyfin through services and scheduled tasks. Administrators are never modified, so a group can never strip your own rights.
+User Management adds a page to your dashboard with two tabs — Groups and Invites. Everything runs inside Jellyfin itself, with no extra service or port, and administrators are never touched, so a group can't lock you out of your own server.
 
 ### Groups
-A group defines a set of user permissions and settings. When you apply changes — and whenever the scheduled task runs — every member of the group is set to those values. Only permissions marked as an **override** are written; anything not overridden keeps whatever each user already has set manually.
+A group is a set of permissions and settings applied to many users at once. Each setting is either an **override** — forced onto every member — or left alone, so the member keeps whatever they already have. Members re-sync when you save and on a schedule, correcting any manual drift.
 
 ### Invites
-A shareable signup link tied to a group. Anyone with the link can create their own account — optionally behind a PIN, with an expiration date and a usage limit. New accounts are placed in the invite's group and are never administrators.
+A shareable signup link tied to a group. Anyone with the link can create their own account, optionally behind a PIN and with an expiration date and usage limit. New accounts join the invite's group and are never administrators.
 
 ### Password
-Each group can act as a password authentication service for its members. When a member changes their password, the group's password conditions are enforced — a password that doesn't meet them is rejected. Otherwise nothing else about the account changes.
+A group can enforce password rules on its members — minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected; nothing else about how they sign in changes.
 
 ### User Expiration
-When the expiry task runs, any group whose expiration date is on or before today has its members disabled. You can instead set a group to **delete** its members on expiration — be careful, as deletion is irreversible.
+Give a group an expiration date and its members are disabled once that date passes, checked by a daily task. You can choose to delete members instead — this is irreversible, so use it with care.
 
 ## Use At Your Own Risk
-This plugin modifies user policies, password enrollment, and can disable or permanently delete accounts in your Jellyfin server. While it is built to leave administrators untouched and to validate every change, I cannot account for every server configuration or edge case. **Always maintain backups of your Jellyfin data and configuration.** By using this plugin, you accept full responsibility for any account changes or issues that may occur.
+This plugin changes user policies and password enrollment, and can disable or permanently delete accounts. It's built to leave administrators untouched and to validate every change, but I can't account for every server or edge case. **Always keep backups of your Jellyfin data and configuration.** By using it, you accept responsibility for any account changes that result.
 
 ---
 
