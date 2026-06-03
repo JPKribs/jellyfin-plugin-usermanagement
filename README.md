@@ -1,6 +1,6 @@
 # ![User Management](Jellyfin.Plugin.UserManagement/Assets/Logo.png)
 
-A Jellyfin plugin for managing the users you already have — reusable permission groups, self-service signup invites, password rules, and account expiration, all from the dashboard with no second process or extra port.
+A Jellyfin plugin for managing the users using bulk tooling. This includes, reusable permission groups, self-service signup invites, password rules, and account expiration, all from the dashboard with no second process or extra port.
 
 ---
 
