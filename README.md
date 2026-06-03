@@ -8,16 +8,16 @@ A Jellyfin plugin for managing the users using bulk tooling. This includes, reus
 User Management adds a page to your dashboard with **Groups** and **Invites** configuration. Everything runs inside Jellyfin itself, with no extra service or port, and administrators are never touched, so a group can't lock you out of your own server.
 
 ### Groups
-A group is a set of permissions and settings applied to many users at once. Each setting is either an **override** — forced onto every member — or left alone, so the member keeps whatever they already have. Members re-sync when you save and on a schedule, correcting any manual drift.
+A group is a set of permissions and settings applied to many users at once. Each setting is either an **override** where it's forced onto every member or left alone, so the member keeps whatever they already have. Members re-sync when you save and on a schedule, correcting any manual drift.
 
 ### Invites
 A shareable signup link tied to a group. Anyone with the link can create their own account, optionally behind a PIN and with an expiration date and usage limit. New accounts join the invite's group and are never administrators.
 
 ### Password
-A group can enforce password rules on its members — minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected; nothing else about how they sign in changes.
+A group can enforce password rules on its members, such as minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected; nothing else about how they sign in changes.
 
 ### User Expiration
-Give a group an expiration date and its members are disabled once that date passes, checked by a daily task. You can choose to delete members instead — this is irreversible, so use it with care.
+Give a group an expiration date and its members are disabled once that date passes, checked by a daily task. You can choose to delete members instead. **Please remember, this is irreversible, so use it with care!**
 
 ## Use At Your Own Risk
 This plugin changes user policies and password enrollment, and can disable or permanently delete accounts. It's built to leave administrators untouched and to validate every change, but I can't account for every server or edge case. **Always keep backups of your Jellyfin data and configuration.** By using it, you accept responsibility for any account changes that result.
@@ -68,6 +68,6 @@ Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
 
 ## AI Disclaimer
 
-Claude Code was utilized in the creation of this project and first drafts of documentation. All code has been manually reviewed and revised after its generation.
+Claude Code was utilized in the initial structure of this project and first drafts of documentation. While all code has been manually reviewed, tested, and revised after its generation, this disclaimer exists to be transparent around this 
 
 **All code was reviewed and tested by humans.**
