@@ -48,8 +48,7 @@ public class GroupAssignmentTask : IScheduledTask
     {
         yield return new TaskTriggerInfo
         {
-            Type = TaskTriggerInfoType.IntervalTrigger,
-            IntervalTicks = TimeSpan.FromHours(12).Ticks
+            Type = TaskTriggerInfoType.StartupTrigger
         };
     }
 }

@@ -13,7 +13,7 @@
 
                     <div class="fieldDescription" style="margin-bottom: 12px;">
                         Create a shareable signup link. Anyone with the link (and the PIN) can create one account
-                        until the invite expires or runs out of uses. Invited users are never administrators.
+                        until the invite expires or runs out of uses.
                     </div>
 
                     <!-- Create invite -->
@@ -30,27 +30,38 @@
                             <div class="inputContainer">
                                 <label for="txtPin">PIN:</label>
                                 <input is="emby-input" type="text" id="txtPin" inputmode="numeric" placeholder="Leave blank for no PIN" />
-                                <div class="fieldDescription">A short code the invitee must enter. The invite locks itself after too many wrong tries.</div>
+                                <div class="fieldDescription" id="pinHelp">A short code the invitee must enter. The invite locks itself after too many wrong tries.</div>
                             </div>
-                            <div class="inputContainer">
-                                <label for="dateExpiry">Expires:</label>
-                                <input is="emby-input" type="datetime-local" id="dateExpiry" />
-                                <div class="fieldDescription">Leave blank to never expire. Time is in this server's local time zone.</div>
-                            </div>
-                            <div class="inputContainer">
-                                <label for="txtMaxUses">Max uses (0 = unlimited):</label>
-                                <input is="emby-input" type="number" id="txtMaxUses" min="0" value="1" />
-                            </div>
-                            <div class="checkboxContainer">
-                                <label class="emby-checkbox-label">
-                                    <input type="checkbox" is="emby-checkbox" id="chkUseDefaultGroup" checked />
-                                    <span class="checkboxLabel">Add new users to the server's default group</span>
-                                </label>
-                            </div>
-                            <div class="selectContainer" id="groupSelectRow" style="display:none;">
+                            <div class="selectContainer" id="groupSelectRow">
                                 <label class="selectLabel" for="selGroup">Add new users to group:</label>
                                 <select is="emby-select" id="selGroup" class="emby-select-withcolor"></select>
                                 <div class="selectArrowContainer"><div style="display:none;">0</div><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+                            </div>
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkSetExpiry" />
+                                    <span class="checkboxLabel">Set invite expiration</span>
+                                </label>
+                            </div>
+                            <div class="um-indent hidden" id="expiryFields">
+                            <div class="inputContainer">
+                                <label for="dateExpiry">Invite expiration</label>
+                                <input is="emby-input" type="date" id="dateExpiry" />
+                                <div class="fieldDescription">Expires on or after this date during the next <strong>Apply expiry</strong> task run.</div>
+                            </div>
+                            </div>
+                            <div class="checkboxContainer">
+                                <label class="emby-checkbox-label">
+                                    <input type="checkbox" is="emby-checkbox" id="chkSetMaxUses" />
+                                    <span class="checkboxLabel">Set maximum usages</span>
+                                </label>
+                            </div>
+                            <div class="um-indent hidden" id="maxUsesFields">
+                            <div class="inputContainer">
+                                <label for="txtMaxUses">Usages</label>
+                                <input is="emby-input" type="number" id="txtMaxUses" min="1" value="1" />
+                                <div class="fieldDescription">Invite link is disabled after this number of people use it.</div>
+                            </div>
                             </div>
                             <button is="emby-button" type="button" id="btnCreateInvite" class="raised button-submit" style="margin-top: 12px;">
                                 <span>Create Invite</span>
@@ -58,13 +69,26 @@
                         </div>
                     </div>
 
-                    <!-- Existing invites -->
+                    <!-- Invites -->
                     <div class="collapsibleSection">
                         <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="activeInvitesContent">
-                            <span class="collapsibleTitle">Active Invites</span>
+                            <span class="collapsibleTitle">Invites</span>
                             <span class="collapsibleIcon">&#9660;</span>
                         </button>
                         <div id="activeInvitesContent" class="collapsibleContent">
+                            <div class="inputContainer">
+                                <label for="txtInviteBaseUrl">Invite base URL:</label>
+                                <input is="emby-input" type="text" id="txtInviteBaseUrl" placeholder="https://jellyfin.example.com" />
+                                <div class="fieldDescription">
+                                    Public address used to build invite links (e.g. through a reverse proxy or domain).
+                                    Leave blank to use the server's own address.
+                                </div>
+                            </div>
+                            <button is="emby-button" type="button" id="btnSaveInviteUrl" class="raised button-submit" style="margin-top: 12px; margin-bottom: 16px;">
+                                <span>Save</span>
+                            </button>
+                            <span id="inviteUrlStatus" class="um-status-text"></span>
+
                             <span id="inviteStatus" class="um-status-text"></span>
                             <div class="pt-wrapper">
                                 <div class="pt-body" id="inviteList"></div>

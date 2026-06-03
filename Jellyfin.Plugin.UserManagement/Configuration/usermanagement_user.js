@@ -29,7 +29,7 @@ export default function (view) {
     var PERMISSIONS = [
         { title: 'Library Access', perms: [
             { key: 'LibraryAccess', label: '', type: 'library',
-                desc: 'Select the libraries to share with this user. Administrators will be able to edit all folders using the metadata manager.' },
+                desc: 'Select the libraries to share with this user.' },
             { key: 'ChannelAccess', label: 'Channels', type: 'channels' }
         ] },
         { title: 'Device Access', perms: [
@@ -46,9 +46,9 @@ export default function (view) {
             { key: 'ForceRemoteSourceTranscoding', label: 'Force transcoding of remote media sources such as Live TV', type: 'bool',
                 desc: 'Restricting access to transcoding may cause playback failures in clients due to unsupported media formats.' },
             { key: 'RemoteClientBitrateLimit', label: 'Internet streaming bitrate limit (Mbps)', type: 'bitrate',
-                desc: 'An optional per-stream bitrate limit for all out of network devices. This is useful to prevent devices from requesting a higher bitrate than your internet connection can handle. This may result in increased CPU load on your server in order to transcode videos on the fly to a lower bitrate.' },
+                desc: 'An optional per-stream bitrate limit for all out of network devices.' },
             { key: 'SyncPlayAccess', label: 'SyncPlay access', type: 'enum',
-                desc: 'The SyncPlay feature enables to sync playback with other devices. Select the level of access this user has to the SyncPlay.',
+                desc: 'The SyncPlay feature enables to sync playback with other devices.',
                 options: [
                     ['CreateAndJoinGroups', 'Allow user to create and join groups'],
                     ['JoinGroups', 'Allow user to join groups'],
@@ -83,11 +83,10 @@ export default function (view) {
         ] },
         { title: 'Other', perms: [
             { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
-                desc: 'Users can download media and store it on their devices. This is not the same as a sync feature. Book libraries require this enabled to function properly.' },
+                desc: 'Users can download media and store it on their devices. Book libraries require this enabled to function properly.' },
             { key: 'IsDisabled', label: 'Disable this user', type: 'bool',
-                desc: 'The server will not allow any connections from this user. Existing connections will be abruptly ended.' },
-            { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool',
-                desc: 'Useful for private or hidden administrator accounts. The user will need to sign in manually by entering their username and password.' },
+                desc: 'The server will not allow any connections from this user.' },
+            { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool' },
             { key: 'LoginAttemptsBeforeLockout', label: 'Failed login tries before user is locked out', type: 'int', min: -1,
                 desc: 'A value of zero means inheriting the default of three tries for normal users and five for administrators. Setting this to -1 will disable the feature.' },
             { key: 'MaxActiveSessions', label: 'Maximum number of simultaneous user sessions', type: 'int',
@@ -390,6 +389,37 @@ export default function (view) {
         });
     }
 
+    function groupLabel(g) {
+        return (g.Name || 'Unnamed group') + (g.Id === fullConfig.DefaultGroupId ? ' (Default)' : '');
+    }
+
+    function refreshGroupLabels() {
+        var select = view.querySelector('#selectGroup');
+        if (!select) return;
+        Array.prototype.forEach.call(select.options, function (opt) {
+            var g = fullConfig.Groups.find(function (x) { return x.Id === opt.value; });
+            if (g) opt.textContent = groupLabel(g);
+        });
+    }
+
+    function updateDefaultButton() {
+        var btn = view.querySelector('#btnDefaultGroup');
+        if (!btn) return;
+        var isDefault = !!currentGroupId && currentGroupId === fullConfig.DefaultGroupId;
+        btn.classList.toggle('button-submit', isDefault);
+        var icon = btn.querySelector('.material-icons');
+        if (icon) icon.textContent = isDefault ? 'star' : 'star_border';
+        btn.setAttribute('title', isDefault ? 'This is the default group — click to unset' : 'Set as default group');
+    }
+
+    function toggleDefaultGroup() {
+        if (!currentGroupId) return;
+        fullConfig.DefaultGroupId = (fullConfig.DefaultGroupId === currentGroupId) ? null : currentGroupId;
+        refreshGroupLabels();
+        updateDefaultButton();
+        checkDirty();
+    }
+
     function populateDropdown() {
         var select = view.querySelector('#selectGroup');
         var previous = currentGroupId;
@@ -402,7 +432,7 @@ export default function (view) {
         groups.forEach(function (g) {
             var opt = document.createElement('option');
             opt.value = g.Id;
-            opt.textContent = g.Name || 'Unnamed group';
+            opt.textContent = groupLabel(g);
             select.appendChild(opt);
         });
 
@@ -411,8 +441,9 @@ export default function (view) {
         Shared.setVisible('emptyState', !hasGroups);
         view.querySelector('#btnRenameGroup').classList.toggle('hidden', !hasGroups);
         view.querySelector('#btnDeleteGroup').classList.toggle('hidden', !hasGroups);
+        view.querySelector('#btnDefaultGroup').classList.toggle('hidden', !hasGroups);
 
-        if (!hasGroups) { currentGroupId = null; return; }
+        if (!hasGroups) { currentGroupId = null; updateDefaultButton(); return; }
 
         if (previous && groups.some(function (g) { return g.Id === previous; })) {
             currentGroupId = previous;
@@ -448,6 +479,7 @@ export default function (view) {
     function persistGroups() {
         return ApiClient.getPluginConfiguration(pluginId).then(function (latest) {
             latest.Groups = fullConfig.Groups;
+            latest.DefaultGroupId = fullConfig.DefaultGroupId || null;
             if (latest.DefaultGroupId && !latest.Groups.some(function (g) { return g.Id === latest.DefaultGroupId; })) {
                 latest.DefaultGroupId = null;
             }
@@ -460,6 +492,7 @@ export default function (view) {
     }
 
     function loadCurrentGroup() {
+        updateDefaultButton();
         var group = getCurrentGroup();
         if (!group) return;
         var perms = group.Permissions || {};
@@ -543,8 +576,10 @@ export default function (view) {
         if (el('#grpPwSymbol')) el('#grpPwSymbol').checked = pw.RequireSymbol === true;
         updatePwEnabledState();
 
+        if (el('#grpExpiryEnabled')) el('#grpExpiryEnabled').checked = !!group.ExpiresOn;
         if (el('#grpExpiryDate')) el('#grpExpiryDate').value = group.ExpiresOn ? String(group.ExpiresOn).slice(0, 10) : '';
         if (el('#grpExpiryAction')) el('#grpExpiryAction').value = group.ExpiryAction || 'Disable';
+        updateExpiryEnabledState();
     }
 
     function collectGroupExtras(group) {
@@ -559,18 +594,18 @@ export default function (view) {
             RequireSymbol: !!(el('#grpPwSymbol') || {}).checked
         };
 
+        var expiryOn = !!(el('#grpExpiryEnabled') || {}).checked;
         var dateVal = (el('#grpExpiryDate') || {}).value || '';
-        group.ExpiresOn = dateVal ? dateVal + 'T00:00:00' : null;
+        group.ExpiresOn = (expiryOn && dateVal) ? dateVal + 'T00:00:00' : null;
         group.ExpiryAction = (el('#grpExpiryAction') || {}).value || 'Disable';
     }
 
     function updatePwEnabledState() {
-        var el = view.querySelector.bind(view);
-        var on = !!(el('#grpPwEnabled') || {}).checked;
-        ['#grpPwLength', '#grpPwNoEmpty', '#grpPwUpper', '#grpPwNumber', '#grpPwSymbol'].forEach(function (sel) {
-            var node = el(sel);
-            if (node) node.disabled = !on;
-        });
+        Shared.setVisible('pwFields', !!(view.querySelector('#grpPwEnabled') || {}).checked);
+    }
+
+    function updateExpiryEnabledState() {
+        Shared.setVisible('grpExpiryFields', !!(view.querySelector('#grpExpiryEnabled') || {}).checked);
     }
 
     function collectCurrentGroup() {
@@ -800,6 +835,7 @@ export default function (view) {
         if (!group) return;
         Dashboard.confirm('Delete group "' + group.Name + '"? Members will be unassigned.', 'Delete Group', function (ok) {
             if (!ok) return;
+            if (fullConfig.DefaultGroupId === group.Id) fullConfig.DefaultGroupId = null;
             fullConfig.Groups = fullConfig.Groups.filter(function (g) { return g.Id !== group.Id; });
             currentGroupId = null;
             populateDropdown();
@@ -864,11 +900,15 @@ export default function (view) {
         view.querySelector('#btnRenameGroup').addEventListener('click', renameGroup);
         view.querySelector('#btnDeleteGroup').addEventListener('click', deleteGroup);
         view.querySelector('#btnSaveGroups').addEventListener('click', save);
+        view.querySelector('#btnDefaultGroup').addEventListener('click', toggleDefaultGroup);
 
         view.querySelector('#memberSearch').addEventListener('input', filterMembers);
 
         var pwEnabled = view.querySelector('#grpPwEnabled');
         if (pwEnabled) pwEnabled.addEventListener('change', updatePwEnabledState);
+
+        var expiryEnabled = view.querySelector('#grpExpiryEnabled');
+        if (expiryEnabled) expiryEnabled.addEventListener('change', updateExpiryEnabledState);
 
         var form = view.querySelector('#UserManagementGroupsForm');
         if (form) {

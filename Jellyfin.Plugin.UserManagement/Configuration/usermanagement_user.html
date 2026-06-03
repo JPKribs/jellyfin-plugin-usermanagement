@@ -12,9 +12,9 @@
                     </div>
 
                     <div class="fieldDescription" style="margin-bottom: 12px;">
-                        A group is a permission template. For each permission you choose whether the group
-                        <strong>overrides</strong> it (the value is applied to every member) or
-                        <strong>inherits</strong> it (left as the user has it). A user belongs to one group at a time.
+                        Groups assign permissions and settings to multiple users at once. A setting marked as an
+                        <strong>override</strong> always uses the group's value; a setting that isn't overridden keeps
+                        whatever value each user already has. A user belongs to one group at a time.
                     </div>
 
                     <!-- Group selector -->
@@ -32,6 +32,10 @@
                             <button is="emby-button" type="button" id="btnDeleteGroup" class="raised icon-btn button-destructive" title="Delete">
                                 <span class="material-icons" aria-hidden="true">delete</span>
                                 <span class="icon-btn-label">Delete</span>
+                            </button>
+                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised icon-btn" title="Set as default group">
+                                <span class="material-icons" aria-hidden="true">star_border</span>
+                                <span class="icon-btn-label">Default</span>
                             </button>
                         </div>
                     </div>
@@ -68,10 +72,10 @@
                                         <span class="checkboxLabel">Enforce password requirements for this group's members</span>
                                     </label>
                                     <div class="fieldDescription checkboxFieldDescription">
-                                        When enabled, members are enrolled in password-rule enforcement: these rules apply to their
-                                        password changes and to invite signups into this group. Administrators are never affected.
+                                        Enforce password rules to the members of this group.
                                     </div>
                                 </div>
+                                <div class="um-indent hidden" id="pwFields">
                                 <div class="inputContainer">
                                     <label for="grpPwLength">Minimum length:</label>
                                     <input is="emby-input" type="number" id="grpPwLength" min="1" />
@@ -100,6 +104,7 @@
                                         <span class="checkboxLabel">Require a symbol</span>
                                     </label>
                                 </div>
+                                </div>
                             </div>
                         </div>
 
@@ -110,21 +115,27 @@
                                 <span class="collapsibleIcon">&#9660;</span>
                             </button>
                             <div id="grpExpiryContent" class="collapsibleContent collapsed">
-                                <div class="fieldDescription" style="margin-bottom: 12px;">
-                                    Optionally expire this group's members on a date. Administrators are never affected.
+                                <div class="checkboxContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
+                                        <span class="checkboxLabel">Set an expiration for the members of this group</span>
+                                    </label>
                                 </div>
+                                <div class="um-indent hidden" id="grpExpiryFields">
                                 <div class="inputContainer">
-                                    <label for="grpExpiryDate">Expiry date (leave blank to never expire):</label>
+                                    <label for="grpExpiryDate">Expiry date:</label>
                                     <input is="emby-input" type="date" id="grpExpiryDate" />
+                                    <div class="fieldDescription">Members are expired by the next <strong>Apply expiry</strong> task run on or after this date.</div>
                                 </div>
                                 <div class="selectContainer">
-                                    <label class="selectLabel" for="grpExpiryAction">When the group expires:</label>
+                                    <label class="selectLabel" for="grpExpiryAction">Expiration method</label>
                                     <select is="emby-select" id="grpExpiryAction" class="emby-select-withcolor">
-                                        <option value="Disable">Disable member accounts</option>
-                                        <option value="Delete">Delete member accounts (permanent)</option>
+                                        <option value="Disable">Disable</option>
+                                        <option value="Delete">Delete</option>
                                     </select>
-                                    <div class="fieldDescription">Disable is reversible. Delete permanently removes the accounts and cannot be undone.</div>
+                                    <div class="fieldDescription">Disable sets the account to inactive which can be reversed. Delete permanently deletes the user and their data.</div>
                                     <div class="selectArrowContainer"><div style="display:none;">0</div><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+                                </div>
                                 </div>
                             </div>
                         </div>

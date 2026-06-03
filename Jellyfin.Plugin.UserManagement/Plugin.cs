@@ -112,18 +112,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
         yield return new PluginPageInfo
         {
-            Name = "usermanagement_settings",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_settings.html"
-        };
-
-        yield return new PluginPageInfo
-        {
-            Name = "usermanagement_settings.js",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_settings.js"
-        };
-
-        yield return new PluginPageInfo
-        {
             Name = "usermanagement_shared.css",
             EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_shared.css"
         };

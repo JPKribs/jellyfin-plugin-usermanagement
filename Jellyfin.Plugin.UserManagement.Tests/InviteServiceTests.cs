@@ -39,16 +39,9 @@ public class InviteServiceTests
     }
 
     [Fact]
-    public void IsRedeemable_Expired_False()
+    public void IsRedeemable_IgnoresExpiryDate_DisabledByTaskInstead()
     {
-        var invite = new Invite { Enabled = true, ExpiresAt = DateTime.UtcNow.AddMinutes(-1) };
-        Assert.False(InviteService.IsRedeemable(invite));
-    }
-
-    [Fact]
-    public void IsRedeemable_NotYetExpired_True()
-    {
-        var invite = new Invite { Enabled = true, ExpiresAt = DateTime.UtcNow.AddMinutes(1) };
+        var invite = new Invite { Enabled = true, ExpiresAt = DateTime.UtcNow.AddDays(-7) };
         Assert.True(InviteService.IsRedeemable(invite));
     }
 

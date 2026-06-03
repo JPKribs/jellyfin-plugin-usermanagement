@@ -11,6 +11,7 @@ export default function (view) {
     var _invites = [];
     var _groups = [];
     var _base = '';
+    var _defaultGroupId = '';
 
     function inviteUrl(token) {
         var base = (_base || ApiClient.serverAddress() || '').replace(/\/+$/, '');
@@ -25,8 +26,8 @@ export default function (view) {
     }
 
     function statusOf(inv) {
-        if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
         if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= new Date()) return { cls: 'Expired', text: 'Expired' };
+        if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
         if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'Disabled', text: 'Used up' };
         return { cls: 'Active', text: 'Active' };
     }
@@ -40,8 +41,15 @@ export default function (view) {
                 _invites = results[0] || [];
                 _groups = (results[1] && results[1].Groups) || [];
                 _base = (results[1] && results[1].InviteBaseUrl) || '';
+                _defaultGroupId = (results[1] && results[1].DefaultGroupId) || '';
+                var urlEl = Shared.getEl('txtInviteBaseUrl');
+                if (urlEl) urlEl.value = _base;
+                var pinHelp = Shared.getEl('pinHelp');
+                if (pinHelp) {
+                    var attempts = (results[1] && results[1].MaxPinAttempts) || 5;
+                    pinHelp.textContent = 'A short code the invitee must enter. The invite locks itself after ' + attempts + ' wrong tries.';
+                }
                 populateGroups();
-                syncGroupRow();
                 renderInvites();
             }).catch(function () {
                 _invites = [];
@@ -60,12 +68,9 @@ export default function (view) {
             opt.textContent = g.Name || 'Unnamed group';
             sel.appendChild(opt);
         });
-    }
-
-    function syncGroupRow() {
-        var useDefault = (Shared.getEl('chkUseDefaultGroup') || {}).checked;
-        var row = Shared.getEl('groupSelectRow');
-        if (row) row.style.display = useDefault ? 'none' : '';
+        if (_defaultGroupId && _groups.some(function (g) { return g.Id === _defaultGroupId; })) {
+            sel.value = _defaultGroupId;
+        }
     }
 
     function renderInvites() {
@@ -134,24 +139,41 @@ export default function (view) {
         }
     }
 
+    function updateExpiryState() {
+        Shared.setVisible('expiryFields', !!(Shared.getEl('chkSetExpiry') || {}).checked);
+    }
+
+    function updateMaxUsesState() {
+        Shared.setVisible('maxUsesFields', !!(Shared.getEl('chkSetMaxUses') || {}).checked);
+    }
+
     function createInvite() {
+        var setExpiry = !!(Shared.getEl('chkSetExpiry') || {}).checked;
         var expVal = (Shared.getEl('dateExpiry') || {}).value || '';
+        var setMaxUses = !!(Shared.getEl('chkSetMaxUses') || {}).checked;
         var maxUses = parseInt(Shared.getEl('txtMaxUses').value, 10);
-        var useDefault = Shared.getEl('chkUseDefaultGroup').checked;
         var groupId = Shared.getEl('selGroup').value || null;
 
-        if (!useDefault && !groupId) {
-            Shared.setStatus('inviteStatus', 'Choose a group for this invite.', true);
+        if (!groupId) {
+            Shared.setStatus('inviteStatus', _groups.length ? 'Choose a group for this invite.' : 'Create a group on the Groups tab first.', true);
+            return;
+        }
+        if (setExpiry && !expVal) {
+            Shared.setStatus('inviteStatus', 'Choose an expiration date or turn off the expiration.', true);
+            return;
+        }
+        if (setMaxUses && (isNaN(maxUses) || maxUses < 1)) {
+            Shared.setStatus('inviteStatus', 'Maximum usages must be 1 or higher.', true);
             return;
         }
 
         var payload = {
             Label: Shared.getEl('txtLabel').value || '',
             Pin: Shared.getEl('txtPin').value || '',
-            UseDefaultGroup: useDefault,
-            GroupId: useDefault ? null : groupId,
-            ExpiresAt: expVal ? new Date(expVal).toISOString() : null,
-            MaxUses: isNaN(maxUses) || maxUses < 0 ? 0 : maxUses
+            UseDefaultGroup: false,
+            GroupId: groupId,
+            ExpiresAt: (setExpiry && expVal) ? expVal + 'T00:00:00' : null,
+            MaxUses: (setMaxUses && maxUses >= 1) ? maxUses : 0
         };
 
         Shared.apiRequest('Invites', 'POST', payload)
@@ -159,12 +181,30 @@ export default function (view) {
                 Shared.setStatus('inviteStatus', 'Invite created.', false);
                 Shared.getEl('txtLabel').value = '';
                 Shared.getEl('txtPin').value = '';
+                Shared.getEl('chkSetExpiry').checked = false;
                 Shared.getEl('dateExpiry').value = '';
+                Shared.getEl('chkSetMaxUses').checked = false;
+                Shared.getEl('txtMaxUses').value = '1';
+                updateExpiryState();
+                updateMaxUsesState();
                 loadAll();
             })
             .catch(function () {
                 Shared.setStatus('inviteStatus', 'Failed to create invite.', true);
             });
+    }
+
+    function saveBaseUrl() {
+        Shared.getConfig().then(function (config) {
+            config.InviteBaseUrl = ((Shared.getEl('txtInviteBaseUrl') || {}).value || '').trim().replace(/\/+$/, '');
+            Shared.saveConfig(config).then(function () {
+                _base = config.InviteBaseUrl;
+                Shared.setStatus('inviteUrlStatus', 'Invite URL saved.', false);
+                renderInvites();
+            }).catch(function () {
+                Shared.setStatus('inviteUrlStatus', 'Failed to save invite URL.', true);
+            });
+        });
     }
 
     function deleteInvite(id) {
@@ -190,7 +230,13 @@ export default function (view) {
         Shared.initCollapsibles();
         var btn = Shared.getEl('btnCreateInvite');
         if (btn) btn.addEventListener('click', createInvite);
-        var chk = Shared.getEl('chkUseDefaultGroup');
-        if (chk) chk.addEventListener('change', syncGroupRow);
+        var burl = Shared.getEl('btnSaveInviteUrl');
+        if (burl) burl.addEventListener('click', saveBaseUrl);
+        var chkExp = Shared.getEl('chkSetExpiry');
+        if (chkExp) chkExp.addEventListener('change', updateExpiryState);
+        var chkMax = Shared.getEl('chkSetMaxUses');
+        if (chkMax) chkMax.addEventListener('change', updateMaxUsesState);
+        updateExpiryState();
+        updateMaxUsesState();
     });
 }

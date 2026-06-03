@@ -89,7 +89,10 @@ public sealed class InviteService : IDisposable
             .FirstOrDefault(i => string.Equals(i.Token, token, StringComparison.Ordinal)));
     }
 
-    /// <summary>Whether the invite is currently redeemable (enabled, not expired, uses remaining).</summary>
+    /// <summary>
+    /// Whether the invite is currently redeemable (enabled, uses remaining). Expiry is not checked here:
+    /// it is day-based and enforced by the scheduled expiry task, which disables the invite when it runs.
+    /// </summary>
     public static bool IsRedeemable(Invite invite)
     {
         ArgumentNullException.ThrowIfNull(invite);
@@ -98,12 +101,45 @@ public sealed class InviteService : IDisposable
             return false;
         }
 
-        if (invite.ExpiresAt is { } expires && expires <= DateTime.UtcNow)
+        return invite.MaxUses <= 0 || invite.UsedCount < invite.MaxUses;
+    }
+
+    /// <summary>
+    /// Disables every still-enabled invite whose expiry date has been reached. Expiry is day-based: an
+    /// invite is disabled the first time this runs on or after its expiry date, so the run time of the
+    /// scheduled task is when the invite actually stops working.
+    /// </summary>
+    /// <returns>The number of invites disabled.</returns>
+    public int ExpireInvites()
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
         {
-            return false;
+            return 0;
         }
 
-        return invite.MaxUses <= 0 || invite.UsedCount < invite.MaxUses;
+        var today = DateTime.UtcNow.Date;
+        var disabled = 0;
+        plugin.MutateConfiguration(cfg =>
+        {
+            foreach (var invite in cfg.Invites)
+            {
+                if (invite.Enabled && invite.ExpiresAt is { } due && due.Date <= today)
+                {
+                    invite.Enabled = false;
+                    disabled++;
+                }
+            }
+
+            return disabled > 0;
+        });
+
+        if (disabled > 0)
+        {
+            _logger.LogInformation("Disabled {Count} expired invite(s)", disabled);
+        }
+
+        return disabled;
     }
 
     /// <summary>
@@ -129,11 +165,6 @@ public sealed class InviteService : IDisposable
             if (!invite.Enabled)
             {
                 return InviteRedeemResult.Fail("This invite is no longer available.");
-            }
-
-            if (invite.ExpiresAt is { } expires && expires <= DateTime.UtcNow)
-            {
-                return InviteRedeemResult.Fail("This invite has expired.");
             }
 
             if (invite.MaxUses > 0 && invite.UsedCount >= invite.MaxUses)

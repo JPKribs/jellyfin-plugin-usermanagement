@@ -2,8 +2,7 @@
 export function getTabs() {
     return [
         { href: 'configurationpage?name=usermanagement_user', name: 'Groups' },
-        { href: 'configurationpage?name=usermanagement_invites', name: 'Invites' },
-        { href: 'configurationpage?name=usermanagement_settings', name: 'Settings' }
+        { href: 'configurationpage?name=usermanagement_invites', name: 'Invites' }
     ];
 }
 

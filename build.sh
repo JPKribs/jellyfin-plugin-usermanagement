@@ -73,8 +73,6 @@ validate_resources() {
         "$PROJECT_DIR/Configuration/usermanagement_user.js"
         "$PROJECT_DIR/Configuration/usermanagement_invites.html"
         "$PROJECT_DIR/Configuration/usermanagement_invites.js"
-        "$PROJECT_DIR/Configuration/usermanagement_settings.html"
-        "$PROJECT_DIR/Configuration/usermanagement_settings.js"
         "$PROJECT_DIR/Configuration/usermanagement_shared.css"
         "$PROJECT_DIR/Configuration/usermanagement_shared.js"
     )

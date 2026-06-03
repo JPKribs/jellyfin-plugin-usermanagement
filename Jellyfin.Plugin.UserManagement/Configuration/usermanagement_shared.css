@@ -730,6 +730,14 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* ===== Indented sub-fields under a gating checkbox ===== */
+.um-indent {
+    margin-left: 1.85em;
+    padding-left: 1em;
+    margin-top: 4px;
+    border-left: 2px solid rgba(255, 255, 255, 0.12);
+}
+
 /* ===== Utility ===== */
 .hidden {
     display: none !important;

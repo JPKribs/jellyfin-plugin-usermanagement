@@ -96,7 +96,7 @@ public class UserManagementController : ControllerBase
                 c.DefaultGroupId is { } id && c.Groups.Any(g => g.Id.Equals(id)));
             if (!hasDefault)
             {
-                return BadRequest(new { Error = "No default group is configured. Set one in Settings, or choose a specific group for this invite." });
+                return BadRequest(new { Error = "No default group is configured. Set one on the Groups tab, or choose a specific group for this invite." });
             }
         }
         else
