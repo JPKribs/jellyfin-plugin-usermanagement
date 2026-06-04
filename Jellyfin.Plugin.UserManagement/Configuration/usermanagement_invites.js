@@ -144,7 +144,7 @@ export default function (view) {
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
                 + '<label style="font-size:0.85em; opacity:0.7; min-width:54px;">Expires</label>'
-                + '<input type="date" class="um-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(Shared.toDateInput(inv.ExpiresAt)) : '') + '" style="max-width:170px; border:1px solid var(--um-border);" />'
+                + '<input type="date" class="um-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:170px; border:1px solid var(--um-border);" />'
                 + '</div>'
                 + '</div>';
         });
