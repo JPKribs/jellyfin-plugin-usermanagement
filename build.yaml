@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.0.0"
+version: "10.11.1.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Group policy templates, account lifecycle, and password hygiene for existing Jellyfin users."
@@ -16,5 +16,5 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  developer:
-  - Initial scaffold
+  new release:
+   This is the first version of this plugin! I created this to help manage some of the items that I found as painpoints. It would be best to read the README for all the details as I put a lot more effort into that than this release message.

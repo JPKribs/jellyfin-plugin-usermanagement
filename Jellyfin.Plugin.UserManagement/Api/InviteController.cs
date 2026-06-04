@@ -36,7 +36,10 @@ public class InviteController : ControllerBase
     [Produces("text/html")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ContentResult Page(string token)
-        => Content(GetPageHtml(), "text/html");
+    {
+        ApplyHardeningHeaders();
+        return Content(GetPageHtml(), "text/html");
+    }
 
     /// <summary>Reports whether an invite can be redeemed, without revealing why if it cannot.</summary>
     /// <param name="token">The invite token.</param>
@@ -46,6 +49,7 @@ public class InviteController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult Info(string token)
     {
+        ApplyHardeningHeaders();
         var invite = _inviteService.FindByToken(token);
         if (invite is null || !InviteService.IsRedeemable(invite))
         {
@@ -73,11 +77,23 @@ public class InviteController : ControllerBase
         [FromBody] RedeemInviteRequest request,
         CancellationToken cancellationToken)
     {
+        ApplyHardeningHeaders();
         var result = await _inviteService
             .RedeemAsync(token, request?.Pin, request?.Username, request?.Password, cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(new { result.Success, result.Message });
+    }
+
+    /// <summary>
+    /// Sets response headers that keep the token out of referrers and caches, applied by the plugin
+    /// itself so it does not depend on a reverse proxy.
+    /// </summary>
+    private void ApplyHardeningHeaders()
+    {
+        Response.Headers["Referrer-Policy"] = "no-referrer";
+        Response.Headers["Cache-Control"] = "no-store";
+        Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
     }
 
     private static string GetPageHtml()

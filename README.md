@@ -17,7 +17,10 @@ A shareable signup link tied to a group. Anyone with the link can create their o
 A group can enforce password rules on its members, such as minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected; nothing else about how they sign in changes.
 
 ### User Expiration
-Give a group an expiration date and its members are disabled once that date passes, checked by a daily task. You can choose to delete members instead. **Please remember, this is irreversible, so use it with care!**
+Give a group an expiration date and its members are disabled once that date passes, checked by a daily task. You can choose to delete members instead. **Please note, this is irreversible, so use it with care!**
+
+### User Inactivity
+Set an inactivity limit for users in a group. Users who have not been active within this window are set to disabled when checked by a daily task. Accounts that have never signed in are left alone.
 
 ## Use At Your Own Risk
 This plugin changes user policies and password enrollment, and can disable or permanently delete accounts. It's built to leave administrators untouched and to validate every change, but I can't account for every server or edge case. **Always keep backups of your Jellyfin data and configuration.** By using it, you accept responsibility for any account changes that result.
@@ -68,6 +71,6 @@ Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
 
 ## AI Disclaimer
 
-Claude Code was utilized in the initial structure of this project and first drafts of documentation. While all code has been manually reviewed, tested, and revised after its generation, this disclaimer exists to be transparent around this 
+Claude Code was utilized in the initial structure of this project and first drafts of documentation. All code has been manually reviewed, tested, and revised after its generation. This disclaimer exists in the interest of transparency.
 
 **All code was reviewed and tested by humans.**

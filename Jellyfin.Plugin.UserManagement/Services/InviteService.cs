@@ -172,6 +172,21 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("This invite has already been fully used.");
             }
 
+            var rateLimited = plugin.ReadConfiguration(c =>
+            {
+                if (c.InviteRateLimitCount <= 0 || c.InviteRateLimitWindowMinutes <= 0)
+                {
+                    return false;
+                }
+
+                var cutoff = DateTime.UtcNow.AddMinutes(-c.InviteRateLimitWindowMinutes);
+                return invite.RecentRedemptions.Count(t => t >= cutoff) >= c.InviteRateLimitCount;
+            });
+            if (rateLimited)
+            {
+                return InviteRedeemResult.Fail("This invite was used recently. Please try again later.");
+            }
+
             if (!string.IsNullOrEmpty(invite.PinHash) && !VerifyPin(invite, pin))
             {
                 var locked = false;
@@ -219,7 +234,7 @@ public sealed class InviteService : IDisposable
 
             if (_userManager.GetUserByName(username) is not null)
             {
-                return InviteRedeemResult.Fail("That username is already taken.");
+                return InviteRedeemResult.Fail("An unknown error occurred. Please check your inputs and try again.");
             }
 
             Guid userId;
@@ -253,10 +268,17 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Could not create the account. Please try again.");
             }
 
-            plugin.MutateConfiguration(_ =>
+            plugin.MutateConfiguration(cfg =>
             {
                 invite.UsedCount++;
                 invite.FailedPinAttempts = 0;
+                if (cfg.InviteRateLimitWindowMinutes > 0)
+                {
+                    var cutoff = DateTime.UtcNow.AddMinutes(-cfg.InviteRateLimitWindowMinutes);
+                    invite.RecentRedemptions.RemoveAll(t => t < cutoff);
+                    invite.RecentRedemptions.Add(DateTime.UtcNow);
+                }
+
                 return true;
             });
 

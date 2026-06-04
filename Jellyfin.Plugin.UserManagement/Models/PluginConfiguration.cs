@@ -29,4 +29,10 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>Gets or sets the number of wrong PIN attempts before an invite locks itself.</summary>
     public int MaxPinAttempts { get; set; } = 5;
+
+    /// <summary>Gets or sets the number of redemptions allowed per invite within the rate-limit window. 0 disables rate limiting.</summary>
+    public int InviteRateLimitCount { get; set; }
+
+    /// <summary>Gets or sets the rate-limit window in minutes. 0 disables rate limiting.</summary>
+    public int InviteRateLimitWindowMinutes { get; set; }
 }

@@ -79,7 +79,8 @@ export default function (view) {
             { key: 'EnableRemoteAccess', label: 'Allow remote connections to this server', type: 'bool',
                 desc: 'If unchecked, all remote connections will be blocked.' },
             { key: 'EnableCollectionManagement', label: 'Allow this user to manage collections', type: 'bool' },
-            { key: 'EnableSubtitleManagement', label: 'Allow this user to edit subtitles', type: 'bool' }
+            { key: 'EnableSubtitleManagement', label: 'Allow this user to edit subtitles', type: 'bool' },
+            { key: 'EnableLyricManagement', label: 'Allow this user to edit lyrics', type: 'bool' }
         ] },
         { title: 'Other', perms: [
             { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
@@ -130,6 +131,7 @@ export default function (view) {
             renderSections();
             populateDropdown();
             snapshot();
+            renderUserCards();
             Dashboard.hideLoadingMsg();
         }).catch(function (err) {
             console.error('Failed to load groups', err);
@@ -580,6 +582,10 @@ export default function (view) {
         if (el('#grpExpiryDate')) el('#grpExpiryDate').value = group.ExpiresOn ? String(group.ExpiresOn).slice(0, 10) : '';
         if (el('#grpExpiryAction')) el('#grpExpiryAction').value = group.ExpiryAction || 'Disable';
         updateExpiryEnabledState();
+
+        if (el('#grpInactiveEnabled')) el('#grpInactiveEnabled').checked = group.DisableInactiveUsers === true;
+        if (el('#grpInactiveDays')) el('#grpInactiveDays').value = group.InactiveDays || 30;
+        updateInactiveEnabledState();
     }
 
     function collectGroupExtras(group) {
@@ -598,6 +604,10 @@ export default function (view) {
         var dateVal = (el('#grpExpiryDate') || {}).value || '';
         group.ExpiresOn = (expiryOn && dateVal) ? dateVal + 'T00:00:00' : null;
         group.ExpiryAction = (el('#grpExpiryAction') || {}).value || 'Disable';
+
+        group.DisableInactiveUsers = !!(el('#grpInactiveEnabled') || {}).checked;
+        var inactiveDays = parseInt((el('#grpInactiveDays') || {}).value, 10);
+        group.InactiveDays = isNaN(inactiveDays) || inactiveDays < 1 ? 30 : inactiveDays;
     }
 
     function updatePwEnabledState() {
@@ -606,6 +616,46 @@ export default function (view) {
 
     function updateExpiryEnabledState() {
         Shared.setVisible('grpExpiryFields', !!(view.querySelector('#grpExpiryEnabled') || {}).checked);
+    }
+
+    function updateInactiveEnabledState() {
+        Shared.setVisible('inactiveFields', !!(view.querySelector('#grpInactiveEnabled') || {}).checked);
+    }
+
+    function card(cls, count, label) {
+        return '<div class="um-card ' + cls + '"><span class="um-card-count">' + count
+            + '</span><span class="um-card-label">' + label + '</span></div>';
+    }
+
+    function renderUserCards() {
+        var container = view.querySelector('#userCards');
+        if (!container) return;
+        var admins = 0, active = 0, inactive = 0;
+        var adminIds = {};
+        allUsers.forEach(function (u) {
+            var p = u.Policy || {};
+            if (p.IsAdministrator) { admins++; adminIds[u.Id] = true; return; }
+            if (p.IsDisabled) { inactive++; } else { active++; }
+        });
+
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var soon = new Date(today); soon.setDate(soon.getDate() + 7);
+        var expiringIds = {};
+        (fullConfig.Groups || []).forEach(function (g) {
+            if (!g.ExpiresOn) return;
+            var d = new Date(g.ExpiresOn);
+            if (isNaN(d.getTime())) return;
+            d.setHours(0, 0, 0, 0);
+            if (d >= today && d <= soon) {
+                (g.MemberIds || []).forEach(function (id) { if (!adminIds[id]) expiringIds[id] = true; });
+            }
+        });
+
+        container.innerHTML =
+            card('admin', admins, 'Admins') +
+            card('active', active, 'Active') +
+            card('inactive', inactive, 'Inactive') +
+            card('expiring', Object.keys(expiringIds).length, 'Expiring Soon');
     }
 
     function collectCurrentGroup() {
@@ -859,6 +909,7 @@ export default function (view) {
         }).then(function () {
             Dashboard.hideLoadingMsg();
             snapshot();
+            renderUserCards();
             Shared.setStatus('groupStatus', 'Saved and applied to members.', false);
         }).catch(function (err) {
             console.error('Save failed', err);
@@ -909,6 +960,9 @@ export default function (view) {
 
         var expiryEnabled = view.querySelector('#grpExpiryEnabled');
         if (expiryEnabled) expiryEnabled.addEventListener('change', updateExpiryEnabledState);
+
+        var inactiveEnabled = view.querySelector('#grpInactiveEnabled');
+        if (inactiveEnabled) inactiveEnabled.addEventListener('change', updateInactiveEnabledState);
 
         var form = view.querySelector('#UserManagementGroupsForm');
         if (form) {

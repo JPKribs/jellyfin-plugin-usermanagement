@@ -385,6 +385,66 @@ public class GroupService
         }
     }
 
+    /// <summary>
+    /// Disables non-admin members of any group with inactivity disabling enabled whose last activity is
+    /// older than the group's threshold. Members who have never been active are left alone.
+    /// </summary>
+    public async Task DisableInactiveMembersAsync(CancellationToken cancellationToken)
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return;
+        }
+
+        var work = plugin.ReadConfiguration(c => c.Groups
+            .Where(g => g.DisableInactiveUsers && g.InactiveDays > 0)
+            .Select(g => (g.Id, g.InactiveDays, Members: g.MemberIds.ToList()))
+            .ToList());
+
+        if (work.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        foreach (var (groupId, days, members) in work)
+        {
+            var cutoff = now.AddDays(-days);
+            foreach (var userId in members)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var user = _userManager.GetUserById(userId);
+                if (user is null || AdminExemption.IsExempt(user))
+                {
+                    continue;
+                }
+
+                var dto = _userManager.GetUserDto(user, string.Empty);
+                var lastActive = dto.LastActivityDate ?? dto.LastLoginDate;
+                if (lastActive is null || lastActive >= cutoff)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (!dto.Policy.IsDisabled)
+                    {
+                        dto.Policy.IsDisabled = true;
+                        await _userManager.UpdatePolicyAsync(userId, dto.Policy).ConfigureAwait(false);
+                        _logger.LogInformation("Disabled inactive user {UserId} from group {GroupId}", userId, groupId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to disable inactive user {UserId} from group {GroupId}", userId, groupId);
+                }
+            }
+        }
+    }
+
     internal static void Merge(GroupPermissions p, UserPolicy policy, Guid userId)
     {
         if (p.ManageEnableRemoteAccess)
@@ -400,6 +460,11 @@ public class GroupService
         if (p.ManageEnableSubtitleManagement)
         {
             policy.EnableSubtitleManagement = p.EnableSubtitleManagement;
+        }
+
+        if (p.ManageEnableLyricManagement)
+        {
+            policy.EnableLyricManagement = p.EnableLyricManagement;
         }
 
         if (p.ManageEnableLiveTvAccess)

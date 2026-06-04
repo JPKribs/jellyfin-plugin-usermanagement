@@ -16,6 +16,8 @@
                         until the invite expires or runs out of uses.
                     </div>
 
+                    <div class="um-cards" id="inviteCards"></div>
+
                     <!-- Create invite -->
                     <div class="collapsibleSection">
                         <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="newInviteContent">
@@ -47,7 +49,7 @@
                             <div class="inputContainer">
                                 <label for="dateExpiry">Invite expiration</label>
                                 <input is="emby-input" type="date" id="dateExpiry" />
-                                <div class="fieldDescription">Expires on or after this date during the next <strong>Apply expiry</strong> task run.</div>
+                                <div class="fieldDescription">Expires on or after this date during the next <strong>Process expired and inactive users</strong> task run.</div>
                             </div>
                             </div>
                             <div class="checkboxContainer">
@@ -83,6 +85,19 @@
                                     Public address used to build invite links (e.g. through a reverse proxy or domain).
                                     Leave blank to use the server's own address.
                                 </div>
+                                <div class="fieldDescription hidden" id="httpsWarn" style="color: var(--um-status-expired-color);">
+                                    Serve invites over HTTPS. Invitees submit a password to this address.
+                                </div>
+                            </div>
+                            <div class="inputContainer">
+                                <label for="txtRateCount">Invite rate limit:</label>
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <input is="emby-input" type="number" id="txtRateCount" min="0" style="max-width:90px;" />
+                                    <span>accepts per</span>
+                                    <input is="emby-input" type="number" id="txtRateWindow" min="0" style="max-width:90px;" />
+                                    <span>minutes</span>
+                                </div>
+                                <div class="fieldDescription">After this many signups the link pauses for the window. Set either to 0 to disable.</div>
                             </div>
                             <button is="emby-button" type="button" id="btnSaveInviteUrl" class="raised button-submit" style="margin-top: 12px; margin-bottom: 16px;">
                                 <span>Save</span>

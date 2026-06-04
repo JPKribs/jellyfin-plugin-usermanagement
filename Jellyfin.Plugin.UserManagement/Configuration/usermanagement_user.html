@@ -17,6 +17,8 @@
                         whatever value each user already has. A user belongs to one group at a time.
                     </div>
 
+                    <div class="um-cards" id="userCards"></div>
+
                     <!-- Group selector -->
                     <div class="um-selector">
                         <select is="emby-select" id="selectGroup" class="um-selector-dropdown"></select>
@@ -125,7 +127,7 @@
                                 <div class="inputContainer">
                                     <label for="grpExpiryDate">Expiry date:</label>
                                     <input is="emby-input" type="date" id="grpExpiryDate" />
-                                    <div class="fieldDescription">Members are expired by the next <strong>Apply expiry</strong> task run on or after this date.</div>
+                                    <div class="fieldDescription">Members are expired by the next <strong>Process expired and inactive users</strong> task run on or after this date.</div>
                                 </div>
                                 <div class="selectContainer">
                                     <label class="selectLabel" for="grpExpiryAction">Expiration method</label>
@@ -135,6 +137,29 @@
                                     </select>
                                     <div class="fieldDescription">Disable sets the account to inactive which can be reversed. Delete permanently deletes the user and their data.</div>
                                     <div class="selectArrowContainer"><div style="display:none;">0</div><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inactivity (per group) -->
+                        <div class="collapsibleSection">
+                            <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpInactiveContent">
+                                <span class="collapsibleTitle">Inactivity</span>
+                                <span class="collapsibleIcon">&#9660;</span>
+                            </button>
+                            <div id="grpInactiveContent" class="collapsibleContent collapsed">
+                                <div class="checkboxContainer">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
+                                        <span class="checkboxLabel">Disable inactive users</span>
+                                    </label>
+                                </div>
+                                <div class="um-indent hidden" id="inactiveFields">
+                                <div class="inputContainer">
+                                    <label for="grpInactiveDays">Days of inactivity before disabling:</label>
+                                    <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
+                                    <div class="fieldDescription">Members with no activity for this many days are disabled by the next <strong>Process expired and inactive users</strong> task run. Members who have never signed in are left alone.</div>
                                 </div>
                                 </div>
                             </div>

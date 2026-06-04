@@ -44,6 +44,11 @@ export default function (view) {
                 _defaultGroupId = (results[1] && results[1].DefaultGroupId) || '';
                 var urlEl = Shared.getEl('txtInviteBaseUrl');
                 if (urlEl) urlEl.value = _base;
+                var rcEl = Shared.getEl('txtRateCount');
+                if (rcEl) rcEl.value = (results[1] && results[1].InviteRateLimitCount) || 0;
+                var rwEl = Shared.getEl('txtRateWindow');
+                if (rwEl) rwEl.value = (results[1] && results[1].InviteRateLimitWindowMinutes) || 0;
+                updateHttpsWarning();
                 var pinHelp = Shared.getEl('pinHelp');
                 if (pinHelp) {
                     var attempts = (results[1] && results[1].MaxPinAttempts) || 5;
@@ -73,7 +78,31 @@ export default function (view) {
         }
     }
 
+    function card(cls, count, label) {
+        return '<div class="um-card ' + cls + '"><span class="um-card-count">' + count
+            + '</span><span class="um-card-label">' + label + '</span></div>';
+    }
+
+    function renderInviteCards() {
+        var container = view.querySelector('#inviteCards');
+        if (!container) return;
+        var now = new Date();
+        var active = 0, expired = 0, locked = 0, consumed = 0;
+        _invites.forEach(function (inv) {
+            if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= now) { expired++; }
+            else if (!inv.Enabled) { locked++; }
+            else if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) { consumed++; }
+            else { active++; }
+        });
+        container.innerHTML =
+            card('active', active, 'Active') +
+            card('expiring', expired, 'Expired') +
+            card('locked', locked, 'Locked') +
+            card('inactive', consumed, 'Consumed');
+    }
+
     function renderInvites() {
+        renderInviteCards();
         var body = view.querySelector('#inviteList');
         var footer = view.querySelector('#inviteFooter');
         if (!body) return;
@@ -194,15 +223,26 @@ export default function (view) {
             });
     }
 
+    function updateHttpsWarning() {
+        var v = ((Shared.getEl('txtInviteBaseUrl') || {}).value || '').trim().toLowerCase();
+        var insecure = v.indexOf('http://') === 0 || (v === '' && location.protocol === 'http:');
+        Shared.setVisible('httpsWarn', insecure);
+    }
+
     function saveBaseUrl() {
         Shared.getConfig().then(function (config) {
             config.InviteBaseUrl = ((Shared.getEl('txtInviteBaseUrl') || {}).value || '').trim().replace(/\/+$/, '');
+            var rc = parseInt((Shared.getEl('txtRateCount') || {}).value, 10);
+            var rw = parseInt((Shared.getEl('txtRateWindow') || {}).value, 10);
+            config.InviteRateLimitCount = isNaN(rc) || rc < 0 ? 0 : rc;
+            config.InviteRateLimitWindowMinutes = isNaN(rw) || rw < 0 ? 0 : rw;
             Shared.saveConfig(config).then(function () {
                 _base = config.InviteBaseUrl;
-                Shared.setStatus('inviteUrlStatus', 'Invite URL saved.', false);
+                Shared.setStatus('inviteUrlStatus', 'Invite settings saved.', false);
+                updateHttpsWarning();
                 renderInvites();
             }).catch(function () {
-                Shared.setStatus('inviteUrlStatus', 'Failed to save invite URL.', true);
+                Shared.setStatus('inviteUrlStatus', 'Failed to save invite settings.', true);
             });
         });
     }
@@ -232,6 +272,8 @@ export default function (view) {
         if (btn) btn.addEventListener('click', createInvite);
         var burl = Shared.getEl('btnSaveInviteUrl');
         if (burl) burl.addEventListener('click', saveBaseUrl);
+        var urlInput = Shared.getEl('txtInviteBaseUrl');
+        if (urlInput) urlInput.addEventListener('input', updateHttpsWarning);
         var chkExp = Shared.getEl('chkSetExpiry');
         if (chkExp) chkExp.addEventListener('change', updateExpiryState);
         var chkMax = Shared.getEl('chkSetMaxUses');

@@ -28,6 +28,12 @@ public class GroupPermissions
     /// <summary>Gets or sets the subtitle management value.</summary>
     public bool EnableSubtitleManagement { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the group manages lyric management.</summary>
+    public bool ManageEnableLyricManagement { get; set; }
+
+    /// <summary>Gets or sets the lyric management value.</summary>
+    public bool EnableLyricManagement { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the group manages Live TV access.</summary>
     public bool ManageEnableLiveTvAccess { get; set; }
 

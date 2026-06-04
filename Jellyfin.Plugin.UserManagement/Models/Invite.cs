@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.UserManagement.Models;
 
@@ -49,4 +50,7 @@ public class Invite
 
     /// <summary>Gets or sets when the invite was created (UTC).</summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>Gets or sets the UTC timestamps of recent successful redemptions, used for rate limiting.</summary>
+    public List<DateTime> RecentRedemptions { get; set; } = new();
 }

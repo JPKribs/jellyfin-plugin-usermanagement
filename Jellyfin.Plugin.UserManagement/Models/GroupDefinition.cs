@@ -33,4 +33,10 @@ public class GroupDefinition
 
     /// <summary>Gets or sets what happens to members once the group expires.</summary>
     public GroupExpiryAction ExpiryAction { get; set; } = GroupExpiryAction.Disable;
+
+    /// <summary>Gets or sets a value indicating whether members inactive for <see cref="InactiveDays"/> days are disabled.</summary>
+    public bool DisableInactiveUsers { get; set; }
+
+    /// <summary>Gets or sets the number of days without activity before a member is disabled.</summary>
+    public int InactiveDays { get; set; } = 30;
 }

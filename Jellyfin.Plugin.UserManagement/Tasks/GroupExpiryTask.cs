@@ -27,13 +27,13 @@ public class GroupExpiryTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public string Name => "Apply expiry";
+    public string Name => "Process expired and inactive users";
 
     /// <inheritdoc />
     public string Key => "UserManagementGroupExpiry";
 
     /// <inheritdoc />
-    public string Description => "Disables or deletes members of expired groups, and disables expired invites.";
+    public string Description => "Disables or deletes members of expired groups, disables inactive members, and disables expired invites.";
 
     /// <inheritdoc />
     public string Category => "User Management";
@@ -42,6 +42,7 @@ public class GroupExpiryTask : IScheduledTask
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         await _groupService.ExpireGroupsAsync(progress, cancellationToken).ConfigureAwait(false);
+        await _groupService.DisableInactiveMembersAsync(cancellationToken).ConfigureAwait(false);
         _inviteService.ExpireInvites();
         progress.Report(100);
     }
