@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.1.2",
+        "changelog": "## Fixes\r\n- Allow locking/unlocking invites\r\n- Allow editing an invite's expiration date\r\n- Add a media conversion permission to groups\r\n- Keep expired and inactive users disabled when a group would otherwise re-enable them\r\n- Fix poor formatting",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.1.2/jellyfin-plugin-usermanagement-10.11.1.2.zip",
+        "checksum": "bef8aa8367f5ae3aadcebd2b60c52256",
+        "timestamp": "2026-06-04T04:14:23Z"
+      },
+      {
         "version": "10.11.1.1",
         "changelog": "## Notice\r\n- Due to the changes in https://github.com/jellyfin/jellyfin/pull/15368 this plugin will only work for 10.11.9 or higher\r\n\r\n## Fixes\r\n- The manifest group was general instead of administration\r\n- The description was just plain wrong from an earlier revision\r\n- Cleanup visuals for record counts\r\n- Fixes for user management changes in 10.11.9+",
         "targetAbi": "10.11.10.0",
