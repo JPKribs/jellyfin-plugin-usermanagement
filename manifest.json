@@ -7,6 +7,15 @@
     "imageUrl": "https://raw.githubusercontent.com/JPKribs/jellyfin-plugin-usermanagement/refs/heads/master/Jellyfin.Plugin.UserManagement/Assets/Logo.png",
     "owner": "JPKribs",
     "category": "General",
-    "versions": []
+    "versions": [
+      {
+        "version": "10.11.1.0",
+        "changelog": "### Initial Release\r\n\r\nThis plugin was built with the goal of automating some of the painpoints that I had managing users. The primary focuses are groups for permissions and configurations to make adding libraries/changes easier, and invite links that are part of Jellyfin instead of using an external platform.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.1.0/jellyfin-plugin-usermanagement-10.11.1.0.zip",
+        "checksum": "500a13247848897b3947737e3d1f9aed",
+        "timestamp": "2026-06-04T01:21:15Z"
+      }
+    ]
   }
 ]
