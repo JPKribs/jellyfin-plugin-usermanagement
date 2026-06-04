@@ -2,11 +2,11 @@
 
 A Jellyfin plugin for managing Jellyfin users from a single point. At this time, this plugin can be used for:
 
-- **Groups**: Enforce the same permissions across multiple users at the same time.
-- **Password Validation**: Enforce password length and complexity for all users in a group.
-- **User Expiry**: Disable or delete user accounts based on a group set date.
-- **User Inactivity**: Disable inactive user accounts based on a group time limit.
-- **Invite Links**: Create an invite link for a user to create a new account on your server and automatically apply group permissions to them.
+- **Groups** — Enforce the same permissions across multiple users at the same time.
+- **Password Validation** — Enforce password length and complexity for all users in a group.
+- **User Expiry** — Disable or delete user accounts based on a group set date.
+- **User Inactivity** — Disable inactive user accounts based on a group time limit.
+- **Invite Links** — Create an invite link for a user to create a new account on your server and automatically apply group permissions to them.
 
 ---
 
