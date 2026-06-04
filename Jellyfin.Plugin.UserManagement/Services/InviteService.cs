@@ -251,7 +251,7 @@ public sealed class InviteService : IDisposable
 
             try
             {
-                await WithUserRetryAsync(userId, u => _userManager.ChangePassword(u, password)).ConfigureAwait(false);
+                await WithUserRetryAsync(userId, u => _userManager.ChangePassword(u.Id, password)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

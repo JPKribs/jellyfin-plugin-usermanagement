@@ -757,11 +757,12 @@
     font-size: 0.85em;
     opacity: 0.9;
 }
-.um-card.admin { background: var(--um-status-admin-bg); color: var(--um-status-admin-color); border-color: var(--um-status-admin-color); }
-.um-card.active { background: var(--um-status-active-bg); color: var(--um-status-active-color); border-color: var(--um-status-active-color); }
-.um-card.inactive { background: var(--um-status-disabled-bg); color: var(--um-status-disabled-color); border-color: var(--um-status-disabled-color); }
-.um-card.expiring { background: var(--um-status-expired-bg); color: var(--um-status-expired-color); border-color: var(--um-status-expired-color); }
-.um-card.locked { background: var(--um-status-locked-bg); color: var(--um-status-locked-color); border-color: var(--um-status-locked-color); }
+.um-card.blue { background: var(--um-status-admin-bg); color: var(--um-status-admin-color); border-color: var(--um-status-admin-color); }
+.um-card.green { background: var(--um-status-active-bg); color: var(--um-status-active-color); border-color: var(--um-status-active-color); }
+.um-card.red { background: var(--um-status-disabled-bg); color: var(--um-status-disabled-color); border-color: var(--um-status-disabled-color); }
+.um-card.purple { background: var(--um-status-locked-bg); color: var(--um-status-locked-color); border-color: var(--um-status-locked-color); }
+.um-card.orange { background: var(--um-status-expired-bg); color: var(--um-status-expired-color); border-color: var(--um-status-expired-color); }
+.um-card.yellow { background: rgba(224, 200, 78, 0.18); color: #e0c84e; border-color: #e0c84e; }
 
 /* ===== Indented sub-fields under a gating checkbox ===== */
 .um-indent {

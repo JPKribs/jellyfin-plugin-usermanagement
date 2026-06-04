@@ -630,12 +630,15 @@ export default function (view) {
     function renderUserCards() {
         var container = view.querySelector('#userCards');
         if (!container) return;
-        var admins = 0, active = 0, inactive = 0;
+        var staleCutoff = Date.now() - 30 * 86400000;
+        var admins = 0, active = 0, inactive = 0, disabled = 0;
         var adminIds = {};
         allUsers.forEach(function (u) {
             var p = u.Policy || {};
             if (p.IsAdministrator) { admins++; adminIds[u.Id] = true; return; }
-            if (p.IsDisabled) { inactive++; } else { active++; }
+            if (p.IsDisabled) { disabled++; return; }
+            var last = u.LastActivityDate || u.LastLoginDate;
+            if (last && new Date(last).getTime() >= staleCutoff) { active++; } else { inactive++; }
         });
 
         var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -652,10 +655,11 @@ export default function (view) {
         });
 
         container.innerHTML =
-            card('admin', admins, 'Admins') +
-            card('active', active, 'Active') +
-            card('inactive', inactive, 'Inactive') +
-            card('expiring', Object.keys(expiringIds).length, 'Expiring Soon');
+            card('blue', admins, 'Admins') +
+            card('green', active, 'Active') +
+            card('yellow', inactive, 'Inactive') +
+            card('red', disabled, 'Disabled') +
+            card('purple', Object.keys(expiringIds).length, 'Expiring Soon');
     }
 
     function collectCurrentGroup() {

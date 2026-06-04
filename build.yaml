@@ -2,7 +2,7 @@
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
 version: "10.11.1.1"
-targetAbi: "10.11.0.0"
+targetAbi: "10.11.10.0"
 framework: "net9.0"
 overview: "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
 description: >
@@ -16,6 +16,10 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
+  notice:
+  - Due to the changes in https://github.com/jellyfin/jellyfin/pull/15368 this plugin will only work for 10.11.9 or higher
   fixes:
   - The manifest group was general instead of administration
   - The description was just plain wrong from an earlier revision
+  - Cleanup visuals for record counts
+  - Fixes for user management changes in 10.11.9+

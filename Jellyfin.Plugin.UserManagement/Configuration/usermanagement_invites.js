@@ -95,10 +95,10 @@ export default function (view) {
             else { active++; }
         });
         container.innerHTML =
-            card('active', active, 'Active') +
-            card('expiring', expired, 'Expired') +
-            card('locked', locked, 'Locked') +
-            card('inactive', consumed, 'Consumed');
+            card('green', active, 'Active') +
+            card('yellow', locked, 'Locked') +
+            card('purple', consumed, 'Consumed') +
+            card('red', expired, 'Expired');
     }
 
     function renderInvites() {

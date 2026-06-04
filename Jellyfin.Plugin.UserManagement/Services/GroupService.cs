@@ -74,7 +74,7 @@ public class GroupService
             }
 
             var assigned = cfg.Groups.SelectMany(g => g.MemberIds).ToHashSet();
-            foreach (var user in _userManager.Users)
+            foreach (var user in _userManager.GetUsers())
             {
                 if (user.HasPermission(PermissionKind.IsAdministrator))
                 {
@@ -196,7 +196,7 @@ public class GroupService
             .SelectMany(g => g.MemberIds)
             .ToHashSet());
 
-        foreach (var user in _userManager.Users)
+        foreach (var user in _userManager.GetUsers())
         {
             if (AdminExemption.IsExempt(user))
             {
