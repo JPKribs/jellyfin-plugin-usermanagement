@@ -1,11 +1,25 @@
 # ![User Management](Jellyfin.Plugin.UserManagement/Assets/Logo.png)
 
-A Jellyfin plugin for managing the users using bulk tooling. This includes, reusable permission groups, self-service signup invites, password rules, and account expiration, all from the dashboard with no second process or extra port.
+A Jellyfin plugin for managing Jellyfin users from a single point. At this time, this plugin can be used for:
+
+- **Groups**: Enforce the same permissions across multiple users at the same time.
+- **Password Validation**: Enforce password length and complexity for all users in a group.
+- **User Expiry**: Disable or delete user accounts based on a group set date.
+- **User Inactivity**: Disable inactive user accounts based on a group time limit.
+- **Invite Links**: Create an invite link for a user to create a new account on your server and automatically apply group permissions to them.
+
+---
+
+**All plugins are made for my personal use cases. I've made these publicly available for anyone who has the same use cases and can benefit from this work. I have no desire to advertise or market for these plugins as these are for personal usage only.**
+
+**Thank you,**
+
+*Joe Kribs*
 
 ---
 
 ## How It Works
-User Management adds a page to your dashboard with **Groups** and **Invites** configuration. Everything runs inside Jellyfin itself, with no extra service or port, and administrators are never touched, so a group can't lock you out of your own server.
+User Management uses groups to assign permissions and rules to all users who are a part of this group. New users can be onboarded from an invite link and has group permissions assigned to them on creation. On update, this plugin finds all users in these groups and updates their `UserDto.userConfiguration` using all overridden permissions and settings. Anything not found in the base `UserDto` is stored and referenced from the plugin storage.
 
 ### Groups
 A group is a set of permissions and settings applied to many users at once. Each setting is either an **override** where it's forced onto every member or left alone, so the member keeps whatever they already have. Members re-sync when you save and on a schedule, correcting any manual drift.
