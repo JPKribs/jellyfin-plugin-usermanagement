@@ -2,11 +2,11 @@
   {
     "guid": "670167bd-e7f8-4549-98e2-5ab2e11bc89f",
     "name": "User Management",
-    "overview": "Group policy templates, account lifecycle, and password hygiene for existing Jellyfin users.",
-    "description": "User Management brings policy, lifecycle, and password hygiene to accounts that already exist on your Jellyfin server. Define group permission templates with live sync, set account expiry and auto-disable inactive users, and enforce password requirements (with an optional HaveIBeenPwned breach check) - all from the dashboard, no second process required.",
+    "overview": "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin.",
+    "description": "User Management provides user groups and password hygiene to accounts that already exist on your Jellyfin server. Define group permission templates with live sync, set account expiry and auto-disable inactive users, and enforce password requirements. Use these groups to send user-managed, and protected invite links.",
     "imageUrl": "https://raw.githubusercontent.com/JPKribs/jellyfin-plugin-usermanagement/refs/heads/master/Jellyfin.Plugin.UserManagement/Assets/Logo.png",
     "owner": "JPKribs",
-    "category": "General",
+    "category": "Administration",
     "versions": [
       {
         "version": "10.11.1.0",

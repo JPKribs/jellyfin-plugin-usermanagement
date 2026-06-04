@@ -1,20 +1,21 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.1.0"
+version: "10.11.1.1"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
-overview: "Group policy templates, account lifecycle, and password hygiene for existing Jellyfin users."
+overview: "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
 description: >
-  User Management brings policy, lifecycle, and password hygiene to accounts that already exist on your
+  User Management provides user groups and password hygiene to accounts that already exist on your
   Jellyfin server. Define group permission templates with live sync, set account expiry and auto-disable
-  inactive users, and enforce password requirements (with an optional HaveIBeenPwned breach check) - all
-  from the dashboard, no second process required.
+  inactive users, and enforce password requirements. Use these groups to send user-managed, and protected 
+  invite links.
 category: "General"
 imageUrl: "https://raw.githubusercontent.com/JPKribs/jellyfin-plugin-usermanagement/refs/heads/master/Jellyfin.Plugin.UserManagement/Assets/Logo.png"
 owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  new release:
-   This is the first version of this plugin! I created this to help manage some of the items that I found as painpoints. It would be best to read the README for all the details as I put a lot more effort into that than this release message.
+  fixes:
+  - The manifest group was general instead of administration
+  - The description was just plain wrong from an earlier revision
