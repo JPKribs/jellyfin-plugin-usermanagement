@@ -34,6 +34,12 @@ public class GroupPermissions
     /// <summary>Gets or sets the lyric management value.</summary>
     public bool EnableLyricManagement { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the group manages media conversion.</summary>
+    public bool ManageEnableMediaConversion { get; set; }
+
+    /// <summary>Gets or sets the media conversion value.</summary>
+    public bool EnableMediaConversion { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the group manages Live TV access.</summary>
     public bool ManageEnableLiveTvAccess { get; set; }
 

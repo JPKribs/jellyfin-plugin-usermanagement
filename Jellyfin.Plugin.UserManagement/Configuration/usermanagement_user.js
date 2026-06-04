@@ -85,6 +85,7 @@ export default function (view) {
         { title: 'Other', perms: [
             { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
                 desc: 'Users can download media and store it on their devices. Book libraries require this enabled to function properly.' },
+            { key: 'EnableMediaConversion', label: 'Allow media conversion', type: 'bool' },
             { key: 'IsDisabled', label: 'Disable this user', type: 'bool',
                 desc: 'The server will not allow any connections from this user.' },
             { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool' },

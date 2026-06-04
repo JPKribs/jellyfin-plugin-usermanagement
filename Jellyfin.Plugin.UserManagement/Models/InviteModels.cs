@@ -24,6 +24,20 @@ public class CreateInviteRequest
     public int MaxUses { get; set; }
 }
 
+/// <summary>Admin request to enable or disable an invite.</summary>
+public class SetInviteEnabledRequest
+{
+    /// <summary>Gets or sets a value indicating whether the invite is enabled.</summary>
+    public bool Enabled { get; set; }
+}
+
+/// <summary>Admin request to change an invite's expiry date.</summary>
+public class SetInviteExpiryRequest
+{
+    /// <summary>Gets or sets the new expiry date, or null for never.</summary>
+    public DateTime? ExpiresAt { get; set; }
+}
+
 /// <summary>Public request body to redeem an invite.</summary>
 public class RedeemInviteRequest
 {

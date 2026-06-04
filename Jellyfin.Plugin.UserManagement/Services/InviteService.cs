@@ -143,6 +143,77 @@ public sealed class InviteService : IDisposable
     }
 
     /// <summary>
+    /// Enables or disables an invite. Enabling also clears the wrong-PIN counter, so an invite that
+    /// locked itself after too many PIN attempts gets a clean slate.
+    /// </summary>
+    /// <returns><c>true</c> if the invite existed and was updated.</returns>
+    public bool SetEnabled(Guid id, bool enabled)
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return false;
+        }
+
+        var found = false;
+        plugin.MutateConfiguration(cfg =>
+        {
+            var invite = cfg.Invites.FirstOrDefault(i => i.Id.Equals(id));
+            if (invite is null)
+            {
+                return false;
+            }
+
+            found = true;
+            invite.Enabled = enabled;
+            if (enabled)
+            {
+                invite.FailedPinAttempts = 0;
+            }
+
+            return true;
+        });
+
+        return found;
+    }
+
+    /// <summary>
+    /// Changes an invite's expiry date. Moving it to a future date (or clearing it) also re-enables the
+    /// invite and clears its PIN lockout, so an invite that the expiry task disabled can be revived.
+    /// </summary>
+    /// <returns><c>true</c> if the invite existed and was updated.</returns>
+    public bool SetExpiry(Guid id, DateTime? expiresAt)
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return false;
+        }
+
+        var found = false;
+        plugin.MutateConfiguration(cfg =>
+        {
+            var invite = cfg.Invites.FirstOrDefault(i => i.Id.Equals(id));
+            if (invite is null)
+            {
+                return false;
+            }
+
+            found = true;
+            invite.ExpiresAt = expiresAt;
+            if (expiresAt is not { } due || due.Date > DateTime.UtcNow.Date)
+            {
+                invite.Enabled = true;
+                invite.FailedPinAttempts = 0;
+            }
+
+            return true;
+        });
+
+        return found;
+    }
+
+    /// <summary>
     /// Validates an invite and, if everything checks out, creates a new (non-admin) account.
     /// </summary>
     public async Task<InviteRedeemResult> RedeemAsync(

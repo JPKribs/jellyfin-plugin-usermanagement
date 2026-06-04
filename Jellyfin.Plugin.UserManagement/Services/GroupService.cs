@@ -119,11 +119,40 @@ public class GroupService
             return false;
         }
 
-        var policy = _userManager.GetUserDto(user, string.Empty).Policy;
+        var dto = _userManager.GetUserDto(user, string.Empty);
+        var policy = dto.Policy;
         Merge(group.Permissions, policy, user.Id);
+
+        if (group.Permissions.ManageIsDisabled && !group.Permissions.IsDisabled && IsLifecycleDisabled(dto, group))
+        {
+            policy.IsDisabled = true;
+        }
 
         await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>
+    /// Whether a member should currently stay disabled due to the group's lifecycle rules, so a group
+    /// that force-enables its members does not re-enable someone the expiry/inactivity task disabled.
+    /// </summary>
+    private static bool IsLifecycleDisabled(MediaBrowser.Model.Dto.UserDto dto, GroupDefinition group)
+    {
+        if (group.ExpiresOn is { } due && due.Date <= DateTime.UtcNow.Date)
+        {
+            return true;
+        }
+
+        if (group.DisableInactiveUsers && group.InactiveDays > 0)
+        {
+            var lastActive = dto.LastActivityDate ?? dto.LastLoginDate;
+            if (lastActive is { } last && last < DateTime.UtcNow.AddDays(-group.InactiveDays))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -465,6 +494,11 @@ public class GroupService
         if (p.ManageEnableLyricManagement)
         {
             policy.EnableLyricManagement = p.EnableLyricManagement;
+        }
+
+        if (p.ManageEnableMediaConversion)
+        {
+            policy.EnableMediaConversion = p.EnableMediaConversion;
         }
 
         if (p.ManageEnableLiveTvAccess)

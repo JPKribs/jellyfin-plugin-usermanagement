@@ -124,20 +124,27 @@ export default function (view) {
             if (inv.UseDefaultGroup) meta.push('Group: Default');
             else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
             if (inv.PinHash) meta.push('PIN set');
-            if (inv.ExpiresAt) meta.push('Expires ' + esc(Shared.formatDate(inv.ExpiresAt)));
+
+            var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
+            var toggleTitle = inv.Enabled ? 'Disable invite' : 'Enable invite';
 
             html += '<div class="pt-row" data-id="' + esc(inv.Id) + '" style="flex-direction:column; align-items:stretch; gap:8px;">'
                 + '<div style="display:flex; align-items:center; gap:8px;">'
                 + '<div class="um-item-info" style="flex:1;">'
-                + '<div class="um-item-title">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
+                + '<div class="um-item-title" style="font-weight: bold;">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
                 + '<div class="um-item-sub">' + meta.join(' • ') + '</div>'
                 + '</div>'
                 + Shared.badge(st.cls, st.text)
+                + '<button type="button" class="um-btn um-toggle" title="' + toggleTitle + '"><span class="material-icons">' + toggleIcon + '</span></button>'
                 + '<button type="button" class="um-btn um-del" title="Delete"><span class="material-icons">delete</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
                 + '<input class="um-edit-input um-url" readonly value="' + esc(url) + '" style="border:1px solid var(--um-border);" />'
                 + '<button is="emby-button" type="button" class="raised button-small um-copy"><span>Copy</span></button>'
+                + '</div>'
+                + '<div style="display:flex; gap:8px; align-items:center;">'
+                + '<label style="font-size:0.85em; opacity:0.7; min-width:54px;">Expires</label>'
+                + '<input type="date" class="um-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(Shared.toDateInput(inv.ExpiresAt)) : '') + '" style="max-width:170px; border:1px solid var(--um-border);" />'
                 + '</div>'
                 + '</div>';
         });
@@ -150,6 +157,13 @@ export default function (view) {
             var del = row.querySelector('.um-del');
             var copy = row.querySelector('.um-copy');
             var urlInput = row.querySelector('.um-url');
+            var toggle = row.querySelector('.um-toggle');
+            if (toggle) toggle.addEventListener('click', function () {
+                var inv = _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
+                setInviteEnabled(id, !(inv && inv.Enabled));
+            });
+            var expiryInput = row.querySelector('.um-expiry');
+            if (expiryInput) expiryInput.addEventListener('change', function () { setInviteExpiry(id, this.value); });
             if (del) del.addEventListener('click', function () { deleteInvite(id); });
             if (copy) copy.addEventListener('click', function () { copyUrl(urlInput); });
         });
@@ -245,6 +259,29 @@ export default function (view) {
                 Shared.setStatus('inviteUrlStatus', 'Failed to save invite settings.', true);
             });
         });
+    }
+
+    function setInviteExpiry(id, dateStr) {
+        var expiresAt = dateStr ? dateStr + 'T00:00:00' : null;
+        Shared.apiRequest('Invites/' + id + '/Expiry', 'POST', { ExpiresAt: expiresAt })
+            .then(function () {
+                Shared.setStatus('inviteStatus', 'Invite expiry updated.', false);
+                loadAll();
+            })
+            .catch(function () {
+                Shared.setStatus('inviteStatus', 'Failed to update expiry.', true);
+            });
+    }
+
+    function setInviteEnabled(id, enabled) {
+        Shared.apiRequest('Invites/' + id + '/Enabled', 'POST', { Enabled: enabled })
+            .then(function () {
+                Shared.setStatus('inviteStatus', enabled ? 'Invite enabled.' : 'Invite disabled.', false);
+                loadAll();
+            })
+            .catch(function () {
+                Shared.setStatus('inviteStatus', 'Failed to update invite.', true);
+            });
     }
 
     function deleteInvite(id) {

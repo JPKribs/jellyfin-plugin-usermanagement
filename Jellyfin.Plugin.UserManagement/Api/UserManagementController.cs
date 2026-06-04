@@ -146,4 +146,50 @@ public class UserManagementController : ControllerBase
         });
         return Ok(new { Success = true });
     }
+
+    /// <summary>Enables or disables an invite, also clearing its PIN lockout when enabling.</summary>
+    /// <param name="id">The invite ID.</param>
+    /// <param name="request">The desired enabled state.</param>
+    /// <returns>Success status.</returns>
+    [HttpPost("Invites/{id}/Enabled")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult SetInviteEnabled(Guid id, [FromBody] SetInviteEnabledRequest request)
+    {
+        if (request is null)
+        {
+            return BadRequest(new { Error = "Missing request body." });
+        }
+
+        if (!_inviteService.SetEnabled(id, request.Enabled))
+        {
+            return NotFound(new { Error = "Invite not found." });
+        }
+
+        return Ok(new { Success = true });
+    }
+
+    /// <summary>Changes an invite's expiry date, reviving it when moved to a future date.</summary>
+    /// <param name="id">The invite ID.</param>
+    /// <param name="request">The new expiry date.</param>
+    /// <returns>Success status.</returns>
+    [HttpPost("Invites/{id}/Expiry")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult SetInviteExpiry(Guid id, [FromBody] SetInviteExpiryRequest request)
+    {
+        if (request is null)
+        {
+            return BadRequest(new { Error = "Missing request body." });
+        }
+
+        if (!_inviteService.SetExpiry(id, request.ExpiresAt))
+        {
+            return NotFound(new { Error = "Invite not found." });
+        }
+
+        return Ok(new { Success = true });
+    }
 }
