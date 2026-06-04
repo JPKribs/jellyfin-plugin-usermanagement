@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.1.1",
+        "changelog": "## Notice\r\n- Due to the changes in https://github.com/jellyfin/jellyfin/pull/15368 this plugin will only work for 10.11.9 or higher\r\n\r\n## Fixes\r\n- The manifest group was general instead of administration\r\n- The description was just plain wrong from an earlier revision\r\n- Cleanup visuals for record counts\r\n- Fixes for user management changes in 10.11.9+",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.1.1/jellyfin-plugin-usermanagement-10.11.1.1.zip",
+        "checksum": "e0b99d1e0dfdbc2932d5ac9db1aec6e7",
+        "timestamp": "2026-06-04T02:20:05Z"
+      },
+      {
         "version": "10.11.1.0",
         "changelog": "### Initial Release\r\n\r\nThis plugin was built with the goal of automating some of the painpoints that I had managing users. The primary focuses are groups for permissions and configurations to make adding libraries/changes easier, and invite links that are part of Jellyfin instead of using an external platform.",
         "targetAbi": "10.11.0.0",
