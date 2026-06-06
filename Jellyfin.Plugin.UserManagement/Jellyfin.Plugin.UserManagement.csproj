@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="JPKribs.Jellyfin.Base" Version="2026.6.15" />
     <PackageReference Include="Jellyfin.Controller" Version="10.11.10">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>

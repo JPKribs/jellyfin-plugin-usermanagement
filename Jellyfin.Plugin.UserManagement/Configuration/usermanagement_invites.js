@@ -79,8 +79,8 @@ export default function (view) {
     }
 
     function card(cls, count, label) {
-        return '<div class="um-card ' + cls + '"><span class="um-card-count">' + count
-            + '</span><span class="um-card-label">' + label + '</span></div>';
+        return '<div class="jpk-card ' + cls + '"><span class="jpk-card-count">' + count
+            + '</span><span class="jpk-card-label">' + label + '</span></div>';
     }
 
     function renderInviteCards() {
@@ -108,7 +108,7 @@ export default function (view) {
         if (!body) return;
 
         if (_invites.length === 0) {
-            body.innerHTML = '<div class="pt-empty">No invites yet. Create one above.</div>';
+            body.innerHTML = Shared.emptySection('No invites yet. Create one above.');
             if (footer) footer.textContent = '';
             return;
         }
@@ -128,23 +128,23 @@ export default function (view) {
             var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
             var toggleTitle = inv.Enabled ? 'Disable invite' : 'Enable invite';
 
-            html += '<div class="pt-row" data-id="' + esc(inv.Id) + '" style="flex-direction:column; align-items:stretch; gap:8px;">'
+            html += '<div class="jpk-table-row" data-id="' + esc(inv.Id) + '" style="flex-direction:column; align-items:stretch; gap:8px;">'
                 + '<div style="display:flex; align-items:center; gap:8px;">'
-                + '<div class="um-item-info" style="flex:1;">'
-                + '<div class="um-item-title" style="font-weight: bold;">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
-                + '<div class="um-item-sub">' + meta.join(' • ') + '</div>'
+                + '<div class="jpk-table-item-info" style="flex:1;">'
+                + '<div class="jpk-table-item-title" style="font-weight: bold;">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
+                + '<div class="jpk-table-item-sub">' + meta.join(' • ') + '</div>'
                 + '</div>'
-                + Shared.badge(st.cls, st.text)
+                + '<span class="jpk-table-status-badge ' + st.cls + '">' + esc(st.text) + '</span>'
                 + '<button type="button" class="um-btn um-toggle" title="' + toggleTitle + '"><span class="material-icons">' + toggleIcon + '</span></button>'
                 + '<button type="button" class="um-btn um-del" title="Delete"><span class="material-icons">delete</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
-                + '<input class="um-edit-input um-url" readonly value="' + esc(url) + '" style="border:1px solid var(--um-border);" />'
-                + '<button is="emby-button" type="button" class="raised button-small um-copy"><span>Copy</span></button>'
+                + '<input class="jpk-edit-input um-url" readonly value="' + esc(url) + '" style="border:1px solid var(--jpk-border);" />'
+                + '<button is="emby-button" type="button" class="raised jpk-button-small um-copy"><span>Copy</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
                 + '<label style="font-size:0.85em; opacity:0.7; min-width:54px;">Expires</label>'
-                + '<input type="date" class="um-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:170px; border:1px solid var(--um-border);" />'
+                + '<input type="date" class="jpk-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:170px; border:1px solid var(--jpk-border);" />'
                 + '</div>'
                 + '</div>';
         });
@@ -152,7 +152,7 @@ export default function (view) {
         body.innerHTML = html;
         if (footer) footer.textContent = _invites.length + ' invite' + (_invites.length !== 1 ? 's' : '');
 
-        body.querySelectorAll('.pt-row').forEach(function (row) {
+        body.querySelectorAll('.jpk-table-row').forEach(function (row) {
             var id = row.getAttribute('data-id');
             var del = row.querySelector('.um-del');
             var copy = row.querySelector('.um-copy');

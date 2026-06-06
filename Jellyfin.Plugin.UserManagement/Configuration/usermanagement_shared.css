@@ -1,310 +1,19 @@
 /* ============================================ */
-/* USER MANAGEMENT PLUGIN - SHARED STYLES       */
+/* USER MANAGEMENT PLUGIN - LOCAL STYLES        */
+/* Generic components come from the shared       */
+/* JPKribs.Jellyfin.Base stylesheet (jpk-*).     */
+/* Only plugin specific pieces live here.        */
 /* ============================================ */
-
-/* ===== Color Variables ===== */
-:root {
-    /* Status: Active - Green */
-    --um-status-active-bg: rgba(92, 184, 92, 0.2);
-    --um-status-active-color: #5cb85c;
-
-    /* Status: Disabled - Red */
-    --um-status-disabled-bg: rgba(217, 83, 79, 0.2);
-    --um-status-disabled-color: #d9534f;
-
-    /* Status: Expired - Orange */
-    --um-status-expired-bg: rgba(240, 173, 78, 0.2);
-    --um-status-expired-color: #f0ad4e;
-
-    /* Status: Locked - Purple */
-    --um-status-locked-bg: rgba(155, 89, 182, 0.2);
-    --um-status-locked-color: #9b59b6;
-
-    /* Status: Admin - Blue */
-    --um-status-admin-bg: rgba(52, 152, 219, 0.2);
-    --um-status-admin-color: #3498db;
-
-    /* Accent - Jellyfin Blue */
-    --um-accent: #00a4dc;
-    --um-accent-hover: #0088cc;
-
-    /* Shared layout tokens */
-    --um-border: #555;
-    --um-error-color: #d9534f;
-    --um-success-color: #5cb85c;
-}
-
-/* ===== Animations ===== */
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
 
 /* ===== Section Titles ===== */
 .sectionTitleContainer .sectionTitle {
     width: 100%;
-    border-bottom: 1px solid var(--um-border);
+    border-bottom: 1px solid var(--jpk-border);
     padding-bottom: 0.5em;
     margin-bottom: 1em;
 }
 
-/* ===== Button Styles ===== */
-.button-submit {
-    background-color: var(--um-accent) !important;
-    color: #fff !important;
-}
-.button-submit:hover {
-    background-color: var(--um-accent-hover) !important;
-}
-.button-destructive {
-    background-color: var(--um-status-disabled-color) !important;
-    color: #fff !important;
-}
-.button-destructive:hover {
-    background-color: #c9302c !important;
-}
-.button-small {
-    padding: 4px 16px !important;
-    min-width: auto !important;
-    font-size: 0.9em !important;
-}
-
-/* ===== PaginatedTable Wrapper ===== */
-.pt-wrapper {
-    display: flex;
-    flex-direction: column;
-}
-
-/* ===== PaginatedTable Controls ===== */
-.pt-controls {
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    margin-bottom: 12px;
-}
-.pt-search-container {
-    flex: 1;
-    min-width: 200px;
-}
-.pt-filter-container {
-    flex-shrink: 0;
-    min-width: 140px;
-}
-.pt-controls .pt-search-container,
-.pt-controls .pt-filter-container {
-    margin: 0;
-}
-.pt-controls .pt-search-container .emby-input-base,
-.pt-controls .pt-search-container .inputContainer,
-.pt-controls .pt-filter-container .selectContainer,
-.pt-controls .pt-filter-container .emby-select-base {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-.pt-controls input[is="emby-input"],
-.pt-controls select[is="emby-select"] {
-    margin: 0 !important;
-}
-
-/* ===== PaginatedTable Selection Header ===== */
-.pt-selection-header {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-}
-.pt-selected-count {
-    opacity: 0.7;
-    min-width: 80px;
-}
-.pt-bulk-actions {
-    display: flex;
-    gap: 8px;
-}
-.pt-header-spacer {
-    flex: 1;
-}
-
-/* ===== PaginatedTable Reload Button ===== */
-.pt-reload-btn {
-    background: transparent;
-    border: none;
-    padding: 6px 10px;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-.pt-reload-btn:hover {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.1);
-}
-.pt-reload-btn.spinning .pt-reload-icon {
-    animation: spin 0.8s linear infinite;
-}
-.pt-reload-icon {
-    font-size: 20px;
-    color: #fff;
-}
-
-/* ===== PaginatedTable Body / Rows / Cells ===== */
-.pt-body {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-.pt-row {
-    display: flex;
-    align-items: center;
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    transition: background-color 0.15s;
-}
-.pt-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-.pt-row:last-child {
-    border-bottom: none;
-}
-.pt-cell {
-    flex: 1;
-    padding: 4px 8px;
-    min-width: 0;
-}
-.pt-cell.pt-cell-checkbox {
-    flex: 0 0 40px;
-    padding: 4px;
-}
-.pt-cell.pt-cell-status {
-    flex: 0 0 220px;
-    text-align: right;
-    display: flex;
-    gap: 6px;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-}
-
-/* ===== Status Badges ===== */
-.pt-status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    white-space: nowrap;
-    border: none;
-    cursor: default;
-}
-.pt-status-badge.Active { background: var(--um-status-active-bg); color: var(--um-status-active-color); }
-.pt-status-badge.Disabled { background: var(--um-status-disabled-bg); color: var(--um-status-disabled-color); }
-.pt-status-badge.Expired { background: var(--um-status-expired-bg); color: var(--um-status-expired-color); }
-.pt-status-badge.Locked { background: var(--um-status-locked-bg); color: var(--um-status-locked-color); }
-.pt-status-badge.Admin { background: var(--um-status-admin-bg); color: var(--um-status-admin-color); }
-.pt-status-badge.Group { background: rgba(255,255,255,0.1); color: #ddd; }
-
-/* ===== Item Info ===== */
-.pt-cell .um-item-info {
-    flex: 1;
-    min-width: 0;
-}
-.pt-cell .um-item-title {
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.pt-cell .um-item-sub {
-    font-size: 0.85em;
-    opacity: 0.7;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* ===== Empty / Footer ===== */
-.pt-empty {
-    padding: 32px 16px;
-    text-align: center;
-    opacity: 0.7;
-}
-.pt-footer {
-    padding: 8px 12px;
-    font-size: 0.9em;
-    opacity: 0.7;
-}
-.pt-bulk-actions button {
-    padding: 4px 12px !important;
-    min-width: auto !important;
-}
-.pt-bulk-actions button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-/* ===== Reset / Action Button Group ===== */
-.resetButtonGroup {
-    margin-bottom: 16px;
-}
-.resetButtonRow {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-.resetButtonRow:last-child {
-    border-bottom: none;
-}
-.resetButtonRow-nuclear {
-    background: rgba(217, 83, 79, 0.08);
-    border-radius: 4px;
-    border-bottom: none;
-}
-.resetButtonInfo {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-    margin-right: 16px;
-}
-.resetButtonInfo .fieldDescription {
-    margin-top: 2px;
-}
-
-/* ===== Status Text ===== */
-.um-status-text {
-    font-size: 0.9em;
-    transition: opacity 0.3s;
-    display: block;
-    margin-top: 4px;
-}
-
-/* ===== Editable Input Fields ===== */
-.um-edit-input {
-    width: 100%;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 3px;
-    padding: 0.3em 0.4em;
-    color: inherit;
-    font-size: 0.9em;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
-}
-.um-edit-input:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-}
-.um-edit-input:focus {
-    border-color: var(--um-accent);
-    outline: none;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-/* ===== Row Action Buttons ===== */
+/* ===== Invite row action buttons (inside the base jpk-table rows) ===== */
 .um-btn {
     background: transparent;
     border: none;
@@ -322,56 +31,11 @@
 .um-btn .material-icons {
     font-size: 20px;
 }
-.um-btn-save:hover {
-    color: var(--um-accent);
+.um-url {
+    flex: 1;
 }
 
-/* ===== Collapsible Sections ===== */
-.collapsibleSection {
-    margin-bottom: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 4px;
-    overflow: hidden;
-}
-.collapsibleHeader {
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255,255,255,0.05);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: inherit;
-    font-size: 1.1em;
-    font-weight: 500;
-    text-align: left;
-}
-.collapsibleHeader:hover {
-    background: rgba(255,255,255,0.08);
-}
-.collapsibleTitle { flex: 1; }
-.collapsibleIcon {
-    font-size: 0.8em;
-    transition: transform 0.2s;
-}
-.collapsibleHeader.collapsed .collapsibleIcon {
-    transform: rotate(-90deg);
-}
-.collapsibleContent {
-    padding: 16px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-}
-.collapsibleContent.collapsed { display: none; }
-.collapsibleActions {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-/* ===== Library Checkbox Grid (group folders) ===== */
+/* ===== Library / device checkbox grid ===== */
 .um-folder-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -379,50 +43,18 @@
     margin-top: 8px;
 }
 
-/* ===== Member Picker ===== */
-.um-member-list {
-    max-height: 240px;
-    overflow-y: auto;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 4px;
-    padding: 8px;
-    margin-top: 8px;
-}
-
-/* ===== Group Selector (EPG-style) ===== */
-.um-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 1.5em;
-}
-.um-selector-dropdown {
-    width: 100%;
-}
-.um-selector-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.um-default-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+/* ===== Membership panel (wraps the base jpk-user-multi selector) ===== */
+.um-member-summary {
+    margin: 8px 0 4px;
+    opacity: 0.7;
     font-size: 0.9em;
-    color: var(--um-status-admin-color);
 }
-.um-default-badge .material-icons {
-    font-size: 18px;
-}
-.icon-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 12px !important;
-    min-width: auto !important;
-}
-.icon-btn .material-icons {
-    font-size: 18px;
+.um-member-panel {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 4px;
 }
 
 /* ===== Permission Rows (Override / Inherit) ===== */
@@ -448,9 +80,9 @@
     font-weight: 500;
     margin-bottom: 4px;
 }
-.um-perm-control .um-edit-input {
+.um-perm-control .jpk-edit-input {
     max-width: 220px;
-    border: 1px solid var(--um-border);
+    border: 1px solid var(--jpk-border);
 }
 /* Inherited rows are dimmed; the value is whatever the user already has. */
 .um-perm-row.inherited .um-perm-main {
@@ -464,104 +96,18 @@
     gap: 6px;
     margin-left: 12px;
     font-size: 0.9em;
-    color: var(--um-status-expired-color);
+    color: var(--jpk-orange-fg);
     vertical-align: middle;
 }
 .um-unsaved-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--um-status-expired-color);
+    background: var(--jpk-orange-fg);
     display: inline-block;
 }
 
-/* ===== Member Checklist (inline) ===== */
-.um-member-summary {
-    margin: 8px 0 4px;
-    opacity: 0.7;
-    font-size: 0.9em;
-}
-.um-member-panel {
-    max-height: 280px;
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-}
-.um-check-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    margin: 0 !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    cursor: pointer;
-}
-.um-check-row:last-child {
-    border-bottom: none;
-}
-.um-check-row:hover {
-    background: rgba(255, 255, 255, 0.04);
-}
-.um-check-row input[type="checkbox"] {
-    flex: 0 0 18px;
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    cursor: pointer;
-    accent-color: var(--um-accent);
-}
-.um-check-row.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-.um-check-row.disabled input[type="checkbox"] {
-    cursor: not-allowed;
-}
-.um-check-name {
-    flex: 1;
-    min-width: 0;
-}
-.um-check-note {
-    font-size: 0.8em;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: rgba(240, 173, 78, 0.15);
-    color: var(--um-status-expired-color);
-    white-space: nowrap;
-}
-.um-check-note.admin {
-    background: rgba(52, 152, 219, 0.15);
-    color: var(--um-status-admin-color);
-}
-
-/* ===== Assigned Member Tags ===== */
-.um-assigned-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 6px;
-}
-.um-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.9em;
-}
-.um-tag-remove {
-    cursor: pointer;
-    opacity: 0.6;
-    font-size: 1.1em;
-    line-height: 1;
-}
-.um-tag-remove:hover {
-    opacity: 1;
-    color: var(--um-status-disabled-color);
-}
-
-/* ===== Tag editor (per-group permission rows) ===== */
+/* ===== Tag editor (per group permission rows) ===== */
 .um-tags {
     margin-top: 4px;
 }
@@ -577,7 +123,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--um-status-admin-bg);
+    background: var(--jpk-blue-bg);
     color: #fff;
     border: 1px solid rgba(52, 152, 219, 0.5);
     border-radius: 14px;
@@ -601,7 +147,7 @@
     cursor: pointer;
 }
 .perm-tag-remove:hover {
-    background: var(--um-status-disabled-color);
+    background: var(--jpk-red-fg);
 }
 .um-tag-add-row {
     display: flex;
@@ -614,7 +160,7 @@
     margin: 0;
 }
 
-/* ===== Access schedule editor (per-group permission rows) ===== */
+/* ===== Access schedule editor (per group permission rows) ===== */
 .um-schedules {
     margin-top: 4px;
 }
@@ -643,159 +189,10 @@
     margin-left: auto;
 }
 
-/* ===== Dialog / Modal ===== */
-.um-dialog {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-}
-.um-dialog-content {
-    background: #1c1c1e;
-    border: 1px solid var(--um-border);
-    border-radius: 6px;
-    width: 100%;
-    max-width: 560px;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-.um-dialog-content-narrow {
-    max-width: 420px;
-}
-.um-dialog-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-.um-dialog-header h2 {
-    margin: 0;
-    font-size: 1.2em;
-}
-.um-dialog-close {
-    background: none;
-    border: none;
-    color: inherit;
-    font-size: 1.6em;
-    line-height: 1;
-    cursor: pointer;
-    opacity: 0.7;
-}
-.um-dialog-close:hover {
-    opacity: 1;
-}
-.um-dialog-search {
-    padding: 12px 16px 0;
-}
-.um-dialog-summary {
-    padding: 8px 16px;
-    opacity: 0.7;
-    font-size: 0.9em;
-}
-.um-dialog-list {
-    overflow-y: auto;
-    padding: 0 16px;
-    flex: 1;
-}
-.um-dialog-body {
-    padding: 16px;
-}
-.um-dialog-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 4px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    cursor: pointer;
-}
-.um-dialog-item.disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-.um-dialog-item-name {
-    flex: 1;
-}
-.um-dialog-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 14px 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* ===== Count Cards ===== */
-.um-cards {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-.um-card {
-    flex: 1;
-    min-width: 90px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid var(--um-border);
-    background: rgba(255, 255, 255, 0.03);
-}
-.um-card-count {
-    display: block;
-    font-size: 1.5em;
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-.um-card-label {
-    display: block;
-    font-size: 0.85em;
-    opacity: 0.9;
-}
-.um-card.blue { background: var(--um-status-admin-bg); color: var(--um-status-admin-color); border-color: var(--um-status-admin-color); }
-.um-card.green { background: var(--um-status-active-bg); color: var(--um-status-active-color); border-color: var(--um-status-active-color); }
-.um-card.red { background: var(--um-status-disabled-bg); color: var(--um-status-disabled-color); border-color: var(--um-status-disabled-color); }
-.um-card.purple { background: var(--um-status-locked-bg); color: var(--um-status-locked-color); border-color: var(--um-status-locked-color); }
-.um-card.orange { background: var(--um-status-expired-bg); color: var(--um-status-expired-color); border-color: var(--um-status-expired-color); }
-.um-card.yellow { background: rgba(224, 200, 78, 0.18); color: #e0c84e; border-color: #e0c84e; }
-
-/* ===== Indented sub-fields under a gating checkbox ===== */
+/* ===== Indented sub fields under a gating checkbox ===== */
 .um-indent {
     margin-left: 1.85em;
     padding-left: 1em;
     margin-top: 4px;
     border-left: 2px solid rgba(255, 255, 255, 0.12);
-}
-
-/* ===== Utility ===== */
-.hidden {
-    display: none !important;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-    .pt-cell.pt-cell-status {
-        flex: 0 0 auto;
-    }
-    .pt-row {
-        padding: 8px;
-    }
-    .pt-status-badge {
-        padding: 3px 8px;
-        font-size: 0.8em;
-    }
-    .pt-controls {
-        flex-direction: column;
-        gap: 8px;
-    }
-    .pt-selection-header {
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 8px;
-    }
 }

@@ -1,11 +1,14 @@
 export default function (view) {
     'use strict';
 
-    var getTabs, generateGuid;
+    var getTabs, generateGuid, createUserMultiSelector;
     var Shared = null;
+    var memberSel = null;
+    var memberNotes = {};
     var _sharedPromise = import('/web/configurationpage?name=usermanagement_shared.js').then(function (mod) {
         getTabs = mod.getTabs;
         generateGuid = mod.generateGuid;
+        createUserMultiSelector = mod.createUserMultiSelector;
         Shared = mod.createShared(view);
     });
 
@@ -130,6 +133,7 @@ export default function (view) {
             if (!fullConfig.Groups) fullConfig.Groups = [];
 
             renderSections();
+            ensureMemberSelector();
             populateDropdown();
             snapshot();
             renderUserCards();
@@ -159,11 +163,11 @@ export default function (view) {
 
         PERMISSIONS.forEach(function (section, si) {
             var id = 'permSection' + si;
-            html += '<div class="collapsibleSection">'
-                + '<button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="' + id + '">'
-                + '<span class="collapsibleTitle">' + esc(section.title) + '</span>'
-                + '<span class="collapsibleIcon">&#9660;</span></button>'
-                + '<div id="' + id + '" class="collapsibleContent collapsed">';
+            html += '<div class="jpk-collapsible-section">'
+                + '<button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="' + id + '">'
+                + '<span class="jpk-collapsible-title">' + esc(section.title) + '</span>'
+                + '<span class="jpk-collapsible-icon">&#9660;</span></button>'
+                + '<div id="' + id + '" class="jpk-collapsible-content collapsed">';
 
             section.perms.forEach(function (p) {
                 html += renderPermRow(p);
@@ -201,9 +205,9 @@ export default function (view) {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
                 + '<span class="checkboxLabel">Enabled</span></label>';
         } else if (p.type === 'int') {
-            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value um-edit-input" />';
+            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value jpk-edit-input" />';
         } else if (p.type === 'bitrate') {
-            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value um-edit-input" />';
+            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value jpk-edit-input" />';
         } else if (p.type === 'enum') {
             var opts = (p.options || []).map(function (o) {
                 return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
@@ -240,12 +244,12 @@ export default function (view) {
         } else if (p.type === 'tags') {
             control = '<div class="um-tags"><div class="perm-tag-list um-tag-list"></div>'
                 + '<div class="um-tag-add-row">'
-                + '<input is="emby-input" type="text" class="perm-tag-input um-edit-input" placeholder="Tag" />'
-                + '<button is="emby-button" type="button" class="raised button-small perm-tag-add"><span>Add</span></button>'
+                + '<input is="emby-input" type="text" class="perm-tag-input jpk-edit-input" placeholder="Tag" />'
+                + '<button is="emby-button" type="button" class="raised jpk-button-small perm-tag-add"><span>Add</span></button>'
                 + '</div></div>';
         } else if (p.type === 'schedule') {
             control = '<div class="um-schedules"><div class="perm-sched-list"></div>'
-                + '<button is="emby-button" type="button" class="raised button-small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
+                + '<button is="emby-button" type="button" class="raised jpk-button-small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
                 + '</div>';
         }
 
@@ -302,7 +306,7 @@ export default function (view) {
             + '<select is="emby-select" class="perm-sched-start emby-select-withcolor">' + hrs(s.StartHour) + '</select>'
             + '<span class="perm-sched-sep">&ndash;</span>'
             + '<select is="emby-select" class="perm-sched-end emby-select-withcolor">' + hrs(s.EndHour) + '</select>'
-            + '<button is="emby-button" type="button" class="raised button-small button-destructive perm-sched-remove"><span>Remove</span></button>'
+            + '<button is="emby-button" type="button" class="raised jpk-button-small jpk-button-destructive perm-sched-remove"><span>Remove</span></button>'
             + '</div>';
     }
 
@@ -409,7 +413,7 @@ export default function (view) {
         var btn = view.querySelector('#btnDefaultGroup');
         if (!btn) return;
         var isDefault = !!currentGroupId && currentGroupId === fullConfig.DefaultGroupId;
-        btn.classList.toggle('button-submit', isDefault);
+        btn.classList.toggle('jpk-button-submit', isDefault);
         var icon = btn.querySelector('.material-icons');
         if (icon) icon.textContent = isDefault ? 'star' : 'star_border';
         btn.setAttribute('title', isDefault ? 'This is the default group — click to unset' : 'Set as default group');
@@ -565,7 +569,27 @@ export default function (view) {
         });
 
         loadGroupExtras(group);
-        renderMembers();
+        if (memberSel) {
+            refreshMemberAvailability(group);
+        }
+        updateMemberSummary();
+    }
+
+    function refreshMemberAvailability(group) {
+        var notes = {};
+        var others = [];
+        // A user belongs to one group at a time, so users already in another group are shown
+        // disabled here with that group's name; remove them there first to move them.
+        fullConfig.Groups.forEach(function (g) {
+            if (g.Id === currentGroupId) return;
+            (g.MemberIds || []).forEach(function (id) {
+                notes[id] = g.Name || 'Another group';
+                others.push(id);
+            });
+        });
+        memberNotes = notes;
+        memberSel.setValue((group && group.MemberIds) || []);
+        memberSel.setDisabled(others);
     }
 
     function loadGroupExtras(group) {
@@ -624,8 +648,8 @@ export default function (view) {
     }
 
     function card(cls, count, label) {
-        return '<div class="um-card ' + cls + '"><span class="um-card-count">' + count
-            + '</span><span class="um-card-label">' + label + '</span></div>';
+        return '<div class="jpk-card ' + cls + '"><span class="jpk-card-count">' + count
+            + '</span><span class="jpk-card-label">' + label + '</span></div>';
     }
 
     function renderUserCards() {
@@ -738,57 +762,33 @@ export default function (view) {
         collectGroupExtras(group);
     }
 
-    function otherGroupOf(userId) {
-        var found = null;
-        fullConfig.Groups.forEach(function (g) {
-            if (g.Id !== currentGroupId && (g.MemberIds || []).indexOf(userId) !== -1) {
-                found = g.Name || 'another group';
-            }
+    function ensureMemberSelector() {
+        var mount = view.querySelector('#memberMount');
+        if (!mount || !createUserMultiSelector) return;
+        if (memberSel) { memberSel.refresh(); return; }
+        memberSel = createUserMultiSelector({
+            adminFilter: 'exclude',
+            showAvatars: true,
+            fetchUsers: function () { return allUsers; },
+            emptyMessage: 'No users available.',
+            disabledIds: [],
+            noteFor: function (u) { return memberNotes[u.id] || ''; },
+            onChange: onMembersChanged
         });
-        return found;
+        mount.appendChild(memberSel.element);
     }
 
-    function renderMembers() {
+    function onMembersChanged(ids) {
         var group = getCurrentGroup();
         if (!group) return;
-        var esc = Shared.escapeHtml;
-        var term = ((view.querySelector('#memberSearch') || {}).value || '').toLowerCase();
-        var list = view.querySelector('#memberList');
-        var members = group.MemberIds || [];
-
-        var rows = '';
-        allUsers.forEach(function (u) {
-            if (term && (u.Name || '').toLowerCase().indexOf(term) === -1) return;
-
-            var inThis = members.indexOf(u.Id) !== -1;
-            var isAdmin = !!(u.Policy && u.Policy.IsAdministrator);
-            var other = inThis ? null : otherGroupOf(u.Id);
-
-            var disabled = isAdmin || (!inThis && !!other);
-            var note = '';
-            if (isAdmin) {
-                note = '<span class="um-check-note admin">Admin</span>';
-            } else if (other) {
-                note = '<span class="um-check-note">' + esc(other) + '</span>';
-            }
-
-            rows += '<label class="um-check-row' + (disabled ? ' disabled' : '') + '">'
-                + '<input type="checkbox" class="um-member-toggle" data-id="' + esc(u.Id) + '"'
-                + (inThis ? ' checked' : '') + (disabled ? ' disabled' : '') + ' />'
-                + '<span class="um-check-name">' + esc(u.Name) + '</span>'
-                + note
-                + '</label>';
+        group.MemberIds = (ids || []).slice();
+        // A user belongs to one group at a time; selecting them here removes them from any other group.
+        fullConfig.Groups.forEach(function (g) {
+            if (g.Id === currentGroupId) return;
+            g.MemberIds = (g.MemberIds || []).filter(function (x) { return group.MemberIds.indexOf(x) === -1; });
         });
-
-        list.innerHTML = rows || '<div class="um-item-sub" style="padding:8px;">No users match.</div>';
-
-        list.querySelectorAll('.um-member-toggle').forEach(function (cb) {
-            cb.addEventListener('change', function () {
-                toggleMember(cb.getAttribute('data-id'), cb.checked);
-            });
-        });
-
         updateMemberSummary();
+        checkDirty();
     }
 
     function updateMemberSummary() {
@@ -796,25 +796,6 @@ export default function (view) {
         var n = group ? (group.MemberIds || []).length : 0;
         var el = view.querySelector('#memberSummary');
         if (el) el.textContent = n + ' member' + (n !== 1 ? 's' : '') + ' in this group';
-    }
-
-    function toggleMember(userId, checked) {
-        var group = getCurrentGroup();
-        if (!group) return;
-        if (checked) {
-            fullConfig.Groups.forEach(function (g) {
-                g.MemberIds = (g.MemberIds || []).filter(function (x) { return x !== userId; });
-            });
-            group.MemberIds.push(userId);
-        } else {
-            group.MemberIds = (group.MemberIds || []).filter(function (x) { return x !== userId; });
-        }
-        renderMembers();
-        checkDirty();
-    }
-
-    function filterMembers() {
-        renderMembers();
     }
 
     function showInputModal(title, value, callback) {
@@ -957,8 +938,6 @@ export default function (view) {
         view.querySelector('#btnDeleteGroup').addEventListener('click', deleteGroup);
         view.querySelector('#btnSaveGroups').addEventListener('click', save);
         view.querySelector('#btnDefaultGroup').addEventListener('click', toggleDefaultGroup);
-
-        view.querySelector('#memberSearch').addEventListener('input', filterMembers);
 
         var pwEnabled = view.querySelector('#grpPwEnabled');
         if (pwEnabled) pwEnabled.addEventListener('change', updatePwEnabledState);

@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Models;
+using JPKribs.Jellyfin.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -105,14 +108,25 @@ public class InviteController : ControllerBase
 
         var assembly = typeof(Plugin).Assembly;
         var resourceName = typeof(Plugin).Namespace + ".Configuration.usermanagement_invite_public.html";
-        using var stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream is null)
+        var content = "Invite page unavailable.";
+        using (var stream = assembly.GetManifestResourceStream(resourceName))
         {
-            return "<!DOCTYPE html><html><body>Invite page unavailable.</body></html>";
+            if (stream is not null)
+            {
+                using var reader = new StreamReader(stream);
+                content = reader.ReadToEnd();
+            }
         }
 
-        using var reader = new StreamReader(stream);
-        _pageHtml = reader.ReadToEnd();
+        _pageHtml = TemplateLoader.Fill("status", new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["TITLE"] = "Invite",
+            ["HEADING"] = string.Empty,
+            ["MESSAGE"] = string.Empty,
+            ["SPINNER"] = string.Empty,
+            ["BUTTON"] = string.Empty,
+            ["CONTENT"] = content
+        });
         return _pageHtml;
     }
 }

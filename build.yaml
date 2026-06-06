@@ -16,9 +16,6 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  fixes:
-  - Allow locking/unlocking invites
-  - Allow editing an invite's expiration date
-  - Add a media conversion permission to groups
-  - Keep expired and inactive users disabled when a group would otherwise re-enable them
-  - Fix poor formatting
+  developer:
+  - Migrate shared components to base
+  - Bump to base 2026.6.15

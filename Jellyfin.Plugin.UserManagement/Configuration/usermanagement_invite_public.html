@@ -1,176 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="referrer" content="no-referrer" />
-    <link id="favicon" rel="icon" href="/web/favicon.ico" />
-    <title>Invite</title>
-    <style>
-        :root { --accent: #00a4dc; --accent-hover: #0088cc; --err: #d9534f; --ok: #5cb85c; }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: #101010; color: #e0e0e0;
-            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 16px;
-        }
-        .card {
-            width: 100%; max-width: 400px; background: #1c1c1e; border: 1px solid #333;
-            border-radius: 8px; padding: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        }
-        h1 { font-size: 1.4em; margin: 0 0 4px; }
-        .sub { opacity: 0.65; font-size: 0.9em; margin-bottom: 20px; }
-        label { display: block; font-size: 0.85em; opacity: 0.8; margin: 14px 0 4px; }
-        input {
-            width: 100%; padding: 10px 12px; background: #2a2a2c; border: 1px solid #444;
-            border-radius: 4px; color: #fff; font-size: 1em;
-        }
-        input:focus { outline: none; border-color: var(--accent); }
-        button {
-            width: 100%; margin-top: 22px; padding: 12px; border: none; border-radius: 4px;
-            background: var(--accent); color: #fff; font-size: 1em; cursor: pointer;
-        }
-        button:hover { background: var(--accent-hover); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .msg { margin-top: 16px; font-size: 0.9em; min-height: 1.2em; }
-        .msg.err { color: var(--err); }
-        .msg.ok { color: var(--ok); }
-        .hidden { display: none; }
-        .center { text-align: center; }
-        a { color: var(--accent); }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div id="loading" class="center">Loading…</div>
+<!-- Rendered inside the shared JPKribs.Jellyfin.Base "status" card (logo + themed card). -->
+<!-- This file is only the card CONTENT; the controller wraps it via TemplateLoader.Fill("status"). -->
+<style>
+    .jpk-status-card > h1:empty, .jpk-status-card > p:empty { display: none; margin: 0; }
+</style>
 
-        <div id="invalid" class="hidden center">
-            <h1>Invite unavailable</h1>
-            <p class="sub">This invite link is invalid, expired, or has been fully used.</p>
-        </div>
+<div id="loading"><div class="jpk-spinner" role="status" aria-label="Loading"></div></div>
 
-        <form id="form" class="hidden" autocomplete="off">
-            <h1>Create your account</h1>
-            <div class="sub" id="label"></div>
+<div id="invalid" class="hidden">
+    <h1>Invite unavailable</h1>
+    <p>This invite link is invalid, expired, or has been fully used.</p>
+    <a class="jpk-btn" id="backLink" href="../web/">Back to Jellyfin</a>
+</div>
 
-            <div id="pinRow" class="hidden">
-                <label for="pin">Invite PIN</label>
-                <input type="text" id="pin" inputmode="numeric" autocomplete="off" />
-            </div>
+<form id="form" class="hidden jpk-fields" autocomplete="off">
+    <h1>Create your account</h1>
+    <p id="label" class="jpk-note" style="margin-top:0;"></p>
 
-            <label for="username">Username</label>
-            <input type="text" id="username" autocomplete="off" />
-
-            <label for="password">Password</label>
-            <input type="password" id="password" autocomplete="new-password" />
-
-            <label for="confirm">Confirm password</label>
-            <input type="password" id="confirm" autocomplete="new-password" />
-
-            <button type="submit" id="submit">Create account</button>
-            <div id="msg" class="msg"></div>
-        </form>
-
-        <div id="done" class="hidden center">
-            <h1>All set!</h1>
-            <p class="sub" id="doneMsg"></p>
-            <p><a id="signinLink" href="/web/">Go to sign in</a></p>
-        </div>
+    <div id="pinRow" class="hidden">
+        <label for="pin">Invite PIN</label>
+        <input type="text" id="pin" inputmode="numeric" autocomplete="off" />
     </div>
 
-    <script>
-        (function () {
-            var path = location.pathname.replace(/\/+$/, '');
-            var infoUrl = path + '/Info';
-            var redeemUrl = path + '/Redeem';
+    <label for="username">Username</label>
+    <input type="text" id="username" autocomplete="off" />
 
-            var prefix = location.pathname.split('/UserManagement/')[0];
-            var customCss = document.createElement('link');
-            customCss.rel = 'stylesheet';
-            customCss.href = prefix + '/Branding/Css.css';
-            document.head.appendChild(customCss);
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="new-password" />
 
-            var favicon = document.getElementById('favicon');
-            if (favicon) {
-                var webBase = prefix + '/web/';
-                fetch(webBase + 'index.html')
-                    .then(function (r) { return r.text(); })
-                    .then(function (html) {
-                        var m = html.match(/<link[^>]+rel=["'](?:shortcut icon|icon)["'][^>]*href=["']([^"']+)["']/i)
-                            || html.match(/<link[^>]+href=["']([^"']+)["'][^>]*rel=["'](?:shortcut icon|icon)["']/i);
-                        if (m && m[1]) { favicon.href = webBase + m[1].replace(/^\.?\//, ''); }
-                    })
-                    .catch(function () { /* keep the default href */ });
+    <label for="confirm">Confirm password</label>
+    <input type="password" id="confirm" autocomplete="new-password" />
+
+    <button type="submit" id="submit" class="jpk-submit">Create account</button>
+    <div id="msg" class="jpk-note"></div>
+</form>
+
+<div id="done" class="hidden">
+    <h1>All set!</h1>
+    <p id="doneMsg"></p>
+    <a class="jpk-btn" id="signinLink" href="../web/">Go to sign in</a>
+</div>
+
+<script>
+    (function () {
+        var path = location.pathname.replace(/\/+$/, '');
+        var infoUrl = path + '/Info';
+        var redeemUrl = path + '/Redeem';
+
+        // This route (/UserManagement/Invite/{token}) is deeper than the template's relative
+        // paths assume, so point the base card logo and links at the server root explicitly.
+        var prefix = location.pathname.split('/UserManagement/')[0];
+        var webBase = prefix + '/web/';
+
+        var logo = document.querySelector('.jpk-logo');
+        if (logo) {
+            logo.src = webBase + 'favicons/touchicon.png';
+            logo.onerror = function () { logo.onerror = null; logo.src = prefix + '/favicon.ico'; };
+        }
+        ['backLink', 'signinLink'].forEach(function (id) {
+            var a = document.getElementById(id);
+            if (a) { a.href = webBase; }
+        });
+
+        fetch(prefix + '/System/Info/Public', { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (info) {
+                if (info && info.ServerName) { document.title = info.ServerName + ' - Invite'; }
+            })
+            .catch(function () { /* keep the default title */ });
+
+        var el = function (id) { return document.getElementById(id); };
+        function show(id) { el(id).classList.remove('hidden'); }
+        function hide(id) { el(id).classList.add('hidden'); }
+
+        fetch(infoUrl, { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (info) {
+                hide('loading');
+                if (!info || !info.Valid) { show('invalid'); return; }
+                show('form');
+                if (info.Label) { el('label').textContent = info.Label; }
+                if (info.RequiresPin) { show('pinRow'); }
+            })
+            .catch(function () { hide('loading'); show('invalid'); });
+
+        el('form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var msg = el('msg');
+            msg.textContent = '';
+            msg.style.color = '';
+
+            var password = el('password').value;
+            if (password !== el('confirm').value) {
+                msg.style.color = 'var(--jpk-error, #d9534f)';
+                msg.textContent = 'Passwords do not match.';
+                return;
             }
 
-            fetch(prefix + '/System/Info/Public', { headers: { 'Accept': 'application/json' } })
+            el('submit').disabled = true;
+            fetch(redeemUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    Pin: el('pin').value,
+                    Username: el('username').value,
+                    Password: password
+                })
+            })
                 .then(function (r) { return r.json(); })
-                .then(function (info) {
-                    if (info && info.ServerName) { document.title = info.ServerName + ' - Invite'; }
-                })
-                .catch(function () { /* keep the default title */ });
-
-            var signin = document.getElementById('signinLink');
-            if (signin) signin.href = prefix + '/web/';
-
-            var el = function (id) { return document.getElementById(id); };
-            function show(id) { el(id).classList.remove('hidden'); }
-            function hide(id) { el(id).classList.add('hidden'); }
-
-            fetch(infoUrl, { headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.json(); })
-                .then(function (info) {
-                    hide('loading');
-                    if (!info || !info.Valid) { show('invalid'); return; }
-                    show('form');
-                    if (info.Label) el('label').textContent = info.Label;
-                    if (info.RequiresPin) show('pinRow');
-                })
-                .catch(function () { hide('loading'); show('invalid'); });
-
-            el('form').addEventListener('submit', function (e) {
-                e.preventDefault();
-                var msg = el('msg');
-                msg.className = 'msg';
-                msg.textContent = '';
-
-                var password = el('password').value;
-                if (password !== el('confirm').value) {
-                    msg.className = 'msg err';
-                    msg.textContent = 'Passwords do not match.';
-                    return;
-                }
-
-                el('submit').disabled = true;
-                fetch(redeemUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({
-                        Pin: el('pin').value,
-                        Username: el('username').value,
-                        Password: password
-                    })
-                })
-                    .then(function (r) { return r.json(); })
-                    .then(function (res) {
-                        if (res && res.Success) {
-                            hide('form');
-                            el('doneMsg').textContent = res.Message || '';
-                            show('done');
-                        } else {
-                            msg.className = 'msg err';
-                            msg.textContent = (res && res.Message) || 'Something went wrong.';
-                            el('submit').disabled = false;
-                        }
-                    })
-                    .catch(function () {
-                        msg.className = 'msg err';
-                        msg.textContent = 'Network error. Please try again.';
+                .then(function (res) {
+                    if (res && res.Success) {
+                        hide('form');
+                        el('doneMsg').textContent = res.Message || '';
+                        show('done');
+                    } else {
+                        msg.style.color = 'var(--jpk-error, #d9534f)';
+                        msg.textContent = (res && res.Message) || 'Something went wrong.';
                         el('submit').disabled = false;
-                    });
-            });
-        })();
-    </script>
-</body>
-</html>
+                    }
+                })
+                .catch(function () {
+                    msg.style.color = 'var(--jpk-error, #d9534f)';
+                    msg.textContent = 'Network error. Please try again.';
+                    el('submit').disabled = false;
+                });
+        });
+    })();
+</script>

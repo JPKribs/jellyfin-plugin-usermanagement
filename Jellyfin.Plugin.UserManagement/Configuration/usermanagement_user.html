@@ -17,44 +17,43 @@
                         whatever value each user already has. A user belongs to one group at a time.
                     </div>
 
-                    <div class="um-cards" id="userCards"></div>
+                    <div class="jpk-cards" id="userCards"></div>
 
                     <!-- Group selector -->
-                    <div class="um-selector">
-                        <select is="emby-select" id="selectGroup" class="um-selector-dropdown"></select>
-                        <div class="um-selector-actions">
-                            <button is="emby-button" type="button" id="btnNewGroup" class="raised icon-btn button-submit" title="New">
+                    <div class="jpk-selector">
+                        <select is="emby-select" id="selectGroup" class="jpk-selector-dropdown"></select>
+                        <div class="jpk-selector-actions">
+                            <button is="emby-button" type="button" id="btnNewGroup" class="raised jpk-icon-btn jpk-button-submit" title="New">
                                 <span class="material-icons" aria-hidden="true">add</span>
                                 <span class="icon-btn-label">New</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised icon-btn" title="Rename">
+                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised jpk-icon-btn" title="Rename">
                                 <span class="material-icons" aria-hidden="true">edit</span>
                                 <span class="icon-btn-label">Rename</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised icon-btn button-destructive" title="Delete">
+                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised jpk-icon-btn jpk-button-destructive" title="Delete">
                                 <span class="material-icons" aria-hidden="true">delete</span>
                                 <span class="icon-btn-label">Delete</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised icon-btn" title="Set as default group">
+                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised jpk-icon-btn" title="Set as default group">
                                 <span class="material-icons" aria-hidden="true">star_border</span>
                                 <span class="icon-btn-label">Default</span>
                             </button>
                         </div>
                     </div>
 
-                    <div id="emptyState" class="pt-empty hidden">No groups yet. Click <strong>New</strong> to create one.</div>
+                    <div id="emptyState" class="jpk-empty-section hidden">No groups yet. Click <strong>New</strong> to create one.</div>
 
                     <div id="groupEditor">
                         <!-- Members (inline checklist) -->
-                        <div class="collapsibleSection">
-                            <button type="button" class="collapsibleHeader" aria-expanded="true" data-target="membersContent">
-                                <span class="collapsibleTitle">Membership</span>
-                                <span class="collapsibleIcon">&#9660;</span>
+                        <div class="jpk-collapsible-section">
+                            <button type="button" class="jpk-collapsible-header" aria-expanded="true" data-target="membersContent">
+                                <span class="jpk-collapsible-title">Membership</span>
+                                <span class="jpk-collapsible-icon">&#9660;</span>
                             </button>
-                            <div id="membersContent" class="collapsibleContent">
-                                <input is="emby-input" type="text" id="memberSearch" placeholder="Search users..." />
+                            <div id="membersContent" class="jpk-collapsible-content">
                                 <div id="memberSummary" class="um-member-summary"></div>
-                                <div id="memberList" class="um-member-panel"></div>
+                                <div id="memberMount" class="um-member-panel"></div>
                             </div>
                         </div>
 
@@ -62,12 +61,12 @@
                         <div id="permissionSections"></div>
 
                         <!-- Password Requirements (per group) -->
-                        <div class="collapsibleSection">
-                            <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpPwContent">
-                                <span class="collapsibleTitle">Password Requirements</span>
-                                <span class="collapsibleIcon">&#9660;</span>
+                        <div class="jpk-collapsible-section">
+                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
+                                <span class="jpk-collapsible-title">Password Requirements</span>
+                                <span class="jpk-collapsible-icon">&#9660;</span>
                             </button>
-                            <div id="grpPwContent" class="collapsibleContent collapsed">
+                            <div id="grpPwContent" class="jpk-collapsible-content collapsed">
                                 <div class="checkboxContainer checkboxContainer-withDescription">
                                     <label class="emby-checkbox-label">
                                         <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
@@ -111,12 +110,12 @@
                         </div>
 
                         <!-- Expiry (per group) -->
-                        <div class="collapsibleSection">
-                            <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpExpiryContent">
-                                <span class="collapsibleTitle">Expiry</span>
-                                <span class="collapsibleIcon">&#9660;</span>
+                        <div class="jpk-collapsible-section">
+                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
+                                <span class="jpk-collapsible-title">Expiry</span>
+                                <span class="jpk-collapsible-icon">&#9660;</span>
                             </button>
-                            <div id="grpExpiryContent" class="collapsibleContent collapsed">
+                            <div id="grpExpiryContent" class="jpk-collapsible-content collapsed">
                                 <div class="checkboxContainer">
                                     <label class="emby-checkbox-label">
                                         <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
@@ -143,12 +142,12 @@
                         </div>
 
                         <!-- Inactivity (per group) -->
-                        <div class="collapsibleSection">
-                            <button type="button" class="collapsibleHeader collapsed" aria-expanded="false" data-target="grpInactiveContent">
-                                <span class="collapsibleTitle">Inactivity</span>
-                                <span class="collapsibleIcon">&#9660;</span>
+                        <div class="jpk-collapsible-section">
+                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
+                                <span class="jpk-collapsible-title">Inactivity</span>
+                                <span class="jpk-collapsible-icon">&#9660;</span>
                             </button>
-                            <div id="grpInactiveContent" class="collapsibleContent collapsed">
+                            <div id="grpInactiveContent" class="jpk-collapsible-content collapsed">
                                 <div class="checkboxContainer">
                                     <label class="emby-checkbox-label">
                                         <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
@@ -167,13 +166,13 @@
 
                         <!-- Save -->
                         <div class="inputContainer" style="margin-top: 16px;">
-                            <button is="emby-button" type="button" id="btnSaveGroups" data-theme="b" class="raised button-submit block">
+                            <button is="emby-button" type="button" id="btnSaveGroups" data-theme="b" class="raised jpk-button-submit block">
                                 <span>Save</span>
                             </button>
                             <span id="unsavedIndicator" class="um-unsaved hidden">
                                 <span class="um-unsaved-dot"></span> Unsaved changes
                             </span>
-                            <span id="groupStatus" class="um-status-text"></span>
+                            <span id="groupStatus" class="jpk-status-text"></span>
                         </div>
                     </div>
 
@@ -183,28 +182,27 @@
     </div>
 
     <!-- Input Modal (name) -->
-    <div id="inputModal" class="um-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
-        <div class="um-dialog-content um-dialog-content-narrow">
-            <div class="um-dialog-header">
-                <h2 id="inputModalTitle"></h2>
-                <button type="button" id="btnCloseInputModal" class="um-dialog-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="um-dialog-body">
+    <div id="inputModal" class="jpk-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
+        <div class="jpk-dialog-content jpk-dialog-content-narrow">
+            <button type="button" id="btnCloseInputModal" class="jpk-dialog-close" aria-label="Close">&times;</button>
+            <h2 class="jpk-modal-title" id="inputModalTitle"></h2>
+            <div class="jpk-modal-body">
                 <div class="inputContainer">
                     <label for="inputModalField">Name:</label>
                     <input is="emby-input" type="text" id="inputModalField" />
                 </div>
             </div>
-            <div class="um-dialog-footer">
-                <button is="emby-button" type="button" id="btnCancelInputModal" class="raised">
+            <div class="jpk-modal-button-row">
+                <button is="emby-button" type="button" id="btnCancelInputModal" class="raised jpk-modal-button">
                     <span>Cancel</span>
                 </button>
-                <button is="emby-button" type="button" id="btnConfirmInputModal" class="raised button-submit">
+                <button is="emby-button" type="button" id="btnConfirmInputModal" class="raised jpk-modal-button jpk-button-submit">
                     <span>OK</span>
                 </button>
             </div>
         </div>
     </div>
 
+    <link rel="stylesheet" href="configurationpage?name=usermanagement_jpkribs_shared.css">
     <link rel="stylesheet" href="configurationpage?name=usermanagement_shared.css">
 </div>
