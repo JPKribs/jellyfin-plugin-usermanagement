@@ -46,9 +46,10 @@
         var infoUrl = path + '/Info';
         var redeemUrl = path + '/Redeem';
 
-        // This route (/UserManagement/Invite/{token}) is deeper than the template's relative
-        // paths assume, so point the base card logo and links at the server root explicitly.
-        var prefix = location.pathname.split('/UserManagement/')[0];
+        // This route (/usermanagement/invite/{token}) is deeper than the template's relative paths
+        // assume, so point the base card logo and links at the server root explicitly. The split is case
+        // insensitive so a lowercase link or an old mixed case bookmark both resolve the same prefix.
+        var prefix = location.pathname.split(/\/usermanagement\//i)[0];
         var webBase = prefix + '/web/';
 
         var logo = document.querySelector('.jpk-logo');

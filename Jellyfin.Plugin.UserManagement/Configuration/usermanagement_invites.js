@@ -15,7 +15,7 @@ export default function (view) {
 
     function inviteUrl(token) {
         var base = (_base || ApiClient.serverAddress() || '').replace(/\/+$/, '');
-        return base + '/UserManagement/Invite/' + token;
+        return base + '/usermanagement/invite/' + token;
     }
 
     function groupName(id) {

@@ -39,10 +39,27 @@ public class InviteServiceTests
     }
 
     [Fact]
-    public void IsRedeemable_IgnoresExpiryDate_DisabledByTaskInstead()
+    public void IsRedeemable_ExpiredInvite_False()
     {
+        // An invite past its expiry date is rejected immediately, not only after the cleanup task runs.
         var invite = new Invite { Enabled = true, ExpiresAt = DateTime.UtcNow.AddDays(-7) };
-        Assert.True(InviteService.IsRedeemable(invite));
+        Assert.False(InviteService.IsRedeemable(invite));
+    }
+
+    [Theory]
+    [InlineData(-7, true)]   // expired a week ago
+    [InlineData(0, true)]    // day based: not valid on the expiry date itself, matching the task
+    [InlineData(7, false)]   // a week out, still valid
+    public void IsExpired_IsDayBased(int dayOffset, bool expected)
+    {
+        var invite = new Invite { ExpiresAt = DateTime.UtcNow.AddDays(dayOffset) };
+        Assert.Equal(expected, InviteService.IsExpired(invite));
+    }
+
+    [Fact]
+    public void IsExpired_NoExpiryDate_False()
+    {
+        Assert.False(InviteService.IsExpired(new Invite { ExpiresAt = null }));
     }
 
     [Fact]

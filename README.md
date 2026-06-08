@@ -1,22 +1,12 @@
 # ![User Management](Jellyfin.Plugin.UserManagement/Assets/Logo.png)
 
-A Jellyfin plugin for managing Jellyfin users from a single point. At this time, this plugin can be used for:
+**A Jellyfin plugin for managing Jellyfin users via groups. This plugin manages:**
 
-- **Groups** — Enforce the same permissions across multiple users at the same time.
+- **Permissions** — Enforce the same permissions across multiple users using groups.
 - **Password Validation** — Enforce password length and complexity for all users in a group.
 - **User Expiry** — Disable or delete user accounts based on a group set date.
 - **User Inactivity** — Disable inactive user accounts based on a group time limit.
-- **Invite Links** — Create an invite link for a user to create a new account on your server and automatically apply group permissions to them.
-
----
-
-**All plugins are made for my personal use cases. I've made these publicly available for anyone who has the same use cases and can benefit from this work. I have no desire to advertise or market for these plugins as these are for personal usage only.**
-
-**Thank you,**
-
-*Joe Kribs*
-
----
+- **Invite Links** — Create an invite link to create new accounts on your server and automatically assign them a group.
 
 ## How It Works
 User Management uses groups to assign permissions and rules to all users who are a part of this group. New users can be onboarded from an invite link and has group permissions assigned to them on creation. On update, this plugin finds all users in these groups and updates their `UserDto.userConfiguration` using all overridden permissions and settings. Anything not found in the base `UserDto` is stored and referenced from the plugin storage.
@@ -24,20 +14,23 @@ User Management uses groups to assign permissions and rules to all users who are
 ### Groups
 A group is a set of permissions and settings applied to many users at once. Each setting is either an **override** where it's forced onto every member or left alone, so the member keeps whatever they already have. Members re-sync when you save and on a schedule, correcting any manual drift.
 
-### Invites
-A shareable signup link tied to a group. Anyone with the link can create their own account, optionally behind a PIN and with an expiration date and usage limit. New accounts join the invite's group and are never administrators.
+This action is performed by looping over all users assigned to a group and updating their `UserDto.Policy` to conform to your group settings. Any elements that are *not set* to override will be retained from the original `UserDto.Policy` from the current user configuration.
 
-### Password
-A group can enforce password rules on its members, such as minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected; nothing else about how they sign in changes.
+### Passwords
+A group can enforce password rules on its members, such as minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected. This plugin does not change the standard login process so all else will be kept the same.
 
 ### User Expiration
-Give a group an expiration date and its members are disabled once that date passes, checked by a daily task. You can choose to delete members instead. **Please note, this is irreversible, so use it with care!**
+Give a group an expiration date and its members are disabled once that date passes. This is checked by the `Process expired and inactive users` **Scheduled Task** so you determine what time of day these expirations occur. 
+
+There is an optional setting to change the disable action into a **deletion**. **Please note, this is irreversible, so use it with care!**
 
 ### User Inactivity
-Set an inactivity limit for users in a group. Users who have not been active within this window are set to disabled when checked by a daily task. Accounts that have never signed in are left alone.
+Set an inactivity limit for users in a group. Users who have not been active within this window are set to disabled when checked by the `Process expired and inactive users` **Scheduled Task**. Accounts that have never signed in are ignored to prevent first time users from being disabled.
 
-## Use At Your Own Risk
-This plugin changes user policies and password enrollment, and can disable or permanently delete accounts. It's built to leave administrators untouched and to validate every change, but I can't account for every server or edge case. **Always keep backups of your Jellyfin data and configuration.** By using it, you accept responsibility for any account changes that result.
+### Invites
+Create a shareable signup link tied to a group. Anyone with the link can create their own account on your server. All users that use the link will be created using the group assigned to it. For added security, there is an optionally PIN that can be set and the user will have to provide it to use the link. Additionally, you can set a rate limit of how many times the link can be used over a period of time to avoid spam.
+
+**To prevent abuse, it is recommended to create a new link for each user that you want to onboard!**
 
 ---
 

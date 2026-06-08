@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.UserManagement.Services;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using Jellyfin.Plugin.UserManagement.Models;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Cryptography;
@@ -90,18 +91,30 @@ public sealed class InviteService : IDisposable
     }
 
     /// <summary>
-    /// Whether the invite is currently redeemable (enabled, uses remaining). Expiry is not checked here:
-    /// it is day-based and enforced by the scheduled expiry task, which disables the invite when it runs.
+    /// Whether the invite is currently redeemable: enabled, not expired, and with uses remaining. Expiry is
+    /// checked directly so an invite stops working on its expiry date even before the scheduled task runs.
     /// </summary>
     public static bool IsRedeemable(Invite invite)
     {
         ArgumentNullException.ThrowIfNull(invite);
-        if (!invite.Enabled)
+        if (!invite.Enabled || IsExpired(invite))
         {
             return false;
         }
 
         return invite.MaxUses <= 0 || invite.UsedCount < invite.MaxUses;
+    }
+
+    /// <summary>
+    /// Whether the invite has reached its expiry date. Expiry is day based, so an invite is expired on or
+    /// after its expiry date, matching the scheduled task that disables it.
+    /// </summary>
+    /// <param name="invite">The invite to check.</param>
+    /// <returns>True when the invite has an expiry date that has been reached.</returns>
+    public static bool IsExpired(Invite invite)
+    {
+        ArgumentNullException.ThrowIfNull(invite);
+        return invite.ExpiresAt is { } due && due.Date <= DateTime.UtcNow.Date;
     }
 
     /// <summary>
@@ -118,13 +131,12 @@ public sealed class InviteService : IDisposable
             return 0;
         }
 
-        var today = DateTime.UtcNow.Date;
         var disabled = 0;
         plugin.MutateConfiguration(cfg =>
         {
             foreach (var invite in cfg.Invites)
             {
-                if (invite.Enabled && invite.ExpiresAt is { } due && due.Date <= today)
+                if (invite.Enabled && IsExpired(invite))
                 {
                     invite.Enabled = false;
                     disabled++;
@@ -236,6 +248,11 @@ public sealed class InviteService : IDisposable
             if (!invite.Enabled)
             {
                 return InviteRedeemResult.Fail("This invite is no longer available.");
+            }
+
+            if (IsExpired(invite))
+            {
+                return InviteRedeemResult.Fail("This invite has expired.");
             }
 
             if (invite.MaxUses > 0 && invite.UsedCount >= invite.MaxUses)

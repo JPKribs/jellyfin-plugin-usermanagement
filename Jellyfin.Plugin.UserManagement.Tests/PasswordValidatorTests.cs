@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Services;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using Xunit;
 
 namespace Jellyfin.Plugin.UserManagement.Tests;

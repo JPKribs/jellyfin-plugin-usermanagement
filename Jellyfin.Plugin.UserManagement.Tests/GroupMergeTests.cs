@@ -7,7 +7,7 @@ using Xunit;
 namespace Jellyfin.Plugin.UserManagement.Tests;
 
 /// <summary>
-/// Tests for the Override / Inherit behavior of <see cref="GroupService.Merge"/>.
+/// Tests for the Override / Inherit behavior of <see cref="GroupPermissionsExtensions.ApplyTo"/>.
 /// </summary>
 public class GroupMergeTests
 {
@@ -17,7 +17,7 @@ public class GroupMergeTests
         var policy = new UserPolicy { EnableRemoteAccess = false };
         var perms = new GroupPermissions { ManageEnableRemoteAccess = false, EnableRemoteAccess = true };
 
-        GroupService.Merge(perms, policy, Guid.NewGuid());
+        perms.ApplyTo(policy, Guid.NewGuid());
 
         Assert.False(policy.EnableRemoteAccess);
     }
@@ -28,7 +28,7 @@ public class GroupMergeTests
         var policy = new UserPolicy { EnableRemoteAccess = true };
         var perms = new GroupPermissions { ManageEnableRemoteAccess = true, EnableRemoteAccess = false };
 
-        GroupService.Merge(perms, policy, Guid.NewGuid());
+        perms.ApplyTo(policy, Guid.NewGuid());
 
         Assert.False(policy.EnableRemoteAccess);
     }
@@ -45,7 +45,7 @@ public class GroupMergeTests
             EnabledFolders = { folder }
         };
 
-        GroupService.Merge(perms, policy, Guid.NewGuid());
+        perms.ApplyTo(policy, Guid.NewGuid());
 
         Assert.False(policy.EnableAllFolders);
         Assert.Equal(new[] { folder }, policy.EnabledFolders);
@@ -62,7 +62,7 @@ public class GroupMergeTests
             AccessSchedules = { new AccessScheduleEntry { DayOfWeek = "Everyday", StartHour = 8, EndHour = 22 } }
         };
 
-        GroupService.Merge(perms, policy, userId);
+        perms.ApplyTo(policy, userId);
 
         var schedule = Assert.Single(policy.AccessSchedules);
         Assert.Equal(8, schedule.StartHour);
@@ -80,7 +80,7 @@ public class GroupMergeTests
             BlockUnratedItems = { "Movie", "NotARealUnratedItem" }
         };
 
-        GroupService.Merge(perms, policy, Guid.NewGuid());
+        perms.ApplyTo(policy, Guid.NewGuid());
 
         Assert.Single(policy.BlockUnratedItems);
     }

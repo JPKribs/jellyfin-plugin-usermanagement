@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Plugin.UserManagement.Configuration;
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Services;
 using MediaBrowser.Common.Configuration;

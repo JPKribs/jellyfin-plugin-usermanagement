@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using MediaBrowser.Controller.Authentication;
 using MediaBrowser.Model.Cryptography;
 using Microsoft.Extensions.Logging;

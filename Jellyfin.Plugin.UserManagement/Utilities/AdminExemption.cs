@@ -2,7 +2,7 @@ using Jellyfin.Data;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
 
-namespace Jellyfin.Plugin.UserManagement.Services;
+namespace Jellyfin.Plugin.UserManagement.Utilities;
 
 /// <summary>
 /// Cross-cutting "is this user exempt from plugin enforcement?" check. Administrators are always

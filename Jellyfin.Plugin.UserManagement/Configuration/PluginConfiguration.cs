@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Jellyfin.Plugin.UserManagement.Models;
 using MediaBrowser.Model.Plugins;
 
-namespace Jellyfin.Plugin.UserManagement.Models;
+namespace Jellyfin.Plugin.UserManagement.Configuration;
 
 /// <summary>
 /// Single configuration object for the plugin. XML-serialized by Jellyfin.
