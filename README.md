@@ -60,10 +60,17 @@ A group whose password changes are set to **Disallowed** cannot be used for invi
 **To prevent abuse, it is recommended to create a new link for each user that you want to onboard!**
 
 ### Activity Log
-The plugin writes its notable events to Jellyfin's activity log (Dashboard → Activity): group creation, password rule enrollment changes, rejected password changes, and the invite lifecycle (created, redeemed, fully consumed, locked, expired, and wrong PIN attempts). Failures and lockouts are logged as warnings so they stand out.
+The plugin writes its notable events to Jellyfin's activity log (Dashboard → Activity), so administrative changes stay auditable without opening the server log.
+
+* **Group created / deleted** — A group was added to or removed from the configuration.
+* **Password rules enrolled / unenrolled** — A user was placed under, or released from, a group's password rules.
+* **Password change blocked** — A self service change was attempted in a group that disallows them, logged as a warning.
+* **Password change rejected** — A new password failed the group's rules, logged as a warning with the reasons.
+* **Invite created / redeemed / consumed / expired** — The invite lifecycle, including the user each redemption created.
+* **Incorrect PIN / invite locked** — A wrong PIN attempt and the lockout after too many, both logged as warnings.
 
 ### Password Resets
-When a user starts Jellyfin's **Forgot password** flow, the server writes a reset code to a file on its filesystem. The **Resets** tab can surface those codes so an administrator can pass one along without needing file access to the server. The feature is **off by default** and must be enabled on the tab. **Only enable it when the dashboard is reached over HTTPS**, since over plain http the codes are readable by anyone watching the connection. Codes are masked on screen until revealed, and can be copied directly.
+When a user starts Jellyfin's **Forgot Password** flow, the server writes a reset code to a file on its filesystem. The **Resets** tab can surface those codes so an administrator can pass one along without needing file access to the server. The feature is **off by default** and must be enabled on the tab. **Only enable it when the dashboard is reached over HTTPS**, since over plain http the codes are readable by anyone watching the connection. Codes are masked on screen until revealed, and can be copied directly.
 
 ---
 

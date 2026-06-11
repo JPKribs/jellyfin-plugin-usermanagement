@@ -54,15 +54,24 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
     {
         if (configuration is PluginConfiguration config)
         {
-            // Groups are created through this generic save (the dashboard has no dedicated endpoint),
-            // so new ids in the incoming save are the only place creation can be observed for auditing.
-            // Configuration can be null on the very first save before any file exists.
+            // Groups are created and deleted through this generic save (the dashboard has no dedicated
+            // endpoint), so the id diff against the stored configuration is the only place either can
+            // be observed for auditing. Configuration can be null on the very first save before any
+            // file exists.
             var existing = new HashSet<Guid>(Configuration?.Groups.Select(g => g.Id) ?? Enumerable.Empty<Guid>());
             foreach (var group in config.Groups.Where(g => !existing.Contains(g.Id)))
             {
                 ActivityLogger.Instance?.Log(
                     "Group '" + group.Name + "' was created",
                     "UserManagement.GroupCreated");
+            }
+
+            var incoming = new HashSet<Guid>(config.Groups.Select(g => g.Id));
+            foreach (var group in (Configuration?.Groups ?? Enumerable.Empty<GroupDefinition>()).Where(g => !incoming.Contains(g.Id)))
+            {
+                ActivityLogger.Instance?.Log(
+                    "Group '" + group.Name + "' was deleted",
+                    "UserManagement.GroupDeleted");
             }
 
             GroupMembership.EnforceSingleMembership(config.Groups);

@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.2.0"
+version: "10.11.2.1"
 targetAbi: "10.11.10.0"
 framework: "net9.0"
 overview: "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
@@ -16,27 +16,7 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  features:
-  - Invite welcome message shown to invitees on the signup page
-  - Invite resources & link buttons presented to new users after signup
-  - Creates a tab for viewing forgot password requests
-  - Options to disallow password changes
-  - Shorter invite links at /invite/{token}
-  - Output logs to the Activity Logs for better visibility
   security:
-  - Groups that disallow password changes cannot take invites
-  - Locked or expired invites cannot be re-enabled until their group and expiration allow it
-  - Externally authenticated users (LDAP, SSO) are never enrolled in password rules
-  - Invite PIN hashes never leave the server and PIN entry fields are masked
-  - Reset code extraction is off by default
-  - HTTPS advisories where sensitive information is used
-  - Single group membership is now enforced by the frontend to mirror backend
-  fixes:
-  - Invite pages serve the server favicon
-  - Password changes rejected by group rules fail fast instead of hanging the dialog (400 Error)
-  - Empty passwords are disallowed by default and the empty password priority is documented
-  - Force invite PINs to be be 6 digits (numbers only)
+  - Resolve `This stores sensitive data returned by call to method EnumerateFiles : IEnumerable as clear text.` where the resetpassword file was exposed in the logs.
   developer:
-  - Provider enrollment switches through policy updates instead of direct entity writes
-  - Invite token comparison is constant time
-  - Invite usage, PIN failure, and rate limit counters move to a standalone status file (Invites & Groups stored separately)
+  - README cleanup

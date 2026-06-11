@@ -81,7 +81,10 @@ public sealed class ResetCodeService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            _logger.LogWarning(ex, "Could not read password reset file {File}", file);
+            // The path stays out of the message so nothing read back from the reset files lands in the
+            // server log, where scanners treat it as clear text storage of sensitive data. An IO
+            // failure's own message already names the file when that detail matters.
+            _logger.LogWarning(ex, "Could not read a password reset file in {Directory}", _directory);
             return null;
         }
     }
