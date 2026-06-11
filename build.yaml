@@ -20,3 +20,4 @@ changelog:
   - Resolve `This stores sensitive data returned by call to method EnumerateFiles : IEnumerable as clear text.` where the resetpassword file was exposed in the logs.
   developer:
   - README cleanup
+  - Fix CodeQL
