@@ -139,4 +139,38 @@ public class GroupServiceStatefulTests
 
         await um.Received().UpdatePolicyAsync(user.Id, Arg.Is<UserPolicy>(p => !p.IsDisabled));
     }
+
+    [Fact]
+    public async Task Enroll_DefaultProviderUser_IsSwitchedThroughPolicyUpdate()
+    {
+        var plugin = TestSupport.NewPlugin();
+        var um = TestSupport.NewUserManager();
+        var svc = TestSupport.NewGroupService(um);
+        var user = TestSupport.NewUser();
+        var providerId = typeof(Services.PasswordRuleAuthenticationProvider).FullName;
+
+        await svc.EnrollAsync(user);
+
+        await um.Received().UpdatePolicyAsync(user.Id, Arg.Is<UserPolicy>(p => p.AuthenticationProviderId == providerId));
+        Assert.Equal(1, plugin.ReadConfiguration(c => c.ProviderEnrollments.Count));
+    }
+
+    [Fact]
+    public async Task Enroll_ExternallyAuthenticatedUser_IsLeftOnTheirProvider()
+    {
+        // Switching an LDAP or SSO user onto the rule provider would validate logins against a local
+        // hash they do not have, turning the account into a blank password login.
+        var plugin = TestSupport.NewPlugin();
+        var um = TestSupport.NewUserManager();
+        var svc = TestSupport.NewGroupService(um);
+        var user = TestSupport.NewUser();
+        var ldapProvider = "Jellyfin.Plugin.LDAP_Auth.LdapAuthenticationProviderPlugin";
+        user.AuthenticationProviderId = ldapProvider;
+
+        await svc.EnrollAsync(user);
+
+        Assert.Equal(ldapProvider, user.AuthenticationProviderId);
+        Assert.Equal(0, plugin.ReadConfiguration(c => c.ProviderEnrollments.Count));
+        await um.DidNotReceive().UpdatePolicyAsync(Arg.Any<Guid>(), Arg.Any<UserPolicy>());
+    }
 }

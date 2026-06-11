@@ -13,6 +13,36 @@
     margin-bottom: 1em;
 }
 
+/* ===== Date fields =====
+   Mirrors the Base form.css unified field rule, which covers text/number/password/search/url/email,
+   textarea, and select but not date inputs. Same surface, border, focus ring, and metrics, plus the
+   font inheritance inputs do not get by default. Candidate to move into Base form.css, after which
+   this block can be deleted. */
+.pluginConfigurationPage input[type="date"] {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--jpk-surface) !important;
+    color: inherit !important;
+    border: 1px solid var(--jpk-border) !important;
+    border-radius: 4px !important;
+    padding: 0.55em 0.7em;
+    font-family: inherit;
+    font-size: 110%;
+}
+
+.pluginConfigurationPage input[type="date"]:focus {
+    outline: none !important;
+    border-color: var(--jpk-accent) !important;
+}
+
+/* Inside table rows, date editors keep the compact jpk-edit-input metrics so they sit flush with
+   the read only link field beside them instead of the full form field size. */
+.pluginConfigurationPage .jpk-table-row input[type="date"] {
+    width: auto;
+    font-size: 0.9em;
+    padding: 0.3em 0.4em;
+}
+
 /* ===== Invite row action buttons (inside the base jpk-table rows) ===== */
 .um-btn {
     background: transparent;

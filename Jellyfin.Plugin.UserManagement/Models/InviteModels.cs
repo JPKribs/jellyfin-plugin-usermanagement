@@ -1,12 +1,19 @@
 using System;
+using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.UserManagement.Models;
 
 /// <summary>Admin request to create an invite.</summary>
 public class CreateInviteRequest
 {
-    /// <summary>Gets or sets an admin-facing label.</summary>
+    /// <summary>Gets or sets an admin-facing name. Never shown to invitees.</summary>
     public string Label { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a welcome message shown to invitees on the signup page.</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the resource links shown to the new user after signup.</summary>
+    public List<InviteResource> Resources { get; set; } = new();
 
     /// <summary>Gets or sets the PIN required to redeem (empty for none).</summary>
     public string Pin { get; set; } = string.Empty;

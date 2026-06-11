@@ -58,11 +58,29 @@ internal static class TestSupport
         return user;
     }
 
-    public static GroupService NewGroupService(IUserManager um)
-        => new(um, Substitute.For<ILogger<GroupService>>());
+    /// <summary>Creates an activity logger over a substituted activity manager.</summary>
+    public static ActivityLogger NewActivityLogger(MediaBrowser.Model.Activity.IActivityManager? activityManager = null)
+    {
+        var manager = activityManager ?? Substitute.For<MediaBrowser.Model.Activity.IActivityManager>();
+        manager.CreateAsync(Arg.Any<ActivityLog>()).Returns(Task.CompletedTask);
+        return new ActivityLogger(manager, Substitute.For<ILogger<ActivityLogger>>());
+    }
 
-    public static InviteService NewInviteService(IUserManager um, GroupService groups)
-        => new(um, groups, Substitute.For<ICryptoProvider>(), Substitute.For<ILogger<InviteService>>());
+    public static GroupService NewGroupService(IUserManager um)
+        => new(um, NewActivityLogger(), Substitute.For<ILogger<GroupService>>());
+
+    /// <summary>Creates a status store backed by a fresh temp directory.</summary>
+    public static InviteStatusStore NewInviteStatusStore()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "um-tests-status-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var paths = Substitute.For<IApplicationPaths>();
+        paths.PluginConfigurationsPath.Returns(dir);
+        return new InviteStatusStore(paths, Substitute.For<ILogger<InviteStatusStore>>());
+    }
+
+    public static InviteService NewInviteService(IUserManager um, GroupService groups, InviteStatusStore? statusStore = null)
+        => new(um, groups, Substitute.For<ICryptoProvider>(), statusStore ?? NewInviteStatusStore(), NewActivityLogger(), Substitute.For<ILogger<InviteService>>());
 }
 
 /// <summary>Serializes tests that mutate the static <see cref="Plugin.Instance"/> singleton.</summary>

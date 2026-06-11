@@ -24,6 +24,7 @@ public class UserManagementController : ControllerBase
 {
     private readonly GroupService _groupService;
     private readonly InviteService _inviteService;
+    private readonly ResetCodeService _resetCodes;
     private readonly ILogger<UserManagementController> _logger;
 
     /// <summary>
@@ -32,11 +33,32 @@ public class UserManagementController : ControllerBase
     public UserManagementController(
         GroupService groupService,
         InviteService inviteService,
+        ResetCodeService resetCodes,
         ILogger<UserManagementController> logger)
     {
         _groupService = groupService;
         _inviteService = inviteService;
+        _resetCodes = resetCodes;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Returns the pending password reset codes from the server's reset files. Codes are only included
+    /// while reset code extraction is enabled in the plugin configuration, so they never leave the
+    /// server by default.
+    /// </summary>
+    /// <returns>Whether extraction is enabled, and the codes when it is.</returns>
+    [HttpGet("Resets")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult GetResets()
+    {
+        var enabled = Plugin.Instance?.ReadConfiguration(c => c.EnableResetCodeExtraction) ?? false;
+        if (!enabled)
+        {
+            return Ok(new { Enabled = false, Resets = new List<ResetCodeInfo>() });
+        }
+
+        return Ok(new { Enabled = true, Resets = _resetCodes.ReadAll() });
     }
 
     /// <summary>
@@ -61,23 +83,20 @@ public class UserManagementController : ControllerBase
         }
     }
 
-    /// <summary>Lists all invites.</summary>
+    /// <summary>Lists all invites, with PIN hashes redacted to a boolean and usage merged in.</summary>
     /// <returns>The invites.</returns>
     [HttpGet("Invites")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<List<Invite>> GetInvites()
-    {
-        var invites = Plugin.Instance?.ReadConfiguration(c => c.Invites.ToList()) ?? new List<Invite>();
-        return Ok(invites);
-    }
+    public ActionResult<List<InviteSummary>> GetInvites()
+        => Ok(_inviteService.GetSummaries());
 
-    /// <summary>Creates an invite and returns it.</summary>
+    /// <summary>Creates an invite and returns it, with the PIN hash redacted to a boolean.</summary>
     /// <param name="request">The invite parameters.</param>
     /// <returns>The created invite.</returns>
     [HttpPost("Invites")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult<Invite> CreateInvite([FromBody] CreateInviteRequest request)
+    public ActionResult<InviteSummary> CreateInvite([FromBody] CreateInviteRequest request)
     {
         var plugin = Plugin.Instance;
         if (plugin is null)
@@ -90,33 +109,47 @@ public class UserManagementController : ControllerBase
             return BadRequest(new { Error = "Missing request body." });
         }
 
+        if (!InviteService.IsValidPin(request.Pin))
+        {
+            return BadRequest(new { Error = "The PIN must be exactly 6 digits, like a Quick Connect code." });
+        }
+
+        foreach (var resource in request.Resources)
+        {
+            if (string.IsNullOrWhiteSpace(resource.Title) || !InviteService.IsValidResourceUrl(resource.Url))
+            {
+                return BadRequest(new { Error = "Each resource needs a title and a full http(s) URL." });
+            }
+        }
+
+        GroupDefinition? targetGroup;
         if (request.UseDefaultGroup)
         {
-            var hasDefault = plugin.ReadConfiguration(c =>
-                c.DefaultGroupId is { } id && c.Groups.Any(g => g.Id.Equals(id)));
-            if (!hasDefault)
+            targetGroup = plugin.ReadConfiguration(c =>
+                c.DefaultGroupId is { } id ? c.Groups.FirstOrDefault(g => g.Id.Equals(id)) : null);
+            if (targetGroup is null)
             {
                 return BadRequest(new { Error = "No default group is configured. Set one on the Groups tab, or choose a specific group for this invite." });
             }
         }
         else
         {
-            var validGroup = request.GroupId is { } gid && plugin.ReadConfiguration(c => c.Groups.Any(g => g.Id.Equals(gid)));
-            if (!validGroup)
+            targetGroup = request.GroupId is { } gid
+                ? plugin.ReadConfiguration(c => c.Groups.FirstOrDefault(g => g.Id.Equals(gid)))
+                : null;
+            if (targetGroup is null)
             {
                 return BadRequest(new { Error = "Choose a group for this invite." });
             }
         }
 
-        var invite = _inviteService.Create(
-            request.Label,
-            request.Pin,
-            request.UseDefaultGroup,
-            request.GroupId,
-            request.ExpiresAt,
-            request.MaxUses);
+        if (targetGroup.BlocksInvites())
+        {
+            return BadRequest(new { Error = "This group disallows all password changes, so it cannot be used for invites. Members of it are managed by administrators." });
+        }
 
-        return Ok(invite);
+        var invite = _inviteService.Create(request);
+        return Ok(InviteSummary.FromInvite(invite));
     }
 
     /// <summary>Deletes an invite.</summary>
@@ -127,23 +160,11 @@ public class UserManagementController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult DeleteInvite(Guid id)
     {
-        var plugin = Plugin.Instance;
-        if (plugin is null)
-        {
-            return StatusCode(500, new { Error = "Plugin not initialized." });
-        }
-
-        var removed = plugin.ReadConfiguration(c => c.Invites.Any(i => i.Id.Equals(id)));
-        if (!removed)
+        if (!_inviteService.Delete(id))
         {
             return NotFound(new { Error = "Invite not found." });
         }
 
-        plugin.MutateConfiguration(cfg =>
-        {
-            cfg.Invites.RemoveAll(i => i.Id.Equals(id));
-            return true;
-        });
         return Ok(new { Success = true });
     }
 
@@ -162,12 +183,13 @@ public class UserManagementController : ControllerBase
             return BadRequest(new { Error = "Missing request body." });
         }
 
-        if (!_inviteService.SetEnabled(id, request.Enabled))
+        return _inviteService.SetEnabled(id, request.Enabled) switch
         {
-            return NotFound(new { Error = "Invite not found." });
-        }
-
-        return Ok(new { Success = true });
+            InviteToggleResult.NotFound => NotFound(new { Error = "Invite not found." }),
+            InviteToggleResult.Expired => BadRequest(new { Error = "This invite's expiration date has passed. Move the expiration forward to re-enable it." }),
+            InviteToggleResult.GroupBlocksInvites => BadRequest(new { Error = "This invite's group disallows all password changes, so the invite cannot be enabled. Change the group's password mode first." }),
+            _ => Ok(new { Success = true })
+        };
     }
 
     /// <summary>Changes an invite's expiry date, reviving it when moved to a future date.</summary>

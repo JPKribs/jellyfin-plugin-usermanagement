@@ -15,8 +15,14 @@ public class Invite
     /// <summary>Gets or sets the high-entropy URL token that identifies this invite.</summary>
     public string Token { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets an admin-facing label.</summary>
+    /// <summary>Gets or sets an admin-facing name. Never shown to invitees.</summary>
     public string Label { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a welcome message shown to invitees on the signup page.</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the resource links shown to the new user after signup.</summary>
+    public List<InviteResource> Resources { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the salted hash of the PIN required to redeem (Jellyfin PasswordHash format).
@@ -39,18 +45,9 @@ public class Invite
     /// <summary>Gets or sets the maximum number of accounts that may be created. 0 = unlimited.</summary>
     public int MaxUses { get; set; }
 
-    /// <summary>Gets or sets how many accounts have been created with this invite.</summary>
-    public int UsedCount { get; set; }
-
     /// <summary>Gets or sets a value indicating whether the invite is active.</summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>Gets or sets the count of consecutive wrong PIN attempts (resets on success).</summary>
-    public int FailedPinAttempts { get; set; }
-
     /// <summary>Gets or sets when the invite was created (UTC).</summary>
     public DateTime CreatedAt { get; set; }
-
-    /// <summary>Gets or sets the UTC timestamps of recent successful redemptions, used for rate limiting.</summary>
-    public List<DateTime> RecentRedemptions { get; set; } = new();
 }

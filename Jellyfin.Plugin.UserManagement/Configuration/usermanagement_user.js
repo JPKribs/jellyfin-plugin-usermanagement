@@ -597,7 +597,9 @@ export default function (view) {
         var el = view.querySelector.bind(view);
         if (el('#grpPwEnabled')) el('#grpPwEnabled').checked = pw.Enabled === true;
         if (el('#grpPwLength')) el('#grpPwLength').value = pw.MinLength || 8;
-        if (el('#grpPwNoEmpty')) el('#grpPwNoEmpty').checked = pw.DisallowEmpty === true;
+        // Defaults to checked for a group with no saved policy, matching the server-side default.
+        if (el('#grpPwNoEmpty')) el('#grpPwNoEmpty').checked = pw.DisallowEmpty !== false;
+        if (el('#grpPwChangeMode')) el('#grpPwChangeMode').value = normalizeChangeMode(pw.ChangeMode);
         if (el('#grpPwUpper')) el('#grpPwUpper').checked = pw.RequireUppercase === true;
         if (el('#grpPwNumber')) el('#grpPwNumber').checked = pw.RequireNumber === true;
         if (el('#grpPwSymbol')) el('#grpPwSymbol').checked = pw.RequireSymbol === true;
@@ -620,6 +622,7 @@ export default function (view) {
             Enabled: !!(el('#grpPwEnabled') || {}).checked,
             MinLength: isNaN(len) || len < 1 ? 8 : len,
             DisallowEmpty: !!(el('#grpPwNoEmpty') || {}).checked,
+            ChangeMode: normalizeChangeMode((el('#grpPwChangeMode') || {}).value),
             RequireUppercase: !!(el('#grpPwUpper') || {}).checked,
             RequireNumber: !!(el('#grpPwNumber') || {}).checked,
             RequireSymbol: !!(el('#grpPwSymbol') || {}).checked
@@ -633,6 +636,14 @@ export default function (view) {
         group.DisableInactiveUsers = !!(el('#grpInactiveEnabled') || {}).checked;
         var inactiveDays = parseInt((el('#grpInactiveDays') || {}).value, 10);
         group.InactiveDays = isNaN(inactiveDays) || inactiveDays < 1 ? 30 : inactiveDays;
+    }
+
+    var CHANGE_MODES = ['Allowed', 'InitialOnly', 'Disallowed'];
+
+    // The generic configuration endpoint may serialize the enum as a number or a string.
+    function normalizeChangeMode(value) {
+        if (typeof value === 'number') return CHANGE_MODES[value] || 'Allowed';
+        return CHANGE_MODES.indexOf(value) >= 0 ? value : 'Allowed';
     }
 
     function updatePwEnabledState() {

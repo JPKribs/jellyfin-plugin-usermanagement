@@ -19,6 +19,25 @@ This action is performed by looping over all users assigned to a group and updat
 ### Passwords
 A group can enforce password rules on its members, such as minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected. This plugin does not change the standard login process so all else will be kept the same.
 
+A **Password changes** dropdown controls whether members may set or change their own password:
+
+* **Allowed** — Members manage their own password, subject to the group's rules.
+* **Initial password only** — A member whose password is *currently empty* may set one, but an *existing password* cannot be changed.
+* **Disallowed** — Members can neither set nor change a password. Only administrators can.
+
+| Action | Allowed | Initial password only | Disallowed |
+| --- | --- | --- | --- |
+| Member changes their existing password | ✅ If it meets the rules | ❌ Blocked | ❌ Blocked |
+| Member with an empty password sets one | ✅ If it meets the rules | ✅ If it meets the rules | ❌ Blocked |
+| Invite signup chooses the account password | ✅ If it meets the rules | ✅ If it meets the rules | ✅ If it meets the rules |
+| Administrator changes a member's password | ✅ Always | ✅ Always | ✅ Always |
+
+#### Note:
+
+* **Administrators are exempt.** Group password rules *never* apply to admin accounts, and admins can never be enrolled in enforcement.
+* **Allowing empty passwords takes priority.** When **Disallow empty passwords** is false, an empty password is accepted even if it fails the other rules, because an empty password means the account deliberately has no password. This is why **Disallow empty passwords** is true by default.
+* **Disallowed groups cannot take invites.** A group whose members may never set a password is admin managed by definition, so it cannot be chosen for invite links. Switching a group to **Disallowed** also disables its outstanding invites, including default group invites when it is the default group. An invite is only allows if a user can set their password *at least on creation*.
+
 ### User Expiration
 Give a group an expiration date and its members are disabled once that date passes. This is checked by the `Process expired and inactive users` **Scheduled Task** so you determine what time of day these expirations occur. 
 
@@ -30,7 +49,29 @@ Set an inactivity limit for users in a group. Users who have not been active wit
 ### Invites
 Create a shareable signup link tied to a group. Anyone with the link can create their own account on your server. All users that use the link will be created using the group assigned to it. For added security, there is an optionally PIN that can be set and the user will have to provide it to use the link. Additionally, you can set a rate limit of how many times the link can be used over a period of time to avoid spam.
 
+Each invite can also carry:
+
+* **Name** — An admin name for the invite. It is only shown on the dashboard so this field is for admin reference only.
+* **Welcome message** — Shown to the invitee under the signup heading.
+* **Resources** — Title and URL pairs presented as link buttons after the account is created, for example a request site or a getting started guide. Only absolute http(s) URLs are accepted.
+
+A group whose password changes are set to **Disallowed** cannot be used for invites, and switching a group to that mode disables its outstanding invite links. A disabled invite (or one past its expiration) cannot be manually re-enabled until the cause is fixed.
+
 **To prevent abuse, it is recommended to create a new link for each user that you want to onboard!**
+
+### Activity Log
+The plugin writes its notable events to Jellyfin's activity log (Dashboard → Activity): group creation, password rule enrollment changes, rejected password changes, and the invite lifecycle (created, redeemed, fully consumed, locked, expired, and wrong PIN attempts). Failures and lockouts are logged as warnings so they stand out.
+
+### Password Resets
+When a user starts Jellyfin's **Forgot password** flow, the server writes a reset code to a file on its filesystem. The **Resets** tab can surface those codes so an administrator can pass one along without needing file access to the server. The feature is **off by default** and must be enabled on the tab. **Only enable it when the dashboard is reached over HTTPS**, since over plain http the codes are readable by anyone watching the connection. Codes are masked on screen until revealed, and can be copied directly.
+
+---
+
+## Uninstalling
+
+**If a group enforces password requirements, turn that enforcement off (or delete the group) and let the sync run before uninstalling the plugin.** Members of such groups are switched onto this plugin's authentication provider while enrolled, and disabling the enforcement switches every member back to the provider they had before. If the plugin is removed while users are still enrolled, Jellyfin assigns those users an invalid authentication provider and **they cannot sign in** until an administrator reassigns the authentication provider on each user's profile page.
+
+This only affects members of groups with password requirements enabled. Users outside those groups and administrators (who are never enrolled) are unaffected.
 
 ---
 

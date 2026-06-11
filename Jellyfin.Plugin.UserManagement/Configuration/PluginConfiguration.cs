@@ -36,4 +36,11 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>Gets or sets the rate-limit window in minutes. 0 disables rate limiting.</summary>
     public int InviteRateLimitWindowMinutes { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the dashboard may read password reset codes from the
+    /// server's reset files. Off by default, since over plain http the code would be visible to anyone
+    /// watching the connection.
+    /// </summary>
+    public bool EnableResetCodeExtraction { get; set; }
 }

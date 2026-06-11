@@ -15,7 +15,7 @@ export default function (view) {
 
     function inviteUrl(token) {
         var base = (_base || ApiClient.serverAddress() || '').replace(/\/+$/, '');
-        return base + '/usermanagement/invite/' + token;
+        return base + '/invite/' + token;
     }
 
     function groupName(id) {
@@ -63,11 +63,51 @@ export default function (view) {
         });
     }
 
+    var _newResources = [];
+
+    function renderResourceList() {
+        var box = Shared.getEl('resList');
+        if (!box) return;
+        Shared.setVisible('resListWrap', _newResources.length > 0);
+        var esc = Shared.escapeHtml;
+        box.innerHTML = _newResources.map(function (res, i) {
+            return '<div class="jpk-table-row" style="align-items:center; gap:8px;">'
+                + '<div class="jpk-table-item-info" style="flex:1;">'
+                + '<div class="jpk-table-item-title" style="font-weight:bold;">' + esc(res.Title) + '</div>'
+                + '<div class="jpk-table-item-sub">' + esc(res.Url) + '</div>'
+                + '</div>'
+                + '<button type="button" class="um-btn um-res-del" data-index="' + i + '" title="Remove"><span class="material-icons">delete</span></button>'
+                + '</div>';
+        }).join('');
+    }
+
+    function addResource() {
+        var title = (Shared.getEl('txtResTitle').value || '').trim();
+        var url = (Shared.getEl('txtResUrl').value || '').trim();
+        if (!title || !/^https?:\/\/.+/i.test(url)) {
+            Shared.setStatus('inviteStatus', 'A resource needs a title and a full http(s) URL.', true);
+            return;
+        }
+        _newResources.push({ Title: title, Url: url });
+        Shared.getEl('txtResTitle').value = '';
+        Shared.getEl('txtResUrl').value = '';
+        renderResourceList();
+    }
+
+    // Groups that disallow all password changes are admin managed and cannot take invites, so they
+    // are left out of the dropdown. The server rejects them too.
+    function blocksInvites(g) {
+        var pw = g.Password || {};
+        var mode = typeof pw.ChangeMode === 'number' ? pw.ChangeMode === 2 : pw.ChangeMode === 'Disallowed';
+        return pw.Enabled === true && mode;
+    }
+
     function populateGroups() {
         var sel = Shared.getEl('selGroup');
         if (!sel) return;
         sel.innerHTML = '';
         _groups.forEach(function (g) {
+            if (blocksInvites(g)) return;
             var opt = document.createElement('option');
             opt.value = g.Id;
             opt.textContent = g.Name || 'Unnamed group';
@@ -123,7 +163,7 @@ export default function (view) {
             meta.push('Uses: ' + uses);
             if (inv.UseDefaultGroup) meta.push('Group: Default');
             else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
-            if (inv.PinHash) meta.push('PIN set');
+            if (inv.HasPin) meta.push('PIN set');
 
             var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
             var toggleTitle = inv.Enabled ? 'Disable invite' : 'Enable invite';
@@ -139,12 +179,12 @@ export default function (view) {
                 + '<button type="button" class="um-btn um-del" title="Delete"><span class="material-icons">delete</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
-                + '<input class="jpk-edit-input um-url" readonly value="' + esc(url) + '" style="border:1px solid var(--jpk-border);" />'
+                + '<input class="jpk-edit-input um-url" readonly value="' + esc(url) + '" />'
                 + '<button is="emby-button" type="button" class="raised jpk-button-small um-copy"><span>Copy</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
                 + '<label style="font-size:0.85em; opacity:0.7; min-width:54px;">Expires</label>'
-                + '<input type="date" class="jpk-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:170px; border:1px solid var(--jpk-border);" />'
+                + '<input type="date" class="jpk-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:240px;" />'
                 + '</div>'
                 + '</div>';
         });
@@ -190,6 +230,7 @@ export default function (view) {
         Shared.setVisible('maxUsesFields', !!(Shared.getEl('chkSetMaxUses') || {}).checked);
     }
 
+
     function createInvite() {
         var setExpiry = !!(Shared.getEl('chkSetExpiry') || {}).checked;
         var expVal = (Shared.getEl('dateExpiry') || {}).value || '';
@@ -210,9 +251,17 @@ export default function (view) {
             return;
         }
 
+        var pin = (Shared.getEl('txtPin').value || '').trim();
+        if (pin && !/^\d{6}$/.test(pin)) {
+            Shared.setStatus('inviteStatus', 'The PIN must be exactly 6 digits, like a Quick Connect code.', true);
+            return;
+        }
+
         var payload = {
             Label: Shared.getEl('txtLabel').value || '',
-            Pin: Shared.getEl('txtPin').value || '',
+            Message: Shared.getEl('txtMessage').value || '',
+            Resources: _newResources.slice(),
+            Pin: pin,
             UseDefaultGroup: false,
             GroupId: groupId,
             ExpiresAt: (setExpiry && expVal) ? expVal + 'T00:00:00' : null,
@@ -223,6 +272,9 @@ export default function (view) {
             .then(function () {
                 Shared.setStatus('inviteStatus', 'Invite created.', false);
                 Shared.getEl('txtLabel').value = '';
+                Shared.getEl('txtMessage').value = '';
+                _newResources = [];
+                renderResourceList();
                 Shared.getEl('txtPin').value = '';
                 Shared.getEl('chkSetExpiry').checked = false;
                 Shared.getEl('dateExpiry').value = '';
@@ -274,6 +326,23 @@ export default function (view) {
     }
 
     function setInviteEnabled(id, enabled) {
+        // Mirror the server's enable guards with specific messages. The server enforces them too.
+        if (enabled) {
+            var inv = _invites.filter(function (i) { return i.Id === id; })[0];
+            if (inv) {
+                if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= new Date()) {
+                    Shared.setStatus('inviteStatus', 'This invite has expired. Move its expiration forward to re-enable it.', true);
+                    return;
+                }
+                var gid = inv.UseDefaultGroup ? _defaultGroupId : inv.GroupId;
+                var group = _groups.filter(function (g) { return g.Id === gid; })[0];
+                if (group && blocksInvites(group)) {
+                    Shared.setStatus('inviteStatus', "This invite's group disallows all password changes, so it cannot be enabled.", true);
+                    return;
+                }
+            }
+        }
+
         Shared.apiRequest('Invites/' + id + '/Enabled', 'POST', { Enabled: enabled })
             .then(function () {
                 Shared.setStatus('inviteStatus', enabled ? 'Invite enabled.' : 'Invite disabled.', false);
@@ -315,6 +384,15 @@ export default function (view) {
         if (chkExp) chkExp.addEventListener('change', updateExpiryState);
         var chkMax = Shared.getEl('chkSetMaxUses');
         if (chkMax) chkMax.addEventListener('change', updateMaxUsesState);
+        var btnRes = Shared.getEl('btnAddResource');
+        if (btnRes) btnRes.addEventListener('click', addResource);
+        var resList = Shared.getEl('resList');
+        if (resList) resList.addEventListener('click', function (e) {
+            var del = e.target.closest('.um-res-del');
+            if (!del) return;
+            _newResources.splice(parseInt(del.getAttribute('data-index'), 10), 1);
+            renderResourceList();
+        });
         updateExpiryState();
         updateMaxUsesState();
     });

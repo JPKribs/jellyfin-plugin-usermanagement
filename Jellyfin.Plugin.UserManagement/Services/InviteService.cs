@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
@@ -23,6 +24,8 @@ public sealed class InviteService : IDisposable
     private readonly IUserManager _userManager;
     private readonly GroupService _groupService;
     private readonly ICryptoProvider _cryptoProvider;
+    private readonly InviteStatusStore _statusStore;
+    private readonly ActivityLogger _activity;
     private readonly ILogger<InviteService> _logger;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -34,31 +37,140 @@ public sealed class InviteService : IDisposable
         IUserManager userManager,
         GroupService groupService,
         ICryptoProvider cryptoProvider,
+        InviteStatusStore statusStore,
+        ActivityLogger activity,
         ILogger<InviteService> logger)
     {
         _userManager = userManager;
         _groupService = groupService;
         _cryptoProvider = cryptoProvider;
+        _statusStore = statusStore;
+        _activity = activity;
         _logger = logger;
     }
+
+    private static string DisplayName(Invite invite)
+        => invite.Label.Length > 0 ? invite.Label : "Untitled invite";
+
+    private static InviteStatus StatusFor(InviteStatusData data, Guid id)
+        => data.Invites.TryGetValue(id, out var status) ? status : (data.Invites[id] = new InviteStatus());
+
+    /// <summary>
+    /// Reports whether a PIN is acceptable: either absent, or exactly six digits to mirror the Quick
+    /// Connect code format invitees already know.
+    /// </summary>
+    /// <param name="pin">The candidate PIN.</param>
+    /// <returns><c>true</c> when the PIN is empty or a six digit code.</returns>
+    public static bool IsValidPin(string? pin)
+    {
+        var trimmed = pin?.Trim() ?? string.Empty;
+        return trimmed.Length == 0 || (trimmed.Length == 6 && trimmed.All(char.IsAsciiDigit));
+    }
+
+    /// <summary>
+    /// Resolves the group an invite places new accounts in, either the current default group or the
+    /// invite's explicit one.
+    /// </summary>
+    /// <param name="invite">The invite.</param>
+    /// <returns>The target group, or <c>null</c> when none resolves.</returns>
+    public GroupDefinition? ResolveTargetGroup(Invite invite)
+    {
+        ArgumentNullException.ThrowIfNull(invite);
+        return invite.UseDefaultGroup
+            ? _groupService.GetDefaultGroup()
+            : (invite.GroupId is { } gid ? _groupService.FindGroup(gid) : null);
+    }
+
+    /// <summary>
+    /// Disables every enabled invite whose target group disallows all password changes. Such a group is
+    /// admin managed, so its outstanding invites are shut off the moment the group is switched over.
+    /// </summary>
+    /// <param name="config">The configuration to normalize in place.</param>
+    /// <returns>The number of invites disabled.</returns>
+    public static int DisableInvitesForBlockedGroups(Configuration.PluginConfiguration config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        var blockedIds = config.Groups.Where(g => g.BlocksInvites()).Select(g => g.Id).ToHashSet();
+        var defaultBlocked = config.DefaultGroupId is { } did && blockedIds.Contains(did);
+
+        var disabled = 0;
+        foreach (var invite in config.Invites)
+        {
+            if (!invite.Enabled)
+            {
+                continue;
+            }
+
+            var blocked = invite.UseDefaultGroup
+                ? defaultBlocked
+                : invite.GroupId is { } gid && blockedIds.Contains(gid);
+            if (blocked)
+            {
+                invite.Enabled = false;
+                disabled++;
+            }
+        }
+
+        return disabled;
+    }
+
+    /// <summary>
+    /// Reports whether a resource URL is an absolute http or https URL, so a resource button can never
+    /// carry another scheme onto the public page.
+    /// </summary>
+    /// <param name="url">The candidate URL.</param>
+    /// <returns><c>true</c> when the URL is absolute http or https.</returns>
+    public static bool IsValidResourceUrl(string? url)
+        => Uri.TryCreate(url, UriKind.Absolute, out var parsed)
+            && (string.Equals(parsed.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(parsed.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Creates and stores a new invite, hashing the PIN (the plaintext is never persisted).
     /// </summary>
-    public Invite Create(string? label, string? pin, bool useDefaultGroup, Guid? groupId, DateTime? expiresAt, int maxUses)
+    public Invite Create(CreateInviteRequest request)
     {
-        var trimmedPin = pin?.Trim() ?? string.Empty;
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!IsValidPin(request.Pin))
+        {
+            throw new ArgumentException("An invite PIN must be exactly six digits.", nameof(request));
+        }
+
+        var resources = new List<InviteResource>();
+        foreach (var resource in request.Resources)
+        {
+            var title = resource.Title?.Trim() ?? string.Empty;
+            if (title.Length == 0 || !IsValidResourceUrl(resource.Url))
+            {
+                throw new ArgumentException("Each resource needs a title and an absolute http or https URL.", nameof(request));
+            }
+
+            resources.Add(new InviteResource { Title = title, Url = resource.Url.Trim() });
+        }
+
+        var target = request.UseDefaultGroup
+            ? _groupService.GetDefaultGroup()
+            : (request.GroupId is { } gid ? _groupService.FindGroup(gid) : null);
+        if (target.BlocksInvites())
+        {
+            throw new ArgumentException("The group disallows all password changes, so it cannot be used for invites.", nameof(request));
+        }
+
+        var trimmedPin = request.Pin?.Trim() ?? string.Empty;
         var invite = new Invite
         {
             Id = Guid.NewGuid(),
             Token = GenerateToken(),
-            Label = (label ?? string.Empty).Trim(),
+            Label = (request.Label ?? string.Empty).Trim(),
+            Message = (request.Message ?? string.Empty).Trim(),
+            Resources = resources,
             PinHash = trimmedPin.Length == 0 ? string.Empty : _cryptoProvider.CreatePasswordHash(trimmedPin).ToString(),
-            UseDefaultGroup = useDefaultGroup,
-            GroupId = useDefaultGroup ? null : groupId,
-            ExpiresAt = expiresAt,
-            MaxUses = maxUses < 0 ? 0 : maxUses,
-            UsedCount = 0,
+            UseDefaultGroup = request.UseDefaultGroup,
+            GroupId = request.UseDefaultGroup ? null : request.GroupId,
+            ExpiresAt = request.ExpiresAt,
+            MaxUses = request.MaxUses < 0 ? 0 : request.MaxUses,
             Enabled = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -69,6 +181,7 @@ public sealed class InviteService : IDisposable
             return true;
         });
 
+        _activity.Log("Invite '" + DisplayName(invite) + "' was created", "UserManagement.InviteCreated");
         return invite;
     }
 
@@ -78,7 +191,7 @@ public sealed class InviteService : IDisposable
     public static string GenerateToken()
         => Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();
 
-    /// <summary>Finds an invite by its token.</summary>
+    /// <summary>Finds an invite by its token, comparing in constant time per candidate.</summary>
     public Invite? FindByToken(string? token)
     {
         if (string.IsNullOrEmpty(token))
@@ -86,15 +199,31 @@ public sealed class InviteService : IDisposable
             return null;
         }
 
+        var candidate = System.Text.Encoding.UTF8.GetBytes(token);
         return Plugin.Instance?.ReadConfiguration(c => c.Invites
-            .FirstOrDefault(i => string.Equals(i.Token, token, StringComparison.Ordinal)));
+            .FirstOrDefault(i => TokenMatches(i.Token, candidate)));
+    }
+
+    private static bool TokenMatches(string? stored, byte[] candidate)
+    {
+        if (string.IsNullOrEmpty(stored))
+        {
+            return false;
+        }
+
+        var storedBytes = System.Text.Encoding.UTF8.GetBytes(stored);
+        return storedBytes.Length == candidate.Length
+            && CryptographicOperations.FixedTimeEquals(storedBytes, candidate);
     }
 
     /// <summary>
     /// Whether the invite is currently redeemable: enabled, not expired, and with uses remaining. Expiry is
     /// checked directly so an invite stops working on its expiry date even before the scheduled task runs.
     /// </summary>
-    public static bool IsRedeemable(Invite invite)
+    /// <param name="invite">The invite.</param>
+    /// <param name="status">The invite's runtime status, or <c>null</c> when it has never been used.</param>
+    /// <returns>Whether the invite can be redeemed right now.</returns>
+    public static bool IsRedeemable(Invite invite, InviteStatus? status)
     {
         ArgumentNullException.ThrowIfNull(invite);
         if (!invite.Enabled || IsExpired(invite))
@@ -102,7 +231,20 @@ public sealed class InviteService : IDisposable
             return false;
         }
 
-        return invite.MaxUses <= 0 || invite.UsedCount < invite.MaxUses;
+        return invite.MaxUses <= 0 || (status?.UsedCount ?? 0) < invite.MaxUses;
+    }
+
+    /// <summary>
+    /// Whether the invite is redeemable right now, reading the runtime status from the store and
+    /// checking that the target group still accepts invites.
+    /// </summary>
+    /// <param name="invite">The invite.</param>
+    /// <returns>Whether the invite can be redeemed right now.</returns>
+    public bool IsRedeemableNow(Invite invite)
+    {
+        ArgumentNullException.ThrowIfNull(invite);
+        return IsRedeemable(invite, _statusStore.Load().Invites.GetValueOrDefault(invite.Id))
+            && !ResolveTargetGroup(invite).BlocksInvites();
     }
 
     /// <summary>
@@ -115,6 +257,57 @@ public sealed class InviteService : IDisposable
     {
         ArgumentNullException.ThrowIfNull(invite);
         return invite.ExpiresAt is { } due && due.Date <= DateTime.UtcNow.Date;
+    }
+
+    /// <summary>
+    /// Returns every invite in its dashboard shape, with runtime usage merged in from the status store
+    /// and the PIN hash redacted to a boolean.
+    /// </summary>
+    /// <returns>The invite summaries.</returns>
+    public List<InviteSummary> GetSummaries()
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return new List<InviteSummary>();
+        }
+
+        var status = _statusStore.Load();
+        return plugin.ReadConfiguration(c => c.Invites
+            .Select(i => InviteSummary.FromInvite(i, status.Invites.GetValueOrDefault(i.Id)))
+            .ToList());
+    }
+
+    /// <summary>
+    /// Deletes an invite and its runtime status entry.
+    /// </summary>
+    /// <param name="id">The invite id.</param>
+    /// <returns><c>true</c> if the invite existed and was removed.</returns>
+    public bool Delete(Guid id)
+    {
+        var plugin = Plugin.Instance;
+        if (plugin is null)
+        {
+            return false;
+        }
+
+        var removed = false;
+        plugin.MutateConfiguration(cfg =>
+        {
+            removed = cfg.Invites.RemoveAll(i => i.Id.Equals(id)) > 0;
+            return removed;
+        });
+
+        if (removed)
+        {
+            var data = _statusStore.Load();
+            if (data.Invites.Remove(id))
+            {
+                _statusStore.Save(data);
+            }
+        }
+
+        return removed;
     }
 
     /// <summary>
@@ -132,6 +325,7 @@ public sealed class InviteService : IDisposable
         }
 
         var disabled = 0;
+        var expiredNames = new List<string>();
         plugin.MutateConfiguration(cfg =>
         {
             foreach (var invite in cfg.Invites)
@@ -139,12 +333,18 @@ public sealed class InviteService : IDisposable
                 if (invite.Enabled && IsExpired(invite))
                 {
                     invite.Enabled = false;
+                    expiredNames.Add(DisplayName(invite));
                     disabled++;
                 }
             }
 
             return disabled > 0;
         });
+
+        foreach (var name in expiredNames)
+        {
+            _activity.Log("Invite '" + name + "' expired and was disabled", "UserManagement.InviteExpired");
+        }
 
         if (disabled > 0)
         {
@@ -156,18 +356,21 @@ public sealed class InviteService : IDisposable
 
     /// <summary>
     /// Enables or disables an invite. Enabling also clears the wrong-PIN counter, so an invite that
-    /// locked itself after too many PIN attempts gets a clean slate.
+    /// locked itself after too many PIN attempts gets a clean slate. Enabling is refused while the
+    /// invite is past its expiry date (move the expiry instead) or while its target group disallows
+    /// all password changes, so a lock applied by switching the group over cannot be undone until the
+    /// group leaves that mode.
     /// </summary>
-    /// <returns><c>true</c> if the invite existed and was updated.</returns>
-    public bool SetEnabled(Guid id, bool enabled)
+    /// <returns>The outcome.</returns>
+    public InviteToggleResult SetEnabled(Guid id, bool enabled)
     {
         var plugin = Plugin.Instance;
         if (plugin is null)
         {
-            return false;
+            return InviteToggleResult.NotFound;
         }
 
-        var found = false;
+        var result = InviteToggleResult.NotFound;
         plugin.MutateConfiguration(cfg =>
         {
             var invite = cfg.Invites.FirstOrDefault(i => i.Id.Equals(id));
@@ -176,22 +379,50 @@ public sealed class InviteService : IDisposable
                 return false;
             }
 
-            found = true;
-            invite.Enabled = enabled;
-            if (enabled)
+            if (enabled && IsExpired(invite))
             {
-                invite.FailedPinAttempts = 0;
+                result = InviteToggleResult.Expired;
+                return false;
             }
 
+            if (enabled && ResolveTargetGroup(invite).BlocksInvites())
+            {
+                result = InviteToggleResult.GroupBlocksInvites;
+                return false;
+            }
+
+            result = InviteToggleResult.Updated;
+            invite.Enabled = enabled;
             return true;
         });
 
-        return found;
+        if (result == InviteToggleResult.Updated && enabled)
+        {
+            ClearPinFailures(id);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Clears an invite's wrong PIN counter in the status store, giving a re-enabled or revived invite
+    /// a clean slate.
+    /// </summary>
+    private void ClearPinFailures(Guid id)
+    {
+        var data = _statusStore.Load();
+        if (data.Invites.TryGetValue(id, out var status) && status.FailedPinAttempts != 0)
+        {
+            status.FailedPinAttempts = 0;
+            _statusStore.Save(data);
+        }
     }
 
     /// <summary>
     /// Changes an invite's expiry date. Moving it to a future date (or clearing it) also re-enables the
     /// invite and clears its PIN lockout, so an invite that the expiry task disabled can be revived.
+    /// The revival is skipped when the invite's target group disallows all password changes, so the date
+    /// still updates but the invite stays disabled until the group leaves that mode.
     /// </summary>
     /// <returns><c>true</c> if the invite existed and was updated.</returns>
     public bool SetExpiry(Guid id, DateTime? expiresAt)
@@ -203,6 +434,7 @@ public sealed class InviteService : IDisposable
         }
 
         var found = false;
+        var revived = false;
         plugin.MutateConfiguration(cfg =>
         {
             var invite = cfg.Invites.FirstOrDefault(i => i.Id.Equals(id));
@@ -213,14 +445,20 @@ public sealed class InviteService : IDisposable
 
             found = true;
             invite.ExpiresAt = expiresAt;
-            if (expiresAt is not { } due || due.Date > DateTime.UtcNow.Date)
+            if ((expiresAt is not { } due || due.Date > DateTime.UtcNow.Date)
+                && !ResolveTargetGroup(invite).BlocksInvites())
             {
                 invite.Enabled = true;
-                invite.FailedPinAttempts = 0;
+                revived = true;
             }
 
             return true;
         });
+
+        if (revived)
+        {
+            ClearPinFailures(id);
+        }
 
         return found;
     }
@@ -255,44 +493,56 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("This invite has expired.");
             }
 
-            if (invite.MaxUses > 0 && invite.UsedCount >= invite.MaxUses)
+            var statusData = _statusStore.Load();
+            var status = StatusFor(statusData, invite.Id);
+
+            if (invite.MaxUses > 0 && status.UsedCount >= invite.MaxUses)
             {
                 return InviteRedeemResult.Fail("This invite has already been fully used.");
             }
 
-            var rateLimited = plugin.ReadConfiguration(c =>
+            var (rateLimitCount, rateLimitWindowMinutes) = plugin.ReadConfiguration(c =>
+                (c.InviteRateLimitCount, c.InviteRateLimitWindowMinutes));
+            if (rateLimitCount > 0 && rateLimitWindowMinutes > 0)
             {
-                if (c.InviteRateLimitCount <= 0 || c.InviteRateLimitWindowMinutes <= 0)
+                var cutoff = DateTime.UtcNow.AddMinutes(-rateLimitWindowMinutes);
+                if (status.RecentRedemptions.Count(t => t >= cutoff) >= rateLimitCount)
                 {
-                    return false;
+                    return InviteRedeemResult.Fail("This invite was used recently. Please try again later.");
                 }
-
-                var cutoff = DateTime.UtcNow.AddMinutes(-c.InviteRateLimitWindowMinutes);
-                return invite.RecentRedemptions.Count(t => t >= cutoff) >= c.InviteRateLimitCount;
-            });
-            if (rateLimited)
-            {
-                return InviteRedeemResult.Fail("This invite was used recently. Please try again later.");
             }
 
             if (!string.IsNullOrEmpty(invite.PinHash) && !VerifyPin(invite, pin))
             {
-                var locked = false;
-                plugin.MutateConfiguration(cfg =>
+                status.FailedPinAttempts++;
+                _statusStore.Save(statusData);
+                _activity.Log(
+                    "An incorrect PIN was entered for invite '" + DisplayName(invite) + "'",
+                    "UserManagement.InvitePinFailed",
+                    overview: "Failed attempts: " + status.FailedPinAttempts,
+                    severity: LogLevel.Warning);
+
+                if (status.FailedPinAttempts >= Math.Max(1, plugin.ReadConfiguration(c => c.MaxPinAttempts)))
                 {
-                    invite.FailedPinAttempts++;
-                    if (invite.FailedPinAttempts >= Math.Max(1, cfg.MaxPinAttempts))
+                    // The lockout itself flips the admin facing switch, which is a config write, but it
+                    // happens at most once per lockout rather than on every attempt.
+                    plugin.MutateConfiguration(cfg =>
                     {
-                        invite.Enabled = false;
-                        locked = true;
-                    }
+                        var stored = cfg.Invites.FirstOrDefault(i => i.Id.Equals(invite.Id));
+                        if (stored is null || !stored.Enabled)
+                        {
+                            return false;
+                        }
 
-                    return true;
-                });
+                        stored.Enabled = false;
+                        return true;
+                    });
 
-                if (locked)
-                {
-                    _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, invite.FailedPinAttempts);
+                    _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, status.FailedPinAttempts);
+                    _activity.Log(
+                        "Invite '" + DisplayName(invite) + "' was locked after too many incorrect PIN attempts",
+                        "UserManagement.InviteLocked",
+                        severity: LogLevel.Warning);
                     return InviteRedeemResult.Fail("Too many incorrect PIN attempts. This invite has been locked.");
                 }
 
@@ -310,9 +560,14 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Please choose a password.");
             }
 
-            var targetGroup = invite.UseDefaultGroup
-                ? _groupService.GetDefaultGroup()
-                : (invite.GroupId is { } gid ? _groupService.FindGroup(gid) : null);
+            var targetGroup = ResolveTargetGroup(invite);
+
+            // Backstop for configuration drift, for example a default group switched to a blocking one
+            // after this invite was issued but before the save path disabled it.
+            if (targetGroup.BlocksInvites())
+            {
+                return InviteRedeemResult.Fail("This invite is no longer available.");
+            }
 
             var passwordErrors = PasswordValidator.Validate(password, targetGroup?.Password);
             if (passwordErrors.Count > 0)
@@ -339,7 +594,12 @@ public sealed class InviteService : IDisposable
 
             try
             {
-                await WithUserRetryAsync(userId, u => _userManager.ChangePassword(u.Id, password)).ConfigureAwait(false);
+                // The scope lets the password rule provider recognize this as the account creation
+                // password rather than a member's self service change, which groups may disallow.
+                using (InviteRedemptionScope.Begin())
+                {
+                    await WithUserRetryAsync(userId, u => _userManager.ChangePassword(u.Id, password)).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -356,19 +616,23 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Could not create the account. Please try again.");
             }
 
-            plugin.MutateConfiguration(cfg =>
+            status.UsedCount++;
+            status.FailedPinAttempts = 0;
+            if (rateLimitWindowMinutes > 0)
             {
-                invite.UsedCount++;
-                invite.FailedPinAttempts = 0;
-                if (cfg.InviteRateLimitWindowMinutes > 0)
-                {
-                    var cutoff = DateTime.UtcNow.AddMinutes(-cfg.InviteRateLimitWindowMinutes);
-                    invite.RecentRedemptions.RemoveAll(t => t < cutoff);
-                    invite.RecentRedemptions.Add(DateTime.UtcNow);
-                }
+                var cutoff = DateTime.UtcNow.AddMinutes(-rateLimitWindowMinutes);
+                status.RecentRedemptions.RemoveAll(t => t < cutoff);
+                status.RecentRedemptions.Add(DateTime.UtcNow);
+            }
 
-                return true;
-            });
+            // Drop status for invites that no longer exist so the store does not grow without bound.
+            var validIds = plugin.ReadConfiguration(c => c.Invites.Select(i => i.Id).ToHashSet());
+            foreach (var key in statusData.Invites.Keys.Where(k => !validIds.Contains(k)).ToList())
+            {
+                statusData.Invites.Remove(key);
+            }
+
+            _statusStore.Save(statusData);
 
             if (targetGroup is not null)
             {
@@ -428,7 +692,25 @@ public sealed class InviteService : IDisposable
             }
 
             _logger.LogInformation("Invite {InviteId} redeemed; created user {UserId}", invite.Id, userId);
-            return InviteRedeemResult.Ok("Your account has been created. You can now sign in.");
+            _activity.Log(
+                "User '" + username + "' was created with invite '" + DisplayName(invite) + "'",
+                "UserManagement.InviteRedeemed",
+                userId);
+            if (invite.MaxUses > 0 && status.UsedCount >= invite.MaxUses)
+            {
+                _activity.Log(
+                    "Invite '" + DisplayName(invite) + "' was fully consumed",
+                    "UserManagement.InviteConsumed");
+            }
+
+            var success = InviteRedeemResult.Ok("Your account has been created!");
+
+            // Re-validate at serve time so a resource edited through the generic configuration endpoint
+            // can never put a non http(s) link in front of the new user.
+            success.Resources = invite.Resources
+                .Where(r => !string.IsNullOrWhiteSpace(r.Title) && IsValidResourceUrl(r.Url))
+                .ToList();
+            return success;
         }
         finally
         {

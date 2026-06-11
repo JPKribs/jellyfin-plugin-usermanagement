@@ -26,14 +26,16 @@ public class GroupService
     private const string DefaultProviderId = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider";
 
     private readonly IUserManager _userManager;
+    private readonly ActivityLogger _activity;
     private readonly ILogger<GroupService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GroupService"/> class.
     /// </summary>
-    public GroupService(IUserManager userManager, ILogger<GroupService> logger)
+    public GroupService(IUserManager userManager, ActivityLogger activity, ILogger<GroupService> logger)
     {
         _userManager = userManager;
+        _activity = activity;
         _logger = logger;
     }
 
@@ -270,6 +272,18 @@ public class GroupService
             return;
         }
 
+        // Only users on the built-in provider can be enrolled. The rule provider verifies logins against
+        // the local password hash, and an externally authenticated user (LDAP, SSO) usually has none, so
+        // switching them would turn their account into a blank password login.
+        if (!string.Equals(user.AuthenticationProviderId, DefaultProviderId, StringComparison.Ordinal))
+        {
+            _logger.LogWarning(
+                "Not enrolling {UserId} in password rules: their authentication provider ({Provider}) is not the built-in default, so password rules cannot apply safely",
+                user.Id,
+                user.AuthenticationProviderId);
+            return;
+        }
+
         var original = user.AuthenticationProviderId;
         plugin.MutateConfiguration(cfg =>
         {
@@ -282,8 +296,11 @@ public class GroupService
             return true;
         });
 
-        user.AuthenticationProviderId = providerId;
-        await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+        await SetAuthenticationProviderAsync(user, providerId).ConfigureAwait(false);
+        _activity.Log(
+            "'" + user.Username + "' was enrolled in group password rules",
+            "UserManagement.PasswordRulesEnrolled",
+            user.Id);
     }
 
     /// <summary>
@@ -323,8 +340,22 @@ public class GroupService
             return true;
         });
 
-        user.AuthenticationProviderId = restore;
-        await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
+        await SetAuthenticationProviderAsync(user, restore).ConfigureAwait(false);
+        _activity.Log(
+            "'" + user.Username + "' was removed from group password rules",
+            "UserManagement.PasswordRulesUnenrolled",
+            user.Id);
+    }
+
+    /// <summary>
+    /// Switches a user's authentication provider through the policy update path, the same route the
+    /// Jellyfin dashboard's own provider dropdown uses, so core applies its normal handling.
+    /// </summary>
+    private async Task SetAuthenticationProviderAsync(User user, string providerId)
+    {
+        var policy = _userManager.GetUserDto(user, string.Empty).Policy;
+        policy.AuthenticationProviderId = providerId;
+        await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
     }
 
     /// <summary>

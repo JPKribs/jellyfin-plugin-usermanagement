@@ -5,7 +5,8 @@ export { generateGuid, createUserMultiSelector };
 export function getTabs() {
     return [
         { href: 'configurationpage?name=usermanagement_user', name: 'Groups' },
-        { href: 'configurationpage?name=usermanagement_invites', name: 'Invites' }
+        { href: 'configurationpage?name=usermanagement_invites', name: 'Invites' },
+        { href: 'configurationpage?name=usermanagement_resets', name: 'Resets' }
     ];
 }
 

@@ -26,13 +26,31 @@
                         </button>
                         <div id="newInviteContent" class="jpk-collapsible-content">
                             <div class="inputContainer">
-                                <label for="txtLabel">Label:</label>
+                                <label for="txtLabel">Name:</label>
                                 <input is="emby-input" type="text" id="txtLabel" placeholder="e.g. Family &amp; friends" />
+                                <div class="fieldDescription">Only shown here, never to the invitee.</div>
+                            </div>
+                            <div class="inputContainer">
+                                <label for="txtMessage">Welcome message:</label>
+                                <textarea id="txtMessage" class="emby-input" autocomplete="off" rows="3" placeholder="e.g. Welcome to the family server! Pick a username and password below."></textarea>
+                                <div class="fieldDescription">Shown to the invitee under the signup heading.</div>
+                            </div>
+                            <div class="inputContainer">
+                                <label>Resources for new users:</label>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                    <input is="emby-input" type="text" id="txtResTitle" placeholder="Title, e.g. Request shows" style="flex:1; min-width:140px;" />
+                                    <input is="emby-input" type="url" id="txtResUrl" placeholder="https://requests.example.com" style="flex:2; min-width:180px;" />
+                                    <button is="emby-button" type="button" id="btnAddResource" class="raised jpk-button-submit jpk-button-small"><span>Add</span></button>
+                                </div>
+                                <div class="fieldDescription" style="margin-top: 6px;">Link buttons shown to the new user after their account is created.</div>
+                                <div class="jpk-table-wrapper hidden" id="resListWrap" style="margin-top: 12px; margin-bottom: 4px;">
+                                    <div class="jpk-table-body" id="resList"></div>
+                                </div>
                             </div>
                             <div class="inputContainer">
                                 <label for="txtPin">PIN:</label>
-                                <input is="emby-input" type="text" id="txtPin" inputmode="numeric" placeholder="Leave blank for no PIN" />
-                                <div class="fieldDescription" id="pinHelp">A short code the invitee must enter. The invite locks itself after too many wrong tries.</div>
+                                <input is="emby-input" type="password" id="txtPin" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="Leave blank for no PIN" />
+                                <div class="fieldDescription" id="pinHelp">A 6 digit code the invitee must enter, like a Quick Connect code. The invite locks itself after too many wrong tries.</div>
                             </div>
                             <div class="selectContainer" id="groupSelectRow">
                                 <label class="selectLabel" for="selGroup">Add new users to group:</label>
@@ -48,7 +66,7 @@
                             <div class="um-indent hidden" id="expiryFields">
                             <div class="inputContainer">
                                 <label for="dateExpiry">Invite expiration</label>
-                                <input is="emby-input" type="date" id="dateExpiry" />
+                                <input type="date" id="dateExpiry" />
                                 <div class="fieldDescription">Expires on or after this date during the next <strong>Process expired and inactive users</strong> task run.</div>
                             </div>
                             </div>
@@ -78,15 +96,15 @@
                             <span class="jpk-collapsible-icon">&#9660;</span>
                         </button>
                         <div id="manageAccessContent" class="jpk-collapsible-content collapsed">
+                            <div class="jpk-warn hidden" id="httpsWarn" style="margin-top: 6px;">
+                                It is not recommended to use a non-HTTPS link for invites. Passwords are sent over this link so any non-encrypted traffic can be surveilled.
+                            </div>
                             <div class="inputContainer">
-                                <label for="txtInviteBaseUrl">Invite base URL:</label>
+                                <label for="txtInviteBaseUrl">Server URL:</label>
                                 <input is="emby-input" type="text" id="txtInviteBaseUrl" placeholder="https://jellyfin.example.com" />
                                 <div class="fieldDescription">
-                                    Public address used to build invite links (e.g. through a reverse proxy or domain).
+                                    Public address used to build invite links (e.g. reverse proxy).
                                     Leave blank to use the server's own address.
-                                </div>
-                                <div class="fieldDescription hidden" id="httpsWarn" style="color: var(--jpk-orange-fg);">
-                                    It is not recommended to use a non-HTTPS link for invites. Passwords are sent over this link so any non-encrypted traffic can be surveilled.
                                 </div>
                             </div>
                             <div class="inputContainer">

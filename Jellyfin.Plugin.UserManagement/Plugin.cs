@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Jellyfin.Plugin.UserManagement.Configuration;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Services;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using JPKribs.Jellyfin.Base;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
@@ -40,6 +43,35 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
     /// <inheritdoc />
     public override string Description => "Group policy templates, account lifecycle, and password hygiene for existing Jellyfin users.";
 
+    /// <summary>
+    /// Normalizes incoming configuration before it is persisted. The dashboard keeps each user in a
+    /// single group, but configuration can arrive from any API client, so membership exclusivity is
+    /// enforced here as well (the first group in list order keeps a duplicated member), and invites
+    /// targeting a group that disallows all password changes are disabled.
+    /// </summary>
+    /// <param name="configuration">The incoming configuration.</param>
+    public override void UpdateConfiguration(BasePluginConfiguration configuration)
+    {
+        if (configuration is PluginConfiguration config)
+        {
+            // Groups are created through this generic save (the dashboard has no dedicated endpoint),
+            // so new ids in the incoming save are the only place creation can be observed for auditing.
+            // Configuration can be null on the very first save before any file exists.
+            var existing = new HashSet<Guid>(Configuration?.Groups.Select(g => g.Id) ?? Enumerable.Empty<Guid>());
+            foreach (var group in config.Groups.Where(g => !existing.Contains(g.Id)))
+            {
+                ActivityLogger.Instance?.Log(
+                    "Group '" + group.Name + "' was created",
+                    "UserManagement.GroupCreated");
+            }
+
+            GroupMembership.EnforceSingleMembership(config.Groups);
+            InviteService.DisableInvitesForBlockedGroups(config);
+        }
+
+        base.UpdateConfiguration(configuration);
+    }
+
     /// <inheritdoc />
     public override IEnumerable<PluginPageInfo> GetPages()
     {
@@ -70,6 +102,18 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
         {
             Name = "usermanagement_invites.js",
             EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_invites.js"
+        };
+
+        yield return new PluginPageInfo
+        {
+            Name = "usermanagement_resets",
+            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_resets.html"
+        };
+
+        yield return new PluginPageInfo
+        {
+            Name = "usermanagement_resets.js",
+            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_resets.js"
         };
 
         yield return new PluginPageInfo

@@ -2,6 +2,15 @@
 <!-- This file is only the card CONTENT; the controller wraps it via TemplateLoader.Fill("status"). -->
 <style>
     .jpk-status-card > h1:empty, .jpk-status-card > p:empty { display: none; margin: 0; }
+
+    /* Resource links shown on the success view, secondary to the sign in button. */
+    #resources { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .um-res-btn {
+        display: block; padding: 0.7em 1.2em; border-radius: 8px; text-decoration: none;
+        background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #f2f2f2; font-size: 0.92rem; font-weight: 600;
+    }
+    .um-res-btn:hover { border-color: #00a4dc; background: rgba(255, 255, 255, 0.1); }
 </style>
 
 <div id="loading"><div class="jpk-spinner" role="status" aria-label="Loading"></div></div>
@@ -13,12 +22,12 @@
 </div>
 
 <form id="form" class="hidden jpk-fields" autocomplete="off">
-    <h1>Create your account</h1>
-    <p id="label" class="jpk-note" style="margin-top:0;"></p>
+    <h1>Create Your Account</h1>
+    <p id="message" class="jpk-note" style="margin-top:0;"></p>
 
     <div id="pinRow" class="hidden">
         <label for="pin">Invite PIN</label>
-        <input type="text" id="pin" inputmode="numeric" autocomplete="off" />
+        <input type="password" id="pin" inputmode="numeric" maxlength="6" autocomplete="off" />
     </div>
 
     <label for="username">Username</label>
@@ -35,9 +44,11 @@
 </form>
 
 <div id="done" class="hidden">
-    <h1>All set!</h1>
-    <p id="doneMsg"></p>
-    <a class="jpk-btn" id="signinLink" href="../web/">Go to sign in</a>
+    <h1 id="doneHeading">Your account has been created!</h1>
+    <p id="doneMsg" style="text-align:center;"></p>
+    <p id="resIntro" class="hidden" style="text-align:left; margin-top:14px;">External Resources:</p>
+    <div id="resources" class="hidden"></div>
+    <a class="jpk-btn" id="signinLink" href="../web/">Go to Sign In</a>
 </div>
 
 <script>
@@ -46,10 +57,10 @@
         var infoUrl = path + '/Info';
         var redeemUrl = path + '/Redeem';
 
-        // This route (/usermanagement/invite/{token}) is deeper than the template's relative paths
-        // assume, so point the base card logo and links at the server root explicitly. The split is case
-        // insensitive so a lowercase link or an old mixed case bookmark both resolve the same prefix.
-        var prefix = location.pathname.split(/\/usermanagement\//i)[0];
+        // This route (/invite/{token}) is deeper than the template's relative paths assume, so point
+        // the base card logo and links at the server root explicitly. The split is case insensitive so
+        // a lowercase link and a mixed case bookmark both resolve the same prefix.
+        var prefix = location.pathname.split(/\/invite\//i)[0];
         var webBase = prefix + '/web/';
 
         var logo = document.querySelector('.jpk-logo');
@@ -79,10 +90,26 @@
                 hide('loading');
                 if (!info || !info.Valid) { show('invalid'); return; }
                 show('form');
-                if (info.Label) { el('label').textContent = info.Label; }
+                if (info.Message) { el('message').textContent = info.Message; }
                 if (info.RequiresPin) { show('pinRow'); }
             })
             .catch(function () { hide('loading'); show('invalid'); });
+
+        function renderResources(list) {
+            var box = el('resources');
+            box.innerHTML = '';
+            (list || []).forEach(function (res) {
+                if (!res || !res.Url || !/^https?:\/\//i.test(res.Url)) { return; }
+                var a = document.createElement('a');
+                a.className = 'um-res-btn';
+                a.href = res.Url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.textContent = res.Title || res.Url;
+                box.appendChild(a);
+            });
+            if (box.children.length > 0) { show('resIntro'); show('resources'); }
+        }
 
         el('form').addEventListener('submit', function (e) {
             e.preventDefault();
@@ -111,7 +138,10 @@
                 .then(function (res) {
                     if (res && res.Success) {
                         hide('form');
+                        var name = (el('username').value || '').trim();
+                        if (name) { el('doneHeading').textContent = name; }
                         el('doneMsg').textContent = res.Message || '';
+                        renderResources(res.Resources);
                         show('done');
                     } else {
                         msg.style.color = 'var(--jpk-error, #d9534f)';

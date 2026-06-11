@@ -16,8 +16,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
+        serviceCollection.AddSingleton<ActivityLogger>();
         serviceCollection.AddSingleton<GroupService>();
         serviceCollection.AddSingleton<InviteService>();
+        serviceCollection.AddSingleton<InviteStatusStore>();
+        serviceCollection.AddSingleton<ResetCodeService>();
         serviceCollection.AddSingleton<IEventConsumer<UserCreatedEventArgs>, GroupEventConsumer>();
 
         serviceCollection.AddSingleton<IAuthenticationProvider, PasswordRuleAuthenticationProvider>();

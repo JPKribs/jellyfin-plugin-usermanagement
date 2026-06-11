@@ -1,0 +1,66 @@
+<div id="UserManagementResetsPage" data-role="page"
+     class="page type-interior pluginConfigurationPage withTabs"
+     data-require="emby-input,emby-button,emby-checkbox"
+     data-controller="__plugin/usermanagement_resets.js">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="UserManagementResetsForm">
+                <div class="verticalSection verticalSection-extrabottompadding">
+
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h1 class="sectionTitle">Password Resets</h1>
+                    </div>
+
+                    <div class="fieldDescription" style="margin-bottom: 12px;">
+                        When a user starts the <strong>Forgot Password</strong> flow, Jellyfin writes a reset
+                        code to a file on the server. This tab surfaces those codes so you can pass one to the
+                        user without needing file access to the server.
+                    </div>
+
+                    <div class="jpk-cards hidden" id="resetCards"></div>
+
+                    <div class="jpk-warn" style="margin-bottom: 12px;">
+                        It is not recommended to use reset code extraction over a non-HTTPS connection. Reset
+                        codes are sent over this connection so any non-encrypted traffic can be surveilled.
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input type="checkbox" is="emby-checkbox" id="chkEnableResets" />
+                            <span class="checkboxLabel">Enable reset code extraction</span>
+                        </label>
+                    </div>
+
+                    <div class="jpk-section">
+                        <div class="jpk-section-title">Pending resets</div>
+                        <div class="jpk-section-content">
+                            <span id="resetStatus" class="jpk-status-text"></span>
+                            <div id="resetDisabled" class="jpk-empty-section hidden">
+                                Reset code extraction is disabled. Enable it above to list pending codes.
+                            </div>
+                            <div id="resetEmpty" class="jpk-empty-section hidden">No pending password resets.</div>
+                            <div id="resetGroups">
+                                <div id="activeGroup" class="hidden">
+                                    <div style="font-weight:600; opacity:0.85; margin: 4px 0 6px;">Active</div>
+                                    <div class="jpk-table-wrapper">
+                                        <div class="jpk-table-body" id="activeList"></div>
+                                    </div>
+                                </div>
+                                <div id="expiredGroup" class="hidden" style="margin-top: 14px;">
+                                    <div style="font-weight:600; opacity:0.85; margin: 4px 0 6px;">Expired</div>
+                                    <div class="jpk-table-wrapper">
+                                        <div class="jpk-table-body" id="expiredList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="configurationpage?name=usermanagement_jpkribs_shared.css">
+    <link rel="stylesheet" href="configurationpage?name=usermanagement_shared.css">
+</div>

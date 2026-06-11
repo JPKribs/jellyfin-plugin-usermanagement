@@ -34,6 +34,9 @@
     <!-- Invites page -->
     <EmbeddedResource Include="Configuration\usermanagement_invites.html" />
     <EmbeddedResource Include="Configuration\usermanagement_invites.js" />
+    <!-- Resets page -->
+    <EmbeddedResource Include="Configuration\usermanagement_resets.html" />
+    <EmbeddedResource Include="Configuration\usermanagement_resets.js" />
     <!-- Public invite redemption page (served by InviteController, not a dashboard page) -->
     <EmbeddedResource Include="Configuration\usermanagement_invite_public.html" />
     <!-- Shared resources -->

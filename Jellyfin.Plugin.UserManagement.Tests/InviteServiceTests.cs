@@ -24,18 +24,43 @@ public class InviteServiceTests
         Assert.NotEqual(InviteService.GenerateToken(), InviteService.GenerateToken());
     }
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [InlineData("   ", true)]
+    [InlineData("123456", true)]
+    [InlineData(" 123456 ", true)]
+    [InlineData("12345", false)]
+    [InlineData("1234567", false)]
+    [InlineData("12345a", false)]
+    [InlineData("12 456", false)]
+    [InlineData("①②③④⑤⑥", false)]
+    public void IsValidPin_RequiresSixDigitsOrNoPin(string? pin, bool expected)
+        => Assert.Equal(expected, InviteService.IsValidPin(pin));
+
+    [Theory]
+    [InlineData("https://example.com/path", true)]
+    [InlineData("http://example.com", true)]
+    [InlineData("javascript:alert(1)", false)]
+    [InlineData("ftp://example.com", false)]
+    [InlineData("/relative", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsValidResourceUrl_RequiresAbsoluteHttp(string? url, bool expected)
+        => Assert.Equal(expected, InviteService.IsValidResourceUrl(url));
+
     [Fact]
     public void IsRedeemable_FreshInvite_True()
     {
-        var invite = new Invite { Enabled = true, MaxUses = 0, UsedCount = 0 };
-        Assert.True(InviteService.IsRedeemable(invite));
+        var invite = new Invite { Enabled = true, MaxUses = 0 };
+        Assert.True(InviteService.IsRedeemable(invite, null));
     }
 
     [Fact]
     public void IsRedeemable_Disabled_False()
     {
         var invite = new Invite { Enabled = false };
-        Assert.False(InviteService.IsRedeemable(invite));
+        Assert.False(InviteService.IsRedeemable(invite, null));
     }
 
     [Fact]
@@ -43,7 +68,7 @@ public class InviteServiceTests
     {
         // An invite past its expiry date is rejected immediately, not only after the cleanup task runs.
         var invite = new Invite { Enabled = true, ExpiresAt = DateTime.UtcNow.AddDays(-7) };
-        Assert.False(InviteService.IsRedeemable(invite));
+        Assert.False(InviteService.IsRedeemable(invite, null));
     }
 
     [Theory]
@@ -65,14 +90,14 @@ public class InviteServiceTests
     [Fact]
     public void IsRedeemable_UsesExhausted_False()
     {
-        var invite = new Invite { Enabled = true, MaxUses = 2, UsedCount = 2 };
-        Assert.False(InviteService.IsRedeemable(invite));
+        var invite = new Invite { Enabled = true, MaxUses = 2 };
+        Assert.False(InviteService.IsRedeemable(invite, new InviteStatus { UsedCount = 2 }));
     }
 
     [Fact]
     public void IsRedeemable_UsesRemaining_True()
     {
-        var invite = new Invite { Enabled = true, MaxUses = 2, UsedCount = 1 };
-        Assert.True(InviteService.IsRedeemable(invite));
+        var invite = new Invite { Enabled = true, MaxUses = 2 };
+        Assert.True(InviteService.IsRedeemable(invite, new InviteStatus { UsedCount = 1 }));
     }
 }

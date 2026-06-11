@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Utilities;
 using MediaBrowser.Controller.Authentication;
 using MediaBrowser.Model.Cryptography;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.UserManagement.Services;
@@ -20,17 +22,23 @@ namespace Jellyfin.Plugin.UserManagement.Services;
 public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequiresResolvedUser
 {
     private readonly ICryptoProvider _cryptoProvider;
+    private readonly ActivityLogger _activity;
     private readonly ILogger<PasswordRuleAuthenticationProvider> _logger;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PasswordRuleAuthenticationProvider"/> class.
     /// </summary>
     public PasswordRuleAuthenticationProvider(
         ICryptoProvider cryptoProvider,
-        ILogger<PasswordRuleAuthenticationProvider> logger)
+        ActivityLogger activity,
+        ILogger<PasswordRuleAuthenticationProvider> logger,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         _cryptoProvider = cryptoProvider;
+        _activity = activity;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     /// <inheritdoc />
@@ -76,13 +84,51 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
 
         if (!isAdmin)
         {
+            // Enrollment is triggered by membership in any password enforcing group, so the lookup must
+            // match: take the first enabled policy among the user's groups, not the first group blindly.
             var policy = Plugin.Instance?.ReadConfiguration(c =>
-                c.Groups.FirstOrDefault(g => g.MemberIds.Contains(user.Id))?.Password);
+                c.Groups.Where(g => g.MemberIds.Contains(user.Id))
+                    .Select(g => g.Password)
+                    .FirstOrDefault(p => p is { Enabled: true }));
+
+            // InitialOnly lets a member with no password set their first one. Invite redemption is
+            // always allowed to set the account creation password: it runs anonymously (the new user
+            // can already be enrolled by the creation event before redemption sets the password), so
+            // without the explicit scope it would look like a member's self service attempt.
+            if (policy is { Enabled: true } && policy.ChangeMode != PasswordChangeMode.Allowed && !CallerIsAdministrator())
+            {
+                var settingFirst = string.IsNullOrEmpty(user.Password);
+                var allowed = settingFirst
+                    && (policy.ChangeMode == PasswordChangeMode.InitialOnly || InviteRedemptionScope.IsActive);
+                if (!allowed)
+                {
+                    _logger.LogInformation("Rejected password change for {UserId}: the group disallows self service changes", user.Id);
+                    _activity.Log(
+                        "A password change for '" + user.Username + "' was blocked",
+                        "UserManagement.PasswordChangeBlocked",
+                        user.Id,
+                        "The user's group disallows self service password changes.",
+                        LogLevel.Warning);
+                    throw new ArgumentException("Password changes are disabled for your account. Ask your server administrator to change it for you.");
+                }
+            }
+
             var errors = PasswordValidator.Validate(newPassword, policy);
             if (errors.Count > 0)
             {
-                _logger.LogInformation("Rejected password change for {UserId}: requirements not met", user.Id);
-                throw new AuthenticationException(string.Join(" ", errors));
+                var reasons = string.Join(" ", errors);
+                _logger.LogWarning("Rejected password change for {UserId}: {Reasons}", user.Id, reasons);
+                _activity.Log(
+                    "A password change for '" + user.Username + "' was rejected by group password rules",
+                    "UserManagement.PasswordChangeRejected",
+                    user.Id,
+                    reasons,
+                    LogLevel.Warning);
+
+                // ArgumentException maps to HTTP 400 in Jellyfin's exception middleware, so the password
+                // form fails fast with an error. AuthenticationException maps to 401, which the web client
+                // treats as a lost session and leaves the dialog spinning with no feedback at all.
+                throw new ArgumentException(reasons);
             }
         }
 
@@ -91,5 +137,13 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
             : _cryptoProvider.CreatePasswordHash(newPassword).ToString();
 
         return Task.CompletedTask;
+    }
+
+    // The same core path delivers self service changes, admin resets, and internal calls, so the caller
+    // is read from the current request. No request at all means internal server work, which is allowed.
+    private bool CallerIsAdministrator()
+    {
+        var principal = _httpContextAccessor?.HttpContext?.User;
+        return principal is null || principal.IsInRole("Administrator");
     }
 }

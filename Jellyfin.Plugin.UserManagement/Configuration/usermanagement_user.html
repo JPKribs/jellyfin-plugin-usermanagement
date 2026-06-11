@@ -13,8 +13,8 @@
 
                     <div class="fieldDescription" style="margin-bottom: 12px;">
                         Groups assign permissions and settings to multiple users at once. A setting marked as an
-                        <strong>override</strong> always uses the group's value; a setting that isn't overridden keeps
-                        whatever value each user already has. A user belongs to one group at a time.
+                        <strong>override</strong> always uses the group's value. A setting that isn't overridden keeps
+                        whatever value each user already has. A user can belong to one group at a time.
                     </div>
 
                     <div class="jpk-cards" id="userCards"></div>
@@ -77,15 +77,33 @@
                                     </div>
                                 </div>
                                 <div class="um-indent hidden" id="pwFields">
-                                <div class="inputContainer">
-                                    <label for="grpPwLength">Minimum length:</label>
-                                    <input is="emby-input" type="number" id="grpPwLength" min="1" />
-                                </div>
-                                <div class="checkboxContainer">
+                                <div class="checkboxContainer checkboxContainer-withDescription">
                                     <label class="emby-checkbox-label">
                                         <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
                                         <span class="checkboxLabel">Disallow empty passwords</span>
                                     </label>
+                                    <div class="fieldDescription">
+                                        When unchecked, an empty password is always accepted and takes priority
+                                        over the other rules, since an empty password means the account has no
+                                        password at all.
+                                    </div>
+                                </div>
+                                <div class="inputContainer">
+                                    <label for="grpPwLength">Minimum length:</label>
+                                    <input is="emby-input" type="number" id="grpPwLength" min="1" />
+                                </div>
+                                <div class="selectContainer">
+                                    <label class="selectLabel" for="grpPwChangeMode">Password changes:</label>
+                                    <select is="emby-select" id="grpPwChangeMode">
+                                        <option value="Allowed">Allowed</option>
+                                        <option value="InitialOnly">Initial password only</option>
+                                        <option value="Disallowed">Disallowed</option>
+                                    </select>
+                                    <div class="fieldDescription">
+                                        Whether members may set or change their own password. With
+                                        <strong>Initial password only</strong>, a member whose password is empty
+                                        may still set one. Administrators can always change a member's password.
+                                    </div>
                                 </div>
                                 <div class="checkboxContainer">
                                     <label class="emby-checkbox-label">
@@ -125,7 +143,7 @@
                                 <div class="um-indent hidden" id="grpExpiryFields">
                                 <div class="inputContainer">
                                     <label for="grpExpiryDate">Expiry date:</label>
-                                    <input is="emby-input" type="date" id="grpExpiryDate" />
+                                    <input type="date" id="grpExpiryDate" />
                                     <div class="fieldDescription">Members are expired by the next <strong>Process expired and inactive users</strong> task run on or after this date.</div>
                                 </div>
                                 <div class="selectContainer">
