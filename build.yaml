@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.2.1"
+version: "10.11.2.2"
 targetAbi: "10.11.10.0"
 framework: "net9.0"
 overview: "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
@@ -16,8 +16,6 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  security:
-  - Resolve `This stores sensitive data returned by call to method EnumerateFiles : IEnumerable as clear text.` where the resetpassword file was exposed in the logs.
-  developer:
-  - README cleanup
-  - Fix CodeQL
+  fixes:
+  - Disallowing password changes could get users locked out
+  - Password resets should always be available to admins on others' behalf

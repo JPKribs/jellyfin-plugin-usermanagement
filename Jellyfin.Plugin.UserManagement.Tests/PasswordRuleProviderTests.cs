@@ -55,6 +55,18 @@ public class PasswordRuleProviderTests
         return accessor;
     }
 
+    // An anonymous request: a principal exists but carries no authenticated identity. This is the
+    // shape of core's forgot password pin redemption and of invite redemption.
+    private static IHttpContextAccessor AnonymousAccessor()
+    {
+        var principal = new System.Security.Claims.ClaimsPrincipal(
+            new System.Security.Claims.ClaimsIdentity());
+
+        var accessor = Substitute.For<IHttpContextAccessor>();
+        accessor.HttpContext.Returns(new DefaultHttpContext { User = principal });
+        return accessor;
+    }
+
     private static GroupDefinition EnforcingGroup(Guid memberId, PasswordPolicy policy)
     {
         var group = new GroupDefinition { Id = Guid.NewGuid(), Name = "Enforced", Password = policy };
@@ -74,7 +86,7 @@ public class PasswordRuleProviderTests
         });
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => NewProvider().ChangePassword(user, "short"));
+            () => NewProvider(AccessorFor(admin: false)).ChangePassword(user, "short"));
 
         Assert.Contains("at least 10 characters", ex.Message, StringComparison.Ordinal);
     }
@@ -122,7 +134,8 @@ public class PasswordRuleProviderTests
             return true;
         });
 
-        await Assert.ThrowsAsync<ArgumentException>(() => NewProvider().ChangePassword(user, "short"));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => NewProvider(AccessorFor(admin: false)).ChangePassword(user, "short"));
     }
 
     [Fact]
@@ -266,7 +279,7 @@ public class PasswordRuleProviderTests
     }
 
     [Fact]
-    public async Task ChangePassword_EmptyDisallowed_ThrowsArgumentException()
+    public async Task ChangePassword_EmptyDisallowed_ThrowsArgumentExceptionForMember()
     {
         var plugin = TestSupport.NewPlugin();
         var user = TestSupport.NewUser();
@@ -277,8 +290,86 @@ public class PasswordRuleProviderTests
         });
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => NewProvider().ChangePassword(user, string.Empty));
+            () => NewProvider(AccessorFor(admin: false)).ChangePassword(user, string.Empty));
 
         Assert.Contains("password is required", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangePassword_AdminCaller_BypassesRuleValidation()
+    {
+        var plugin = TestSupport.NewPlugin();
+        var user = TestSupport.NewUser();
+        plugin.MutateConfiguration(cfg =>
+        {
+            cfg.Groups.Add(EnforcingGroup(user.Id, new PasswordPolicy { Enabled = true, MinLength = 16, RequireSymbol = true }));
+            return true;
+        });
+
+        await NewProvider(AccessorFor(admin: true)).ChangePassword(user, "short");
+
+        Assert.False(string.IsNullOrEmpty(user.Password));
+    }
+
+    [Fact]
+    public async Task ChangePassword_AdminCaller_CanResetToEmpty()
+    {
+        // The dashboard's Reset Password is a change to the empty string, so the validator must not
+        // run for admin callers or a member locked out under Disallowed rules could never be rescued.
+        var plugin = TestSupport.NewPlugin();
+        var user = TestSupport.NewUser();
+        user.Password = "existing-hash";
+        plugin.MutateConfiguration(cfg =>
+        {
+            cfg.Groups.Add(EnforcingGroup(user.Id, new PasswordPolicy
+            {
+                Enabled = true,
+                DisallowEmpty = true,
+                ChangeMode = PasswordChangeMode.Disallowed
+            }));
+            return true;
+        });
+
+        await NewProvider(AccessorFor(admin: true)).ChangePassword(user, string.Empty);
+
+        Assert.Null(user.Password);
+    }
+
+    [Fact]
+    public async Task ChangePassword_AnonymousCaller_BypassesEnforcement()
+    {
+        // Core's forgot password flow redeems a pin by setting the member's password to that pin in
+        // an anonymous request. The pin never satisfies group rules and only an administrator can
+        // read it off the server, so enforcement must not apply or the flow breaks for every
+        // enrolled user in every mode.
+        var plugin = TestSupport.NewPlugin();
+        var user = TestSupport.NewUser();
+        user.Password = "existing-hash";
+        plugin.MutateConfiguration(cfg =>
+        {
+            cfg.Groups.Add(EnforcingGroup(user.Id, new PasswordPolicy
+            {
+                Enabled = true,
+                DisallowEmpty = true,
+                MinLength = 16,
+                RequireSymbol = true,
+                ChangeMode = PasswordChangeMode.Disallowed
+            }));
+            return true;
+        });
+
+        await NewProvider(AnonymousAccessor()).ChangePassword(user, "A1B2C3D4");
+
+        Assert.NotEqual("existing-hash", user.Password);
+        Assert.False(string.IsNullOrEmpty(user.Password));
+    }
+
+    [Fact]
+    public async Task Authenticate_UnresolvedUser_ThrowsAuthenticationException()
+    {
+        // Core probes every provider for usernames that match no account and only catches
+        // AuthenticationException, so any other type becomes a 500 for the login request.
+        await Assert.ThrowsAsync<MediaBrowser.Controller.Authentication.AuthenticationException>(
+            () => NewProvider().Authenticate("ghost", "whatever", null));
     }
 }

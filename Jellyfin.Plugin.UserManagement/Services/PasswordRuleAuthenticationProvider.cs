@@ -17,7 +17,8 @@ namespace Jellyfin.Plugin.UserManagement.Services;
 /// Authentication provider that enforces the configured password requirements on password changes
 /// for users assigned to it. Login verification is delegated to <see cref="ICryptoProvider"/> exactly
 /// like the built-in provider, so assigning a user does not change how their existing password works.
-/// Administrators are never validated (and are never assigned to this provider).
+/// Administrators are never validated (and are never assigned to this provider), and changes made by
+/// an administrator on a member's behalf bypass enforcement entirely so a reset always works.
 /// </summary>
 public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequiresResolvedUser
 {
@@ -54,7 +55,13 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
     /// <inheritdoc />
     public Task<ProviderAuthenticationResult> Authenticate(string username, string password, User? resolvedUser)
     {
-        ArgumentNullException.ThrowIfNull(resolvedUser);
+        // Core probes every provider when the username matches no account. AuthenticationException is
+        // the one type its provider loop catches, so anything else would turn a typoed username into
+        // an HTTP 500 for the whole login request.
+        if (resolvedUser is null)
+        {
+            throw new AuthenticationException("Invalid username or password.");
+        }
 
         var success = string.IsNullOrEmpty(resolvedUser.Password)
             ? string.IsNullOrEmpty(password)
@@ -82,7 +89,14 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
 
         var isAdmin = user.HasPermission(PermissionKind.IsAdministrator);
 
-        if (!isAdmin)
+        // Group rules constrain member self service only: a member changing their own password with
+        // their own session. Everything else must pass untouched, because each is a rescue or creation
+        // flow with its own gatekeeper. The dashboard's Reset Password is an admin change to the empty
+        // string and is the only rescue for a member locked out under rules they cannot satisfy. Core's
+        // forgot password flow runs anonymously and sets the password to a pin only an administrator
+        // can read off the server. Invite redemption also runs anonymously and validates against its
+        // target group before creating the account.
+        if (!isAdmin && CallerIsSelfService())
         {
             // Enrollment is triggered by membership in any password enforcing group, so the lookup must
             // match: take the first enabled policy among the user's groups, not the first group blindly.
@@ -95,7 +109,7 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
             // always allowed to set the account creation password: it runs anonymously (the new user
             // can already be enrolled by the creation event before redemption sets the password), so
             // without the explicit scope it would look like a member's self service attempt.
-            if (policy is { Enabled: true } && policy.ChangeMode != PasswordChangeMode.Allowed && !CallerIsAdministrator())
+            if (policy is { Enabled: true } && policy.ChangeMode != PasswordChangeMode.Allowed)
             {
                 var settingFirst = string.IsNullOrEmpty(user.Password);
                 var allowed = settingFirst
@@ -139,11 +153,14 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
         return Task.CompletedTask;
     }
 
-    // The same core path delivers self service changes, admin resets, and internal calls, so the caller
-    // is read from the current request. No request at all means internal server work, which is allowed.
-    private bool CallerIsAdministrator()
+    // The same core path delivers self service changes, admin resets, pin redemptions, invite
+    // signups, and internal calls, so the caller is read from the current request. Only an
+    // authenticated non administrator is a member acting on their own account: no request at all
+    // means internal server work, and an unauthenticated request is an anonymous rescue or signup
+    // flow that is gated elsewhere.
+    private bool CallerIsSelfService()
     {
         var principal = _httpContextAccessor?.HttpContext?.User;
-        return principal is null || principal.IsInRole("Administrator");
+        return principal?.Identity?.IsAuthenticated == true && !principal.IsInRole("Administrator");
     }
 }
