@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.2.2",
+        "changelog": "## Fixes\r\n- Disallowing password changes could get users locked out\r\n- Password resets should always be available to admins on others' behalf",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.2.2/jellyfin-plugin-usermanagement-10.11.2.2.zip",
+        "checksum": "df98b9faf642047270a14b4485d69bee",
+        "timestamp": "2026-06-11T06:09:21Z"
+      },
+      {
         "version": "10.11.2.1",
         "changelog": "## Security\r\n- Remove reset password file path from the admin logs just in case\r\n\r\n## Developer\r\n- README cleanup\r\n- Fix CodeQL",
         "targetAbi": "10.11.10.0",
