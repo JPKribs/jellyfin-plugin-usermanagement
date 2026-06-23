@@ -175,6 +175,7 @@ export default function (view) {
                 + '<div class="jpk-table-item-sub">' + meta.join(' • ') + '</div>'
                 + '</div>'
                 + '<span class="jpk-table-status-badge ' + st.cls + '">' + esc(st.text) + '</span>'
+                + '<button type="button" class="um-btn um-dup" title="Duplicate invite"><span class="material-icons">content_copy</span></button>'
                 + '<button type="button" class="um-btn um-toggle" title="' + toggleTitle + '"><span class="material-icons">' + toggleIcon + '</span></button>'
                 + '<button type="button" class="um-btn um-del" title="Delete"><span class="material-icons">delete</span></button>'
                 + '</div>'
@@ -206,6 +207,8 @@ export default function (view) {
             if (expiryInput) expiryInput.addEventListener('change', function () { setInviteExpiry(id, this.value); });
             if (del) del.addEventListener('click', function () { deleteInvite(id); });
             if (copy) copy.addEventListener('click', function () { copyUrl(urlInput); });
+            var dup = row.querySelector('.um-dup');
+            if (dup) dup.addEventListener('click', function () { duplicateInvite(id); });
         });
     }
 
@@ -230,6 +233,54 @@ export default function (view) {
         Shared.setVisible('maxUsesFields', !!(Shared.getEl('chkSetMaxUses') || {}).checked);
     }
 
+
+    function openCreateSection() {
+        var header = view.querySelector('.jpk-collapsible-header[data-target="newInviteContent"]');
+        var content = Shared.getEl('newInviteContent');
+        if (header && content && content.classList.contains('collapsed')) {
+            header.click();
+        }
+        if (content && content.scrollIntoView) {
+            content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function duplicateInvite(id) {
+        var inv = _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
+        if (!inv) return;
+
+        Shared.getEl('txtLabel').value = inv.Label ? inv.Label + ' copy' : '';
+        Shared.getEl('txtMessage').value = inv.Message || '';
+
+        _newResources = (inv.Resources || []).map(function (r) {
+            return { Title: r.Title, Url: r.Url };
+        });
+        renderResourceList();
+
+        var sel = Shared.getEl('selGroup');
+        var groupId = inv.UseDefaultGroup ? _defaultGroupId : inv.GroupId;
+        if (sel && groupId && _groups.some(function (g) { return g.Id === groupId; })) {
+            sel.value = groupId;
+        }
+
+        var hasExpiry = !!inv.ExpiresAt;
+        Shared.getEl('chkSetExpiry').checked = hasExpiry;
+        Shared.getEl('dateExpiry').value = hasExpiry ? String(inv.ExpiresAt).slice(0, 10) : '';
+        updateExpiryState();
+
+        var hasMaxUses = inv.MaxUses > 0;
+        Shared.getEl('chkSetMaxUses').checked = hasMaxUses;
+        Shared.getEl('txtMaxUses').value = hasMaxUses ? String(inv.MaxUses) : '1';
+        updateMaxUsesState();
+
+        // The PIN is stored only as a salted hash, so it cannot be carried over.
+        Shared.getEl('txtPin').value = '';
+
+        openCreateSection();
+        Shared.setStatus('inviteStatus', inv.HasPin
+            ? 'Settings copied into the form. Set a new PIN, then create the invite.'
+            : 'Settings copied into the form. Review and create the invite.', false);
+    }
 
     function createInvite() {
         var setExpiry = !!(Shared.getEl('chkSetExpiry') || {}).checked;

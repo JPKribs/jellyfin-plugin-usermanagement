@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.2.2"
+version: "10.11.3.0"
 targetAbi: "10.11.10.0"
 framework: "net9.0"
 overview: "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
@@ -16,6 +16,5 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  fixes:
-  - Disallowing password changes could get users locked out
-  - Password resets should always be available to admins on others' behalf
+  features:
+  - Adds the ability to duplicate an existing invite

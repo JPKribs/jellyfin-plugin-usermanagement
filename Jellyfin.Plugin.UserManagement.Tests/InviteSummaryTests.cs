@@ -39,4 +39,26 @@ public class InviteSummaryTests
 
         Assert.False(summary.HasPin);
     }
+
+    [Fact]
+    public void FromInvite_CarriesMessageAndResources()
+    {
+        var invite = new Invite
+        {
+            Id = Guid.NewGuid(),
+            Token = "t",
+            Message = "Welcome!",
+            Resources =
+            {
+                new InviteResource { Title = "Requests", Url = "https://requests.example.com" }
+            }
+        };
+
+        var summary = InviteSummary.FromInvite(invite);
+
+        Assert.Equal("Welcome!", summary.Message);
+        var resource = Assert.Single(summary.Resources);
+        Assert.Equal("Requests", resource.Title);
+        Assert.Equal("https://requests.example.com", resource.Url);
+    }
 }

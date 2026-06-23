@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.UserManagement.Models;
 
@@ -16,6 +17,12 @@ public class InviteSummary
 
     /// <summary>Gets or sets an admin-facing label.</summary>
     public string Label { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a welcome message shown to invitees on the signup page.</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the resource links shown to the new user after signup.</summary>
+    public List<InviteResource> Resources { get; set; } = new();
 
     /// <summary>Gets or sets a value indicating whether a PIN is required to redeem.</summary>
     public bool HasPin { get; set; }
@@ -53,6 +60,8 @@ public class InviteSummary
             Id = invite.Id,
             Token = invite.Token,
             Label = invite.Label,
+            Message = invite.Message,
+            Resources = invite.Resources,
             HasPin = !string.IsNullOrEmpty(invite.PinHash),
             UseDefaultGroup = invite.UseDefaultGroup,
             GroupId = invite.GroupId,
