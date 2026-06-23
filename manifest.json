@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.3.0",
+        "changelog": "## Features\r\n- Adds the ability to duplicate an existing invite",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.3.0/jellyfin-plugin-usermanagement-10.11.3.0.zip",
+        "checksum": "2acfee9f003c8aa4d9422ea4293e5442",
+        "timestamp": "2026-06-23T00:55:50Z"
+      },
+      {
         "version": "10.11.2.2",
         "changelog": "## Fixes\r\n- Disallowing password changes could get users locked out\r\n- Password resets should always be available to admins on others' behalf",
         "targetAbi": "10.11.10.0",
