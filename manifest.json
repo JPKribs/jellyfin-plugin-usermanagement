@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.4.2",
+        "changelog": "## Features\r\n- Groups can now template the web home screen section order - My Media, Continue Watching, Continue Listening, Continue Reading, Recently Added, Next Up, Live TV and Active Recordings - applied with the same Override/Inherit model as other settings (web client only; mobile and TV apps keep their own layout)",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.4.2/jellyfin-plugin-usermanagement-10.11.4.2.zip",
+        "checksum": "6617188681ed5f9257dc576327f9504b",
+        "timestamp": "2026-07-08T20:54:10Z"
+      },
+      {
         "version": "10.11.4.1",
         "changelog": "## Features\r\n- The group library order now lists every home screen view, adding Live TV, Collections and other views that are not standalone libraries so it matches the Jellyfin dashboard\r\n\r\n## Fixes\r\n- The automatic folder grouping option now lists only the folders Jellyfin can group into Movies and TV views, instead of every library",
         "targetAbi": "10.11.10.0",
