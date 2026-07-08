@@ -22,6 +22,9 @@ public class GroupDefinition
     /// <summary>Gets or sets the permission shape applied to members.</summary>
     public GroupPermissions Permissions { get; set; } = new();
 
+    /// <summary>Gets or sets the display and playback preferences applied to members.</summary>
+    public GroupConfiguration Configuration { get; set; } = new();
+
     /// <summary>Gets or sets the password complexity rules enforced on enrolled members of this group.</summary>
     public PasswordPolicy Password { get; set; } = new();
 

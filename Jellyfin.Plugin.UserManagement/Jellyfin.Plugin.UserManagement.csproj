@@ -29,8 +29,8 @@
 
   <ItemGroup>
     <!-- Groups page -->
-    <EmbeddedResource Include="Configuration\usermanagement_user.html" />
-    <EmbeddedResource Include="Configuration\usermanagement_user.js" />
+    <EmbeddedResource Include="Configuration\usermanagement_groups.html" />
+    <EmbeddedResource Include="Configuration\usermanagement_groups.js" />
     <!-- Invites page -->
     <EmbeddedResource Include="Configuration\usermanagement_invites.html" />
     <EmbeddedResource Include="Configuration\usermanagement_invites.js" />

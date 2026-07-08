@@ -69,8 +69,8 @@ validate_resources() {
 
     local missing_files=()
     local config_files=(
-        "$PROJECT_DIR/Configuration/usermanagement_user.html"
-        "$PROJECT_DIR/Configuration/usermanagement_user.js"
+        "$PROJECT_DIR/Configuration/usermanagement_groups.html"
+        "$PROJECT_DIR/Configuration/usermanagement_groups.js"
         "$PROJECT_DIR/Configuration/usermanagement_invites.html"
         "$PROJECT_DIR/Configuration/usermanagement_invites.js"
         "$PROJECT_DIR/Configuration/usermanagement_shared.css"

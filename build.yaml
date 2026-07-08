@@ -1,15 +1,15 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.3.0"
+version: "10.11.4.0"
 targetAbi: "10.11.10.0"
 framework: "net9.0"
-overview: "Group policy templates, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
+overview: "Group policy templates, display and playback preferences, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
 description: >
   User Management provides user groups and password hygiene to accounts that already exist on your
-  Jellyfin server. Define group permission templates with live sync, set account expiry and auto-disable
-  inactive users, and enforce password requirements. Use these groups to send user-managed, and protected 
-  invite links.
+  Jellyfin server. Define group templates that manage both permissions and display and playback
+  preferences with live sync, set account expiry and auto-disable inactive users, and enforce password
+  requirements. Use these groups to send user-managed, and protected invite links.
 category: "General"
 imageUrl: "https://raw.githubusercontent.com/JPKribs/jellyfin-plugin-usermanagement/refs/heads/master/Jellyfin.Plugin.UserManagement/Assets/Logo.png"
 owner: "JPKribs"
@@ -17,4 +17,7 @@ artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
   features:
-  - Adds the ability to duplicate an existing invite
+  - "Groups gain a Configuration section that manages Jellyfin user preferences with the same Override/Inherit model as permissions: subtitle mode, preferred subtitle and audio language, play default audio track, remember audio and subtitle track selections, play next episode automatically, Google Cast version, and display missing episodes"
+  - "Groups can manage home screen settings: hide watched content from Recently Added, media library order, My Media and home-section visibility, and automatic folder grouping into Movies/Music/TV views"
+  - "Home screen library lists only show libraries the group grants access to, so a group cannot order or toggle a library it hides from members"
+  - "Reorganized the Groups page into four sections - Membership, Settings, Configuration, and Other"

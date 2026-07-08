@@ -88,8 +88,8 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
 
         yield return new PluginPageInfo
         {
-            Name = "usermanagement_user",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_user.html",
+            Name = "usermanagement_groups",
+            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_groups.html",
             MenuSection = "server",
             DisplayName = "User Management",
             EnableInMainMenu = true
@@ -97,8 +97,8 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
 
         yield return new PluginPageInfo
         {
-            Name = "usermanagement_user.js",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_user.js"
+            Name = "usermanagement_groups.js",
+            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_groups.js"
         };
 
         yield return new PluginPageInfo

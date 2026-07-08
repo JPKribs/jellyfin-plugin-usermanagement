@@ -132,6 +132,14 @@ public class GroupService
         }
 
         await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
+
+        if (group.Configuration.ManagesAnything())
+        {
+            var config = dto.Configuration;
+            group.Configuration.ApplyTo(config);
+            await _userManager.UpdateConfigurationAsync(user.Id, config).ConfigureAwait(false);
+        }
+
         return true;
     }
 

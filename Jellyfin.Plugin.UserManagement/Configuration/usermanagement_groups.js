@@ -19,6 +19,8 @@ export default function (view) {
     var allLibraries = [];
     var allDevices = [];
     var parentalRatings = [];
+    var allCultures = [];
+    var allCastReceivers = [];
     var _snapshot = null;
     var _dirty = false;
 
@@ -99,6 +101,69 @@ export default function (view) {
         ] }
     ];
 
+    var SUBTITLE_MODES = [
+        ['Default', 'Default', 'Subtitles are loaded based on the default and forced flags in the embedded metadata. Language preferences are considered when multiple options are available.'],
+        ['Smart', 'Smart', 'Subtitles matching the language preference will be loaded when the audio is in a foreign language.'],
+        ['OnlyForced', 'Only Forced', 'Only subtitles marked as forced will be loaded.'],
+        ['Always', 'Always Play', 'Subtitles matching the language preference will be loaded regardless of the audio language.'],
+        ['None', 'None', 'Subtitles will not be loaded by default. They can still be turned on manually during playback.']
+    ];
+
+    // Display and playback preferences applied to the Jellyfin user configuration, mirroring the
+    // fields on a user's Subtitles / Playback / Display / Home preference pages.
+    var CONFIG = [
+        { title: 'Subtitles', perms: [
+            { key: 'SubtitleMode', label: 'Subtitle mode', type: 'submode' },
+            { key: 'SubtitleLanguagePreference', label: 'Preferred subtitle language', type: 'culture' },
+            { key: 'RememberSubtitleSelections', label: 'Set subtitle track based on previous item', type: 'bool',
+                desc: 'Try to set the subtitle track to the closest match to the last video.' }
+        ] },
+        { title: 'Playback', perms: [
+            { key: 'AudioLanguagePreference', label: 'Preferred audio language', type: 'culture' },
+            { key: 'PlayDefaultAudioTrack', label: 'Play default audio track regardless of language', type: 'bool', def: true },
+            { key: 'RememberAudioSelections', label: 'Set audio track based on previous item', type: 'bool',
+                desc: 'Try to set the audio track to the closest match to the last video.' },
+            { key: 'EnableNextEpisodeAutoPlay', label: 'Play next episode automatically', type: 'bool' },
+            { key: 'CastReceiverId', label: 'Google Cast Version', type: 'castreceiver' }
+        ] },
+        { title: 'Display', perms: [
+            { key: 'DisplayMissingEpisodes', label: 'Display missing episodes within seasons', type: 'bool',
+                desc: 'This must also be enabled for TV libraries in the server configuration.' }
+        ] },
+        { title: 'Home', perms: [
+            { key: 'HidePlayedInLatest', label: "Hide watched content from 'Recently Added Media'", type: 'bool', def: true },
+            { key: 'OrderedViews', label: 'Media library order', type: 'order',
+                desc: 'Set the order libraries appear on the home screen.' },
+            { key: 'MyMediaExcludes', label: 'Display on home screen', type: 'libgrid', invert: true,
+                desc: 'Choose which libraries appear in the My Media row.' },
+            { key: 'LatestItemsExcludes', label: "Display in home screen sections such as 'Recently Added Media' and 'Continue Watching'", type: 'libgrid', invert: true },
+            { key: 'GroupedFolders', label: "Automatically group content from the following folders into views such as 'Movies', 'Music' and 'TV'", type: 'libgrid', invert: false,
+                desc: 'Folders that are unchecked will be displayed by themselves in their own view.' }
+        ] }
+    ];
+
+    function fetchCultures() {
+        try {
+            return ApiClient.getCultures().then(function (r) { return r || []; }).catch(function () { return []; });
+        } catch (e) { return Promise.resolve([]); }
+    }
+
+    var DEFAULT_CAST_RECEIVERS = [
+        { Id: 'F007D354', Name: 'Stable' },
+        { Id: '6F511C87', Name: 'Unstable' }
+    ];
+
+    function fetchCastReceivers() {
+        try {
+            return ApiClient.getServerConfiguration()
+                .then(function (c) {
+                    var list = c && c.CastReceiverApplications;
+                    return (list && list.length) ? list : DEFAULT_CAST_RECEIVERS;
+                })
+                .catch(function () { return DEFAULT_CAST_RECEIVERS; });
+        } catch (e) { return Promise.resolve(DEFAULT_CAST_RECEIVERS); }
+    }
+
     function fetchDevices() {
         try {
             return ApiClient.getJSON(ApiClient.getUrl('Devices'))
@@ -123,13 +188,17 @@ export default function (view) {
             ApiClient.getUsers(),
             ApiClient.getVirtualFolders(),
             fetchDevices(),
-            fetchRatings()
+            fetchRatings(),
+            fetchCultures(),
+            fetchCastReceivers()
         ]).then(function (results) {
             fullConfig = results[0];
             allUsers = results[1] || [];
             allLibraries = results[2] || [];
             allDevices = results[3] || [];
             parentalRatings = results[4] || [];
+            allCultures = results[5] || [];
+            allCastReceivers = results[6] || [];
             if (!fullConfig.Groups) fullConfig.Groups = [];
 
             renderSections();
@@ -156,13 +225,12 @@ export default function (view) {
     }
     function ratingName(r) { return r.Name || r.name || ''; }
 
-    function renderSections() {
-        var container = view.querySelector('#permissionSections');
+    function renderSectionGroup(sections, container, prefix, store) {
         var esc = Shared.escapeHtml;
         var html = '';
 
-        PERMISSIONS.forEach(function (section, si) {
-            var id = 'permSection' + si;
+        sections.forEach(function (section, si) {
+            var id = prefix + si;
             html += '<div class="jpk-collapsible-section">'
                 + '<button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="' + id + '">'
                 + '<span class="jpk-collapsible-title">' + esc(section.title) + '</span>'
@@ -170,14 +238,18 @@ export default function (view) {
                 + '<div id="' + id + '" class="jpk-collapsible-content collapsed">';
 
             section.perms.forEach(function (p) {
-                html += renderPermRow(p);
+                html += renderPermRow(p, store);
             });
 
             html += '</div></div>';
         });
 
         container.innerHTML = html;
+    }
 
+    function renderSections() {
+        renderSectionGroup(PERMISSIONS, view.querySelector('#permissionSections'), 'permSection', 'perm');
+        renderSectionGroup(CONFIG, view.querySelector('#configSections'), 'configSection', 'config');
         Shared.initCollapsibles();
         bindPermRows();
     }
@@ -197,9 +269,35 @@ export default function (view) {
             function (l) { return l.ItemId; }, function (l) { return l.Name; });
     }
 
-    function renderPermRow(p) {
+    function cultureOptions() {
+        var esc = Shared.escapeHtml;
+        var opts = '<option value="">Any Language</option>';
+        allCultures.forEach(function (c) {
+            var code = c.ThreeLetterISOLanguageName || c.threeLetterISOLanguageName || '';
+            var name = c.DisplayName || c.displayName || code;
+            if (code) opts += '<option value="' + esc(code) + '">' + esc(name) + '</option>';
+        });
+        return opts;
+    }
+
+    function orderList(itemClass) {
+        var esc = Shared.escapeHtml;
+        return '<div class="um-order-list ' + itemClass + '">'
+            + allLibraries.map(function (l) {
+                return '<div class="um-order-row" data-id="' + esc(l.ItemId) + '">'
+                    + '<span class="um-order-name">' + esc(l.Name) + '</span>'
+                    + '<span class="um-order-actions">'
+                    + '<button type="button" class="um-order-btn um-order-up" title="Move up"><span class="material-icons" aria-hidden="true">keyboard_arrow_up</span></button>'
+                    + '<button type="button" class="um-order-btn um-order-down" title="Move down"><span class="material-icons" aria-hidden="true">keyboard_arrow_down</span></button>'
+                    + '</span></div>';
+            }).join('')
+            + '</div>';
+    }
+
+    function renderPermRow(p, store) {
         var esc = Shared.escapeHtml;
         var control = '';
+        store = store || 'perm';
 
         if (p.type === 'bool') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
@@ -251,13 +349,33 @@ export default function (view) {
             control = '<div class="um-schedules"><div class="perm-sched-list"></div>'
                 + '<button is="emby-button" type="button" class="raised jpk-button-small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
                 + '</div>';
+        } else if (p.type === 'submode') {
+            var mopts = SUBTITLE_MODES.map(function (m) {
+                return '<option value="' + esc(m[0]) + '">' + esc(m[1]) + '</option>';
+            }).join('');
+            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + mopts + '</select>'
+                + '<div class="fieldDescription perm-submode-help"></div>';
+        } else if (p.type === 'culture') {
+            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + cultureOptions() + '</select>';
+        } else if (p.type === 'castreceiver') {
+            var copts = allCastReceivers.map(function (r) {
+                return '<option value="' + esc(r.Id || r.id) + '">' + esc(r.Name || r.name || r.Id) + '</option>';
+            }).join('');
+            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + copts + '</select>';
+        } else if (p.type === 'order') {
+            control = orderList('perm-order');
+        } else if (p.type === 'libgrid') {
+            control = checkGrid('perm-lib-grid', 'perm-lib', allLibraries,
+                function (l) { return l.ItemId; }, function (l) { return l.Name; });
         }
 
         var desc = p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '';
         var labelHtml = p.label ? '<div class="um-perm-label">' + esc(p.label) + '</div>' : '';
+        var invertAttr = (p.type === 'libgrid') ? ' data-invert="' + (p.invert ? '1' : '0') + '"' : '';
+        var defAttr = p.def ? ' data-default="1"' : '';
 
-        return '<div class="um-perm-row inherited" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '">'
-            + '<label class="emby-checkbox-label um-perm-toggle" title="Override this permission for the group">'
+        return '<div class="um-perm-row inherited" data-store="' + esc(store) + '" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '"' + invertAttr + defAttr + '>'
+            + '<label class="emby-checkbox-label um-perm-toggle" title="Override this setting for the group">'
             + '<input type="checkbox" is="emby-checkbox" class="perm-manage" />'
             + '<span class="checkboxLabel">Override</span></label>'
             + '<div class="um-perm-main">'
@@ -336,6 +454,11 @@ export default function (view) {
                 toggle.addEventListener('change', function () { updateFolderVisibility(row); });
             });
 
+            // Re-filter the home-screen library lists whenever Library Access changes.
+            if (row.getAttribute('data-perm') === 'LibraryAccess') {
+                row.addEventListener('change', applyAccessFilter);
+            }
+
             if (type === 'tags') {
                 var add = function () {
                     var input = row.querySelector('.perm-tag-input');
@@ -369,8 +492,31 @@ export default function (view) {
                     btn.closest('.perm-sched-row').remove();
                     checkDirty();
                 });
+            } else if (type === 'submode') {
+                var sel = row.querySelector('.perm-value');
+                sel.addEventListener('change', function () { updateSubmodeHelp(row); });
+            } else if (type === 'order') {
+                row.querySelector('.perm-order').addEventListener('click', function (e) {
+                    var btn = e.target.closest('.um-order-up, .um-order-down');
+                    if (!btn || btn.disabled) return;
+                    var item = btn.closest('.um-order-row');
+                    if (btn.classList.contains('um-order-up')) {
+                        if (item.previousElementSibling) item.parentNode.insertBefore(item, item.previousElementSibling);
+                    } else if (item.nextElementSibling) {
+                        item.parentNode.insertBefore(item.nextElementSibling, item);
+                    }
+                    checkDirty();
+                });
             }
         });
+    }
+
+    function updateSubmodeHelp(row) {
+        var help = row.querySelector('.perm-submode-help');
+        if (!help) return;
+        var val = row.querySelector('.perm-value').value;
+        var mode = SUBTITLE_MODES.find(function (m) { return m[0] === val; });
+        help.textContent = mode ? mode[2] : '';
     }
 
     function updateRowInherited(row) {
@@ -498,16 +644,118 @@ export default function (view) {
         });
     }
 
+    function loadConfigRow(row, cfg, key, type, manage) {
+        manage.checked = cfg['Manage' + key] === true;
+
+        if (type === 'order') {
+            var list = row.querySelector('.perm-order');
+            // Reset to the default library order first so switching groups never leaves stale ordering.
+            allLibraries.forEach(function (l) {
+                var el = list.querySelector('.um-order-row[data-id="' + l.ItemId + '"]');
+                if (el) list.appendChild(el);
+            });
+            (cfg.OrderedViews || []).slice().reverse().forEach(function (id) {
+                var el = list.querySelector('.um-order-row[data-id="' + id + '"]');
+                if (el) list.insertBefore(el, list.firstChild);
+            });
+        } else if (type === 'libgrid') {
+            var invert = row.getAttribute('data-invert') === '1';
+            var stored = cfg[key] || [];
+            row.querySelectorAll('.perm-lib').forEach(function (cb) {
+                var listed = stored.indexOf(cb.value) !== -1;
+                cb.checked = invert ? !listed : listed;
+            });
+        } else if (type === 'submode') {
+            row.querySelector('.perm-value').value = cfg.SubtitleMode || 'Default';
+            updateSubmodeHelp(row);
+        } else if (type === 'culture' || type === 'castreceiver') {
+            var sel = row.querySelector('.perm-value');
+            var val = cfg[key];
+            sel.value = (val == null) ? (sel.options[0] ? sel.options[0].value : '') : val;
+        } else {
+            var v = row.querySelector('.perm-value');
+            var stored2 = cfg[key];
+            v.checked = (stored2 === true || stored2 === false)
+                ? stored2 === true
+                : row.getAttribute('data-default') === '1';
+        }
+    }
+
+    function collectConfigRow(row, cfg, key, type, managed) {
+        cfg['Manage' + key] = managed;
+
+        if (type === 'order') {
+            // Only accessible libraries are shown, so only those are persisted in the order.
+            var ids = [];
+            row.querySelectorAll('.um-order-row:not(.hidden)').forEach(function (el) { ids.push(el.getAttribute('data-id')); });
+            cfg.OrderedViews = ids;
+        } else if (type === 'libgrid') {
+            var invert = row.getAttribute('data-invert') === '1';
+            var out = [];
+            row.querySelectorAll('.perm-lib').forEach(function (cb) {
+                var label = cb.closest('.emby-checkbox-label');
+                if (label && label.classList.contains('hidden')) return;
+                if (invert ? !cb.checked : cb.checked) out.push(cb.value);
+            });
+            cfg[key] = out;
+        } else if (type === 'submode' || type === 'culture' || type === 'castreceiver') {
+            cfg[key] = row.querySelector('.perm-value').value;
+        } else {
+            cfg[key] = row.querySelector('.perm-value').checked;
+        }
+    }
+
+    // The set of library ids the group's members can see, read live from the Library Access row.
+    // Returns null when every library is accessible (access unmanaged or "all libraries" enabled).
+    function accessibleLibraryIds() {
+        var row = view.querySelector('.um-perm-row[data-perm="LibraryAccess"]');
+        if (!row) return null;
+        var managed = row.querySelector('.perm-manage').checked;
+        var allFolders = row.querySelector('.perm-allfolders').checked;
+        if (!managed || allFolders) return null;
+        var set = {};
+        row.querySelectorAll('.perm-folder:checked').forEach(function (cb) { set[cb.value] = true; });
+        return set;
+    }
+
+    // Hides home-screen library rows (order and grids) the group's members cannot access, so an admin
+    // cannot order or toggle a library the group hides from them.
+    function applyAccessFilter() {
+        var access = accessibleLibraryIds();
+        var accessible = function (id) { return access === null || access[id] === true; };
+
+        view.querySelectorAll('#configSections .um-perm-row').forEach(function (row) {
+            var type = row.getAttribute('data-type');
+            if (type === 'order') {
+                row.querySelectorAll('.um-order-row').forEach(function (el) {
+                    el.classList.toggle('hidden', !accessible(el.getAttribute('data-id')));
+                });
+            } else if (type === 'libgrid') {
+                row.querySelectorAll('.perm-lib').forEach(function (cb) {
+                    var label = cb.closest('.emby-checkbox-label');
+                    if (label) label.classList.toggle('hidden', !accessible(cb.value));
+                });
+            }
+        });
+    }
+
     function loadCurrentGroup() {
         updateDefaultButton();
         var group = getCurrentGroup();
         if (!group) return;
         var perms = group.Permissions || {};
+        var cfg = group.Configuration || {};
 
         view.querySelectorAll('.um-perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
             var manage = row.querySelector('.perm-manage');
+
+            if (row.getAttribute('data-store') === 'config') {
+                loadConfigRow(row, cfg, key, type, manage);
+                updateRowInherited(row);
+                return;
+            }
 
             if (type === 'library') {
                 manage.checked = perms.ManageLibraryAccess === true;
@@ -568,6 +816,7 @@ export default function (view) {
             updateRowInherited(row);
         });
 
+        applyAccessFilter();
         loadGroupExtras(group);
         if (memberSel) {
             refreshMemberAvailability(group);
@@ -695,19 +944,26 @@ export default function (view) {
             card('green', active, 'Active') +
             card('yellow', inactive, 'Inactive') +
             card('red', disabled, 'Disabled') +
-            card('purple', Object.keys(expiringIds).length, 'Expiring Soon');
+            card('purple', Object.keys(expiringIds).length, 'Expiring');
     }
 
     function collectCurrentGroup() {
         var group = getCurrentGroup();
         if (!group) return;
         if (!group.Permissions) group.Permissions = {};
+        if (!group.Configuration) group.Configuration = {};
         var perms = group.Permissions;
+        var cfg = group.Configuration;
 
         view.querySelectorAll('.um-perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
             var managed = row.querySelector('.perm-manage').checked;
+
+            if (row.getAttribute('data-store') === 'config') {
+                collectConfigRow(row, cfg, key, type, managed);
+                return;
+            }
 
             if (type === 'library') {
                 perms.ManageLibraryAccess = managed;
@@ -855,7 +1111,7 @@ export default function (view) {
             if (nameExists(name, null)) { Dashboard.alert('A group with this name already exists.'); return; }
 
             if (currentGroupId) collectCurrentGroup();
-            var group = { Id: generateGuid(), Name: name, MemberIds: [], Permissions: {} };
+            var group = { Id: generateGuid(), Name: name, MemberIds: [], Permissions: {}, Configuration: {} };
             fullConfig.Groups.push(group);
             currentGroupId = group.Id;
             populateDropdown();

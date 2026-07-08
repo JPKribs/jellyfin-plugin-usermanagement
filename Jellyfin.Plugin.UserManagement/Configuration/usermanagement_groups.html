@@ -1,7 +1,7 @@
 <div id="UserManagementGroupsPage" data-role="page"
      class="page type-interior pluginConfigurationPage withTabs"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
-     data-controller="__plugin/usermanagement_user.js">
+     data-controller="__plugin/usermanagement_groups.js">
     <div data-role="content">
         <div class="content-primary">
             <form id="UserManagementGroupsForm">
@@ -45,20 +45,35 @@
                     <div id="emptyState" class="jpk-empty-section hidden">No groups yet. Click <strong>New</strong> to create one.</div>
 
                     <div id="groupEditor">
-                        <!-- Members (inline checklist) -->
-                        <div class="jpk-collapsible-section">
-                            <button type="button" class="jpk-collapsible-header" aria-expanded="true" data-target="membersContent">
-                                <span class="jpk-collapsible-title">Membership</span>
-                                <span class="jpk-collapsible-icon">&#9660;</span>
-                            </button>
-                            <div id="membersContent" class="jpk-collapsible-content">
+                        <!-- Membership (parent, no children) -->
+                        <div class="jpk-section um-parent-section">
+                            <div class="jpk-section-title">Membership</div>
+                            <div class="jpk-section-content">
                                 <div id="memberSummary" class="um-member-summary"></div>
                                 <div id="memberMount" class="um-member-panel"></div>
                             </div>
                         </div>
 
-                        <!-- Permission sections (rendered by JS) -->
-                        <div id="permissionSections"></div>
+                        <!-- Settings (UserPolicy sub-sections, rendered by JS) -->
+                        <div class="jpk-section um-parent-section">
+                            <div class="jpk-section-title">Settings</div>
+                            <div class="jpk-section-content">
+                                <div id="permissionSections"></div>
+                            </div>
+                        </div>
+
+                        <!-- Configuration (UserConfiguration sub-sections, rendered by JS) -->
+                        <div class="jpk-section um-parent-section">
+                            <div class="jpk-section-title">Configuration</div>
+                            <div class="jpk-section-content">
+                                <div id="configSections"></div>
+                            </div>
+                        </div>
+
+                        <!-- Other (plugin lifecycle sub-sections) -->
+                        <div class="jpk-section um-parent-section">
+                            <div class="jpk-section-title">Other</div>
+                            <div class="jpk-section-content">
 
                         <!-- Password Requirements (per group) -->
                         <div class="jpk-collapsible-section">
@@ -181,6 +196,9 @@
                                 </div>
                             </div>
                         </div>
+                            </div>
+                        </div>
+                        <!-- /Other -->
 
                         <!-- Save -->
                         <div class="inputContainer" style="margin-top: 16px;">

@@ -5,6 +5,25 @@
 /* Only plugin specific pieces live here.        */
 /* ============================================ */
 
+/* ===== Parent sections (Membership / Settings / Configuration / Other) ===== */
+/* Non-collapsible wrappers that hold the collapsible sub-sections. Scoped to the Groups page so
+   the base .jpk-section-title styling elsewhere (e.g. the Invites list) is left untouched. */
+#UserManagementGroupsPage .um-parent-section {
+    margin-bottom: 2em;
+}
+#UserManagementGroupsPage .um-parent-section > .jpk-section-title {
+    font-size: 1.35em;
+    font-weight: 600;
+    text-transform: none;
+    border-bottom-width: 2px;
+}
+#UserManagementGroupsPage .um-parent-section > .jpk-section-content {
+    padding-left: 8px;
+}
+#UserManagementGroupsPage .um-parent-section .jpk-collapsible-header {
+    font-size: 1em;
+}
+
 /* ===== Section Titles ===== */
 .sectionTitleContainer .sectionTitle {
     width: 100%;
@@ -71,6 +90,63 @@
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 6px;
     margin-top: 8px;
+}
+
+/* ===== Ordered library list (home screen order) ===== */
+.um-order-list {
+    margin-top: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.um-order-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.um-order-row:last-child {
+    border-bottom: none;
+}
+.um-order-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.um-order-actions {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+.um-order-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--jpk-border);
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: background 0.15s, opacity 0.15s;
+}
+.um-order-btn .material-icons {
+    font-size: 20px;
+}
+.um-order-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    opacity: 1;
+}
+.um-order-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+    background: transparent;
 }
 
 /* ===== Membership panel (wraps the base jpk-user-multi selector) ===== */
@@ -225,4 +301,25 @@
     padding-left: 1em;
     margin-top: 4px;
     border-left: 2px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ===== Invite status badges ===== */
+/* Match the summary card color scheme (Active = green, Locked = yellow, Used up = purple,
+   Expired = red). The base badge palette maps these statuses differently, so override per status.
+   Scoped to the invites page id to win over the base rule regardless of stylesheet order. */
+#UserManagementInvitesPage .jpk-table-status-badge.Active {
+    background: var(--jpk-green-bg);
+    color: var(--jpk-green-fg);
+}
+#UserManagementInvitesPage .jpk-table-status-badge.Locked {
+    background: #e0c84e2e;
+    color: #e0c84e;
+}
+#UserManagementInvitesPage .jpk-table-status-badge.Disabled {
+    background: var(--jpk-purple-bg);
+    color: var(--jpk-purple-fg);
+}
+#UserManagementInvitesPage .jpk-table-status-badge.Expired {
+    background: var(--jpk-red-bg);
+    color: var(--jpk-red-fg);
 }
