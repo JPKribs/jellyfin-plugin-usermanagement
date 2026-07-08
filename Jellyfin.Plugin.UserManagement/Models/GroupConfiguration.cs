@@ -94,4 +94,14 @@ public class GroupConfiguration
 
     /// <summary>Gets or sets the library IDs grouped together into a single home screen view.</summary>
     public List<Guid> GroupedFolders { get; set; } = new();
+
+    /// <summary>Gets or sets a value indicating whether the group manages the home screen section order.</summary>
+    public bool ManageHomeSections { get; set; }
+
+    /// <summary>
+    /// Gets or sets the ordered home screen sections for the web client. Each entry is a section key
+    /// (smalllibrarytiles, librarybuttons, activerecordings, resume, resumeaudio, resumebook, latestmedia,
+    /// nextup, livetv, none) matching a <see cref="Jellyfin.Database.Implementations.Enums.HomeSectionType"/>.
+    /// </summary>
+    public List<string> HomeSections { get; set; } = new();
 }

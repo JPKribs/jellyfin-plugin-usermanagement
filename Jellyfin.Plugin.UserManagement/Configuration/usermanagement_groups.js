@@ -111,6 +111,25 @@ export default function (view) {
         ['None', 'None', 'Subtitles will not be loaded by default. They can still be turned on manually during playback.']
     ];
 
+    // Home screen section options for the web client, in the order and wording Jellyfin uses.
+    // The value keys map (case-insensitively) onto the server's HomeSectionType.
+    var HOME_SECTIONS = [
+        ['smalllibrarytiles', 'My Media'],
+        ['librarybuttons', 'My Media (small)'],
+        ['activerecordings', 'Active Recordings'],
+        ['resume', 'Continue Watching'],
+        ['resumeaudio', 'Continue Listening'],
+        ['resumebook', 'Continue Reading'],
+        ['latestmedia', 'Recently Added Media'],
+        ['nextup', 'Next Up'],
+        ['livetv', 'Live TV'],
+        ['none', 'None']
+    ];
+
+    // Jellyfin's default home layout, used when a group has not set an explicit order yet.
+    var DEFAULT_HOME_SECTIONS = ['smalllibrarytiles', 'resume', 'resumeaudio', 'resumebook', 'livetv', 'nextup', 'latestmedia', 'none', 'none', 'none'];
+    var HOME_SECTION_COUNT = 10;
+
     // Display and playback preferences applied to the Jellyfin user configuration, mirroring the
     // fields on a user's Subtitles / Playback / Display / Home preference pages.
     var CONFIG = [
@@ -133,6 +152,8 @@ export default function (view) {
                 desc: 'This must also be enabled for TV libraries in the server configuration.' }
         ] },
         { title: 'Home', perms: [
+            { key: 'HomeSections', label: 'Customize how the Home Sections are presented to this group.', type: 'homesections',
+                desc: 'Set the order of the home screen sections for the web client. This only affects applicable clients.' },
             { key: 'HidePlayedInLatest', label: "Hide watched content from 'Recently Added Media'", type: 'bool', def: true },
             { key: 'OrderedViews', label: 'Media library order', type: 'order',
                 desc: 'Set the order libraries appear on the home screen.' },
@@ -402,6 +423,18 @@ export default function (view) {
             control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + copts + '</select>';
         } else if (p.type === 'order') {
             control = orderList('perm-order');
+        } else if (p.type === 'homesections') {
+            var secOpts = HOME_SECTIONS.map(function (o) {
+                return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
+            }).join('');
+            var secRows = '';
+            for (var hi = 0; hi < HOME_SECTION_COUNT; hi++) {
+                secRows += '<div class="selectContainer um-homesection-row">'
+                    + '<label class="selectLabel">Home screen section ' + (hi + 1) + '</label>'
+                    + '<select is="emby-select" class="perm-homesection emby-select-withcolor" data-index="' + hi + '">' + secOpts + '</select>'
+                    + '</div>';
+            }
+            control = '<div class="um-homesections">' + secRows + '</div>';
         } else if (p.type === 'libgrid') {
             // GroupedFolders only lists folders Jellyfin can group (movies/shows), from GroupingOptions;
             // the exclude grids list every configured library.
@@ -709,6 +742,11 @@ export default function (view) {
                 var listed = stored.indexOf(cb.value) !== -1;
                 cb.checked = invert ? !listed : listed;
             });
+        } else if (type === 'homesections') {
+            var secs = (cfg.HomeSections && cfg.HomeSections.length) ? cfg.HomeSections : DEFAULT_HOME_SECTIONS;
+            row.querySelectorAll('.perm-homesection').forEach(function (sel, idx) {
+                sel.value = secs[idx] || 'none';
+            });
         } else if (type === 'submode') {
             row.querySelector('.perm-value').value = cfg.SubtitleMode || 'Default';
             updateSubmodeHelp(row);
@@ -742,6 +780,10 @@ export default function (view) {
                 if (invert ? !cb.checked : cb.checked) out.push(cb.value);
             });
             cfg[key] = out;
+        } else if (type === 'homesections') {
+            var secs = [];
+            row.querySelectorAll('.perm-homesection').forEach(function (sel) { secs.push(sel.value); });
+            cfg.HomeSections = secs;
         } else if (type === 'submode' || type === 'culture' || type === 'castreceiver') {
             cfg[key] = row.querySelector('.perm-value').value;
         } else {

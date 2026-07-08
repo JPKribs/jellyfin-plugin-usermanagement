@@ -6,7 +6,9 @@ using Jellyfin.Plugin.UserManagement.Configuration;
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Services;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Cryptography;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Serialization;
@@ -39,6 +41,7 @@ internal static class TestSupport
     {
         var um = Substitute.For<IUserManager>();
         um.UpdatePolicyAsync(Arg.Any<Guid>(), Arg.Any<UserPolicy>()).Returns(Task.CompletedTask);
+        um.UpdateConfigurationAsync(Arg.Any<Guid>(), Arg.Any<UserConfiguration>()).Returns(Task.CompletedTask);
         um.UpdateUserAsync(Arg.Any<User>()).Returns(Task.CompletedTask);
         um.DeleteUserAsync(Arg.Any<Guid>()).Returns(Task.CompletedTask);
         um.ChangePassword(Arg.Any<Guid>(), Arg.Any<string>()).Returns(Task.CompletedTask);
@@ -66,8 +69,12 @@ internal static class TestSupport
         return new ActivityLogger(manager, Substitute.For<ILogger<ActivityLogger>>());
     }
 
-    public static GroupService NewGroupService(IUserManager um)
-        => new(um, NewActivityLogger(), Substitute.For<ILogger<GroupService>>());
+    public static GroupService NewGroupService(IUserManager um, IDisplayPreferencesManager? displayPreferences = null)
+        => new(
+            um,
+            displayPreferences ?? Substitute.For<IDisplayPreferencesManager>(),
+            NewActivityLogger(),
+            Substitute.For<ILogger<GroupService>>());
 
     /// <summary>Creates a status store backed by a fresh temp directory.</summary>
     public static InviteStatusStore NewInviteStatusStore()

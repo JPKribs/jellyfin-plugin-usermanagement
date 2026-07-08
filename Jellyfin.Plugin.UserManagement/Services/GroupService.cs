@@ -10,6 +10,7 @@ using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Utilities;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
+using MediaBrowser.Controller;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Users;
 using Microsoft.Extensions.Logging;
@@ -25,16 +26,27 @@ public class GroupService
 {
     private const string DefaultProviderId = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider";
 
+    // The web client's home screen settings live under a fixed display-preferences item id (the
+    // deterministic hash of "usersettings") for the "emby" client, shared by every user.
+    private static readonly Guid HomeSettingsItemId = Guid.Parse("3CE5B65D-E116-D731-65D1-EFC4A30EC35C");
+    private const string HomeSettingsClient = "emby";
+
     private readonly IUserManager _userManager;
+    private readonly IDisplayPreferencesManager _displayPreferences;
     private readonly ActivityLogger _activity;
     private readonly ILogger<GroupService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GroupService"/> class.
     /// </summary>
-    public GroupService(IUserManager userManager, ActivityLogger activity, ILogger<GroupService> logger)
+    public GroupService(
+        IUserManager userManager,
+        IDisplayPreferencesManager displayPreferences,
+        ActivityLogger activity,
+        ILogger<GroupService> logger)
     {
         _userManager = userManager;
+        _displayPreferences = displayPreferences;
         _activity = activity;
         _logger = logger;
     }
@@ -140,7 +152,38 @@ public class GroupService
             await _userManager.UpdateConfigurationAsync(user.Id, config).ConfigureAwait(false);
         }
 
+        if (group.Configuration.ManageHomeSections)
+        {
+            ApplyHomeSections(user.Id, group.Configuration.HomeSections);
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Writes the group's home screen section order onto the member's web-client display preferences.
+    /// Only the "emby" (web) client is templated; other clients keep their own layout.
+    /// </summary>
+    private void ApplyHomeSections(Guid userId, List<string> sections)
+    {
+        try
+        {
+            var prefs = _displayPreferences.GetDisplayPreferences(userId, HomeSettingsItemId, HomeSettingsClient);
+            prefs.HomeSections.Clear();
+            for (var i = 0; i < sections.Count; i++)
+            {
+                if (Enum.TryParse<HomeSectionType>(sections[i], ignoreCase: true, out var type))
+                {
+                    prefs.HomeSections.Add(new HomeSection { Order = i, Type = type });
+                }
+            }
+
+            _displayPreferences.UpdateDisplayPreferences(prefs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply home screen sections for {UserId}", userId);
+        }
     }
 
     /// <summary>
