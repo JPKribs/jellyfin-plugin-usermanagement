@@ -21,6 +21,8 @@ export default function (view) {
     var parentalRatings = [];
     var allCultures = [];
     var allCastReceivers = [];
+    var allViews = [];
+    var allGroupable = [];
     var _snapshot = null;
     var _dirty = false;
 
@@ -137,7 +139,7 @@ export default function (view) {
             { key: 'MyMediaExcludes', label: 'Display on home screen', type: 'libgrid', invert: true,
                 desc: 'Choose which libraries appear in the My Media row.' },
             { key: 'LatestItemsExcludes', label: "Display in home screen sections such as 'Recently Added Media' and 'Continue Watching'", type: 'libgrid', invert: true },
-            { key: 'GroupedFolders', label: "Automatically group content from the following folders into views such as 'Movies', 'Music' and 'TV'", type: 'libgrid', invert: false,
+            { key: 'GroupedFolders', label: "Automatically group content from the following folders into views such as 'Movies', 'Music' and 'TV'", type: 'libgrid', invert: false, source: 'groupable',
                 desc: 'Folders that are unchecked will be displayed by themselves in their own view.' }
         ] }
     ];
@@ -172,6 +174,29 @@ export default function (view) {
         } catch (e) { return Promise.resolve([]); }
     }
 
+    // The user's home-screen views, matching Jellyfin's own "Library Order" list. Fetched for the
+    // current admin, this includes derived views such as Live TV and Collections that getVirtualFolders
+    // does not return.
+    function fetchUserViews() {
+        try {
+            var uid = ApiClient.getCurrentUserId();
+            return ApiClient.getJSON(ApiClient.getUrl('Users/' + uid + '/Views', { includeHidden: true }))
+                .then(function (r) { return (r && r.Items) ? r.Items : []; })
+                .catch(function () { return []; });
+        } catch (e) { return Promise.resolve([]); }
+    }
+
+    // The folders that Jellyfin can group into type views ('Movies', 'Music', 'TV') - the "Library
+    // Folders" list. This is a filtered subset (movies/shows), not every library.
+    function fetchGroupingOptions() {
+        try {
+            var uid = ApiClient.getCurrentUserId();
+            return ApiClient.getJSON(ApiClient.getUrl('Users/' + uid + '/GroupingOptions'))
+                .then(function (r) { return (r && r.Items) ? r.Items : (Array.isArray(r) ? r : []); })
+                .catch(function () { return []; });
+        } catch (e) { return Promise.resolve([]); }
+    }
+
     function fetchRatings() {
         try {
             if (ApiClient.getParentalRatings) {
@@ -190,7 +215,9 @@ export default function (view) {
             fetchDevices(),
             fetchRatings(),
             fetchCultures(),
-            fetchCastReceivers()
+            fetchCastReceivers(),
+            fetchUserViews(),
+            fetchGroupingOptions()
         ]).then(function (results) {
             fullConfig = results[0];
             allUsers = results[1] || [];
@@ -199,6 +226,8 @@ export default function (view) {
             parentalRatings = results[4] || [];
             allCultures = results[5] || [];
             allCastReceivers = results[6] || [];
+            allViews = results[7] || [];
+            allGroupable = results[8] || [];
             if (!fullConfig.Groups) fullConfig.Groups = [];
 
             renderSections();
@@ -280,12 +309,21 @@ export default function (view) {
         return opts;
     }
 
+    // The home-screen views in default order, normalized to { id, name }. Falls back to the configured
+    // libraries if the user-views call returned nothing.
+    function orderSource() {
+        if (allViews && allViews.length) {
+            return allViews.map(function (v) { return { id: v.Id || v.id, name: v.Name || v.name || '' }; });
+        }
+        return allLibraries.map(function (l) { return { id: l.ItemId, name: l.Name }; });
+    }
+
     function orderList(itemClass) {
         var esc = Shared.escapeHtml;
         return '<div class="um-order-list ' + itemClass + '">'
-            + allLibraries.map(function (l) {
-                return '<div class="um-order-row" data-id="' + esc(l.ItemId) + '">'
-                    + '<span class="um-order-name">' + esc(l.Name) + '</span>'
+            + orderSource().map(function (v) {
+                return '<div class="um-order-row" data-id="' + esc(v.id) + '">'
+                    + '<span class="um-order-name">' + esc(v.name) + '</span>'
                     + '<span class="um-order-actions">'
                     + '<button type="button" class="um-order-btn um-order-up" title="Move up"><span class="material-icons" aria-hidden="true">keyboard_arrow_up</span></button>'
                     + '<button type="button" class="um-order-btn um-order-down" title="Move down"><span class="material-icons" aria-hidden="true">keyboard_arrow_down</span></button>'
@@ -365,8 +403,14 @@ export default function (view) {
         } else if (p.type === 'order') {
             control = orderList('perm-order');
         } else if (p.type === 'libgrid') {
-            control = checkGrid('perm-lib-grid', 'perm-lib', allLibraries,
-                function (l) { return l.ItemId; }, function (l) { return l.Name; });
+            // GroupedFolders only lists folders Jellyfin can group (movies/shows), from GroupingOptions;
+            // the exclude grids list every configured library.
+            var gridItems = (p.source === 'groupable') ? allGroupable : allLibraries;
+            var idOf = (p.source === 'groupable')
+                ? function (v) { return v.Id || v.id; }
+                : function (l) { return l.ItemId; };
+            control = checkGrid('perm-lib-grid', 'perm-lib', gridItems,
+                idOf, function (v) { return v.Name || v.name || ''; });
         }
 
         var desc = p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '';
@@ -649,9 +693,9 @@ export default function (view) {
 
         if (type === 'order') {
             var list = row.querySelector('.perm-order');
-            // Reset to the default library order first so switching groups never leaves stale ordering.
-            allLibraries.forEach(function (l) {
-                var el = list.querySelector('.um-order-row[data-id="' + l.ItemId + '"]');
+            // Reset to the default view order first so switching groups never leaves stale ordering.
+            orderSource().forEach(function (v) {
+                var el = list.querySelector('.um-order-row[data-id="' + v.id + '"]');
                 if (el) list.appendChild(el);
             });
             (cfg.OrderedViews || []).slice().reverse().forEach(function (id) {
@@ -723,12 +767,18 @@ export default function (view) {
     function applyAccessFilter() {
         var access = accessibleLibraryIds();
         var accessible = function (id) { return access === null || access[id] === true; };
+        // Only configured libraries are access-gated. The order list also contains derived views such
+        // as Live TV and Collections (from GroupingOptions), which are not libraries and stay visible.
+        var libIds = {};
+        allLibraries.forEach(function (l) { libIds[l.ItemId] = true; });
 
         view.querySelectorAll('#configSections .um-perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
             if (type === 'order') {
                 row.querySelectorAll('.um-order-row').forEach(function (el) {
-                    el.classList.toggle('hidden', !accessible(el.getAttribute('data-id')));
+                    var id = el.getAttribute('data-id');
+                    var hide = libIds[id] === true && !accessible(id);
+                    el.classList.toggle('hidden', hide);
                 });
             } else if (type === 'libgrid') {
                 row.querySelectorAll('.perm-lib').forEach(function (cb) {
