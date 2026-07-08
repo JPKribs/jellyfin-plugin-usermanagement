@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.4.0",
+        "changelog": "## Features\r\n- Groups gain a Configuration section that manages Jellyfin user preferences with the same Override/Inherit model as permissions: subtitle mode, preferred subtitle and audio language, play default audio track, remember audio and subtitle track selections, play next episode automatically, Google Cast version, and display missing episodes\r\n- Groups can manage home screen settings: hide watched content from Recently Added, media library order, My Media and home-section visibility, and automatic folder grouping into Movies/Music/TV views\r\n- Home screen library lists only show libraries the group grants access to, so a group cannot order or toggle a library it hides from members\r\n- Reorganized the Groups page into four sections - Membership, Settings, Configuration, and Other",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.4.0/jellyfin-plugin-usermanagement-10.11.4.0.zip",
+        "checksum": "bc63691995a232a30d37d3fe0fd21de5",
+        "timestamp": "2026-07-08T18:47:19Z"
+      },
+      {
         "version": "10.11.3.0",
         "changelog": "## Features\r\n- Adds the ability to duplicate an existing invite",
         "targetAbi": "10.11.10.0",
