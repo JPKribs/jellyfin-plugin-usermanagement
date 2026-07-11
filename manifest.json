@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.4.3",
+        "changelog": "## Developer\r\n- Bump Base to 2026.7.12\r\n- Use ActivityLogger from Base 2026.7.12\r\n- Standardize activity log messages",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.4.3/jellyfin-plugin-usermanagement-10.11.4.3.zip",
+        "checksum": "f494c2d752cf80ff1b38ee97d956919e",
+        "timestamp": "2026-07-11T23:30:54Z"
+      },
+      {
         "version": "10.11.4.2",
         "changelog": "## Features\r\n- Groups can now template the web home screen section order - My Media, Continue Watching, Continue Listening, Continue Reading, Recently Added, Next Up, Live TV and Active Recordings - applied with the same Override/Inherit model as other settings (web client only; mobile and TV apps keep their own layout)",
         "targetAbi": "10.11.10.0",
