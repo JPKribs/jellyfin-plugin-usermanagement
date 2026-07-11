@@ -8,6 +8,7 @@ using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Utilities;
 using Jellyfin.Plugin.UserManagement.Models;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Cryptography;
 using Microsoft.Extensions.Logging;
@@ -181,7 +182,7 @@ public sealed class InviteService : IDisposable
             return true;
         });
 
-        _activity.Log("Invite '" + DisplayName(invite) + "' was created", "UserManagement.InviteCreated");
+        _activity.Log("Invite created: " + DisplayName(invite), "UserManagement.InviteCreated");
         return invite;
     }
 
@@ -343,7 +344,7 @@ public sealed class InviteService : IDisposable
 
         foreach (var name in expiredNames)
         {
-            _activity.Log("Invite '" + name + "' expired and was disabled", "UserManagement.InviteExpired");
+            _activity.Log("Invite expired and disabled: " + name, "UserManagement.InviteExpired");
         }
 
         if (disabled > 0)
@@ -517,7 +518,7 @@ public sealed class InviteService : IDisposable
                 status.FailedPinAttempts++;
                 _statusStore.Save(statusData);
                 _activity.Log(
-                    "An incorrect PIN was entered for invite '" + DisplayName(invite) + "'",
+                    "Incorrect PIN entered for invite: " + DisplayName(invite),
                     "UserManagement.InvitePinFailed",
                     overview: "Failed attempts: " + status.FailedPinAttempts,
                     severity: LogLevel.Warning);
@@ -540,7 +541,7 @@ public sealed class InviteService : IDisposable
 
                     _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, status.FailedPinAttempts);
                     _activity.Log(
-                        "Invite '" + DisplayName(invite) + "' was locked after too many incorrect PIN attempts",
+                        "Invite locked after too many incorrect PIN attempts: " + DisplayName(invite),
                         "UserManagement.InviteLocked",
                         severity: LogLevel.Warning);
                     return InviteRedeemResult.Fail("Too many incorrect PIN attempts. This invite has been locked.");
@@ -693,13 +694,13 @@ public sealed class InviteService : IDisposable
 
             _logger.LogInformation("Invite {InviteId} redeemed; created user {UserId}", invite.Id, userId);
             _activity.Log(
-                "User '" + username + "' was created with invite '" + DisplayName(invite) + "'",
+                "User created via invite: " + DisplayName(invite) + ", user: " + username,
                 "UserManagement.InviteRedeemed",
-                userId);
+                userId: userId);
             if (invite.MaxUses > 0 && status.UsedCount >= invite.MaxUses)
             {
                 _activity.Log(
-                    "Invite '" + DisplayName(invite) + "' was fully consumed",
+                    "Invite fully consumed: " + DisplayName(invite),
                     "UserManagement.InviteConsumed");
             }
 

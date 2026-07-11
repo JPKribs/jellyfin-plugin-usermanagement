@@ -10,6 +10,7 @@ using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Utilities;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Users;
@@ -349,9 +350,9 @@ public class GroupService
 
         await SetAuthenticationProviderAsync(user, providerId).ConfigureAwait(false);
         _activity.Log(
-            "'" + user.Username + "' was enrolled in group password rules",
+            "Enrolled in group password rules: " + user.Username,
             "UserManagement.PasswordRulesEnrolled",
-            user.Id);
+            userId: user.Id);
     }
 
     /// <summary>
@@ -393,9 +394,9 @@ public class GroupService
 
         await SetAuthenticationProviderAsync(user, restore).ConfigureAwait(false);
         _activity.Log(
-            "'" + user.Username + "' was removed from group password rules",
+            "Removed from group password rules: " + user.Username,
             "UserManagement.PasswordRulesUnenrolled",
-            user.Id);
+            userId: user.Id);
     }
 
     /// <summary>

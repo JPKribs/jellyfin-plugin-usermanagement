@@ -6,6 +6,7 @@ using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Utilities;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller.Authentication;
 using MediaBrowser.Model.Cryptography;
 using Microsoft.AspNetCore.Http;
@@ -118,11 +119,11 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                 {
                     _logger.LogInformation("Rejected password change for {UserId}: the group disallows self service changes", user.Id);
                     _activity.Log(
-                        "A password change for '" + user.Username + "' was blocked",
+                        "Password change blocked: " + user.Username,
                         "UserManagement.PasswordChangeBlocked",
-                        user.Id,
-                        "The user's group disallows self service password changes.",
-                        LogLevel.Warning);
+                        overview: "The group disallows self-service password changes.",
+                        severity: LogLevel.Warning,
+                        userId: user.Id);
                     throw new ArgumentException("Password changes are disabled for your account. Ask your server administrator to change it for you.");
                 }
             }
@@ -133,11 +134,11 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                 var reasons = string.Join(" ", errors);
                 _logger.LogWarning("Rejected password change for {UserId}: {Reasons}", user.Id, reasons);
                 _activity.Log(
-                    "A password change for '" + user.Username + "' was rejected by group password rules",
+                    "Password change rejected by group password rules: " + user.Username,
                     "UserManagement.PasswordChangeRejected",
-                    user.Id,
-                    reasons,
-                    LogLevel.Warning);
+                    overview: reasons,
+                    severity: LogLevel.Warning,
+                    userId: user.Id);
 
                 // ArgumentException maps to HTTP 400 in Jellyfin's exception middleware, so the password
                 // form fails fast with an error. AuthenticationException maps to 401, which the web client

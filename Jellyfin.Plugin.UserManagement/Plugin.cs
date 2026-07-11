@@ -61,16 +61,16 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
             var existing = new HashSet<Guid>(Configuration?.Groups.Select(g => g.Id) ?? Enumerable.Empty<Guid>());
             foreach (var group in config.Groups.Where(g => !existing.Contains(g.Id)))
             {
-                ActivityLogger.Instance?.Log(
-                    "Group '" + group.Name + "' was created",
+                ActivityLoggerAccessor.Instance?.Log(
+                    "Group created: " + group.Name,
                     "UserManagement.GroupCreated");
             }
 
             var incoming = new HashSet<Guid>(config.Groups.Select(g => g.Id));
             foreach (var group in (Configuration?.Groups ?? Enumerable.Empty<GroupDefinition>()).Where(g => !incoming.Contains(g.Id)))
             {
-                ActivityLogger.Instance?.Log(
-                    "Group '" + group.Name + "' was deleted",
+                ActivityLoggerAccessor.Instance?.Log(
+                    "Group deleted: " + group.Name,
                     "UserManagement.GroupDeleted");
             }
 

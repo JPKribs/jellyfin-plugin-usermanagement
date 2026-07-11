@@ -24,14 +24,6 @@
     font-size: 1em;
 }
 
-/* ===== Section Titles ===== */
-.sectionTitleContainer .sectionTitle {
-    width: 100%;
-    border-bottom: 1px solid var(--jpk-border);
-    padding-bottom: 0.5em;
-    margin-bottom: 1em;
-}
-
 /* ===== Date fields =====
    Mirrors the Base form.css unified field rule, which covers text/number/password/search/url/email,
    textarea, and select but not date inputs. Same surface, border, focus ring, and metrics, plus the
