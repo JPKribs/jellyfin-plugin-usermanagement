@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.5.0",
+        "changelog": "## Features\r\n- Groups can log out member devices that have not checked in within a set number of days\r\n- Cleanup rules target all clients, only selected clients, or all except selected clients\r\n- Overlapping rules resolve to the shortest window\r\n- New Clean Expired Sessions scheduled task",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.5.0/jellyfin-plugin-usermanagement-10.11.5.0.zip",
+        "checksum": "16a5de0a324fb8d26998fb821bac2b19",
+        "timestamp": "2026-07-13T06:24:31Z"
+      },
+      {
         "version": "10.11.4.3",
         "changelog": "## Developer\r\n- Bump Base to 2026.7.12\r\n- Use ActivityLogger from Base 2026.7.12\r\n- Standardize activity log messages",
         "targetAbi": "10.11.10.0",
