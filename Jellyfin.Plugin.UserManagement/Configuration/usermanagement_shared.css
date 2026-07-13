@@ -287,6 +287,32 @@
     margin-left: auto;
 }
 
+/* ===== Session cleanup rule cards (per group) ===== */
+.um-session-rule {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+.um-session-rule-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.um-session-rule-title {
+    font-weight: 500;
+    opacity: 0.85;
+}
+.um-session-rule .selectContainer,
+.um-session-rule .inputContainer {
+    margin-bottom: 8px;
+}
+.um-session-rule .sess-clients {
+    margin-bottom: 8px;
+}
+
 /* ===== Indented sub fields under a gating checkbox ===== */
 .um-indent {
     margin-left: 1.85em;

@@ -42,4 +42,10 @@ public class GroupDefinition
 
     /// <summary>Gets or sets the number of days without activity before a member is disabled.</summary>
     public int InactiveDays { get; set; } = 30;
+
+    /// <summary>Gets or sets a value indicating whether members' stale sessions are logged out per <see cref="SessionCleanupRules"/>.</summary>
+    public bool CleanupSessions { get; set; }
+
+    /// <summary>Gets or sets the session-cleanup rules; where rules overlap on a client, the shortest window wins.</summary>
+    public List<SessionCleanupRule> SessionCleanupRules { get; set; } = new();
 }

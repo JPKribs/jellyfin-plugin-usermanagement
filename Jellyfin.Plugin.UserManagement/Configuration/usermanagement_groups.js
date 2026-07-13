@@ -954,6 +954,10 @@ export default function (view) {
         if (el('#grpInactiveEnabled')) el('#grpInactiveEnabled').checked = group.DisableInactiveUsers === true;
         if (el('#grpInactiveDays')) el('#grpInactiveDays').value = group.InactiveDays || 30;
         updateInactiveEnabledState();
+
+        if (el('#grpSessionEnabled')) el('#grpSessionEnabled').checked = group.CleanupSessions === true;
+        renderSessionRules(group.SessionCleanupRules || []);
+        updateSessionEnabledState();
     }
 
     function collectGroupExtras(group) {
@@ -977,6 +981,9 @@ export default function (view) {
         group.DisableInactiveUsers = !!(el('#grpInactiveEnabled') || {}).checked;
         var inactiveDays = parseInt((el('#grpInactiveDays') || {}).value, 10);
         group.InactiveDays = isNaN(inactiveDays) || inactiveDays < 1 ? 30 : inactiveDays;
+
+        group.CleanupSessions = !!(el('#grpSessionEnabled') || {}).checked;
+        group.SessionCleanupRules = domSessionRules();
     }
 
     var CHANGE_MODES = ['Allowed', 'InitialOnly', 'Disallowed'];
@@ -997,6 +1004,134 @@ export default function (view) {
 
     function updateInactiveEnabledState() {
         Shared.setVisible('inactiveFields', !!(view.querySelector('#grpInactiveEnabled') || {}).checked);
+    }
+
+    var SESSION_MODES = ['All', 'Only', 'AllExcept'];
+    var SESSION_MODE_HELP = {
+        Only: 'Only sessions on these clients are removed during cleanup.',
+        AllExcept: 'All sessions are cleaned up except sessions on these clients.'
+    };
+
+    // The generic configuration endpoint may serialize the enum as a number or a string.
+    function normalizeSessionMode(value) {
+        if (typeof value === 'number') return SESSION_MODES[value] || 'All';
+        return SESSION_MODES.indexOf(value) >= 0 ? value : 'All';
+    }
+
+    // Every client name worth offering: clients that have a device on the server, plus clients already
+    // referenced by the given rules, so a selected client whose devices are gone is never orphaned.
+    function knownClients(rules) {
+        var seen = {};
+        var out = [];
+        var add = function (name) {
+            if (name && !seen[name.toLowerCase()]) { seen[name.toLowerCase()] = true; out.push(name); }
+        };
+        allDevices.forEach(function (d) { add(d.AppName || d.appName); });
+        (rules || []).forEach(function (r) { (r.Clients || []).forEach(add); });
+        return out.sort(function (a, b) { return a.localeCompare(b); });
+    }
+
+    function sessionRuleHtml(rule, clients) {
+        var esc = Shared.escapeHtml;
+        var selected = {};
+        (rule.Clients || []).forEach(function (c) { selected[c.toLowerCase()] = true; });
+        var mode = normalizeSessionMode(rule.Mode);
+        var days = rule.Days > 0 ? rule.Days : 30;
+
+        var grid = clients.length
+            ? '<div class="um-folder-grid sess-client-grid">' + clients.map(function (c) {
+                return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="sess-client" value="'
+                    + esc(c) + '"' + (selected[c.toLowerCase()] ? ' checked' : '')
+                    + ' /><span class="checkboxLabel">' + esc(c) + '</span></label>';
+            }).join('') + '</div>'
+            : '<div class="fieldDescription">No clients have connected to this server yet.</div>';
+
+        return '<div class="um-session-rule">'
+            + '<div class="um-session-rule-head">'
+            + '<span class="um-session-rule-title"></span>'
+            + '<button is="emby-button" type="button" class="raised jpk-button-small jpk-button-destructive sess-remove"><span>Remove</span></button>'
+            + '</div>'
+            + '<div class="selectContainer">'
+            + '<label class="selectLabel">Clients</label>'
+            + '<select is="emby-select" class="sess-mode emby-select-withcolor">'
+            + '<option value="All"' + (mode === 'All' ? ' selected' : '') + '>All Clients</option>'
+            + '<option value="Only"' + (mode === 'Only' ? ' selected' : '') + '>Only These Clients</option>'
+            + '<option value="AllExcept"' + (mode === 'AllExcept' ? ' selected' : '') + '>All Except These Clients</option>'
+            + '</select>'
+            + '</div>'
+            + '<div class="sess-clients hidden">'
+            + grid
+            + '<div class="fieldDescription sess-clients-help"></div>'
+            + '</div>'
+            + '<div class="inputContainer">'
+            + '<label>Days before a device is logged out:</label>'
+            + '<input is="emby-input" type="number" class="sess-days" min="1" value="' + days + '" />'
+            + '<div class="fieldDescription">Devices will be logged out after this many days without checking back into the server.</div>'
+            + '</div>'
+            + '</div>';
+    }
+
+    function renderSessionRules(rules) {
+        var list = view.querySelector('#sessionRuleList');
+        if (!list) return;
+        var clients = knownClients(rules);
+        list.innerHTML = (rules || []).map(function (r) { return sessionRuleHtml(r, clients); }).join('');
+        list.querySelectorAll('.um-session-rule').forEach(updateSessionRuleUi);
+        updateSessionRuleTitles();
+        updateSessionOverlaps();
+    }
+
+    function domSessionRules() {
+        var rules = [];
+        view.querySelectorAll('#sessionRuleList .um-session-rule').forEach(function (row) {
+            var mode = normalizeSessionMode(row.querySelector('.sess-mode').value);
+            var clients = [];
+            row.querySelectorAll('.sess-client:checked').forEach(function (cb) { clients.push(cb.value); });
+            var days = parseInt(row.querySelector('.sess-days').value, 10);
+            rules.push({
+                Mode: mode,
+                Clients: mode === 'All' ? [] : clients,
+                Days: isNaN(days) || days < 1 ? 30 : days
+            });
+        });
+        return rules;
+    }
+
+    function updateSessionRuleUi(row) {
+        var mode = row.querySelector('.sess-mode').value;
+        row.querySelector('.sess-clients').classList.toggle('hidden', mode === 'All');
+        row.querySelector('.sess-clients-help').textContent = SESSION_MODE_HELP[mode] || '';
+    }
+
+    function updateSessionRuleTitles() {
+        view.querySelectorAll('#sessionRuleList .um-session-rule-title').forEach(function (el, i) {
+            el.textContent = 'Rule ' + (i + 1);
+        });
+    }
+
+    // Option A conflict handling: where several rules cover the same client, the shortest window wins.
+    // This surfaces which clients that affects so overlapping rules are never a silent surprise.
+    function updateSessionOverlaps() {
+        var warn = view.querySelector('#sessionOverlapWarning');
+        if (!warn) return;
+        var rules = domSessionRules();
+        var overlapped = [];
+        knownClients(rules).forEach(function (client) {
+            var matches = rules.filter(function (r) {
+                if (r.Mode === 'All') return true;
+                var listed = r.Clients.some(function (c) { return c.toLowerCase() === client.toLowerCase(); });
+                return r.Mode === 'Only' ? listed : !listed;
+            });
+            if (matches.length > 1) overlapped.push(client);
+        });
+        warn.textContent = overlapped.length
+            ? 'More than one rule covers ' + overlapped.join(', ') + '. The shortest window applies where rules overlap.'
+            : '';
+        warn.classList.toggle('hidden', overlapped.length === 0);
+    }
+
+    function updateSessionEnabledState() {
+        Shared.setVisible('sessionFields', !!(view.querySelector('#grpSessionEnabled') || {}).checked);
     }
 
     function card(cls, count, label) {
@@ -1306,6 +1441,36 @@ export default function (view) {
 
         var inactiveEnabled = view.querySelector('#grpInactiveEnabled');
         if (inactiveEnabled) inactiveEnabled.addEventListener('change', updateInactiveEnabledState);
+
+        var sessionEnabled = view.querySelector('#grpSessionEnabled');
+        if (sessionEnabled) sessionEnabled.addEventListener('change', updateSessionEnabledState);
+
+        var addSessionRule = view.querySelector('#btnAddSessionRule');
+        if (addSessionRule) addSessionRule.addEventListener('click', function () {
+            var list = view.querySelector('#sessionRuleList');
+            list.insertAdjacentHTML('beforeend', sessionRuleHtml({ Mode: 'All', Clients: [], Days: 30 }, knownClients(domSessionRules())));
+            updateSessionRuleUi(list.lastElementChild);
+            updateSessionRuleTitles();
+            updateSessionOverlaps();
+            checkDirty();
+        });
+
+        var sessionRuleList = view.querySelector('#sessionRuleList');
+        if (sessionRuleList) {
+            sessionRuleList.addEventListener('change', function (e) {
+                var row = e.target.closest('.um-session-rule');
+                if (row && e.target.classList.contains('sess-mode')) updateSessionRuleUi(row);
+                updateSessionOverlaps();
+            });
+            sessionRuleList.addEventListener('click', function (e) {
+                var btn = e.target.closest('.sess-remove');
+                if (!btn) return;
+                btn.closest('.um-session-rule').remove();
+                updateSessionRuleTitles();
+                updateSessionOverlaps();
+                checkDirty();
+            });
+        }
 
         var form = view.querySelector('#UserManagementGroupsForm');
         if (form) {

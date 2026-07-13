@@ -28,6 +28,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             return log;
         });
         serviceCollection.AddSingleton<GroupService>();
+        serviceCollection.AddSingleton<SessionCleanupService>();
         serviceCollection.AddSingleton<InviteService>();
         serviceCollection.AddSingleton<InviteStatusStore>();
         serviceCollection.AddSingleton<ResetCodeService>();

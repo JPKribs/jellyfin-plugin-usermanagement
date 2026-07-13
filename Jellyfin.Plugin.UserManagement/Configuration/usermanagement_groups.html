@@ -75,6 +75,33 @@
                             <div class="jpk-section-title">Other</div>
                             <div class="jpk-section-content">
 
+                        <!-- Session Management (per group) -->
+                        <div class="jpk-collapsible-section">
+                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
+                                <span class="jpk-collapsible-title">Session Management</span>
+                                <span class="jpk-collapsible-icon">&#9660;</span>
+                            </button>
+                            <div id="grpSessionContent" class="jpk-collapsible-content collapsed">
+                                <div class="checkboxContainer checkboxContainer-withDescription">
+                                    <label class="emby-checkbox-label">
+                                        <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
+                                        <span class="checkboxLabel">Clean up old sessions</span>
+                                    </label>
+                                    <div class="fieldDescription checkboxFieldDescription">
+                                        Log out devices belonging to this group's members once they have gone too long
+                                        without checking back into the server. Cleanup is performed by the
+                                        <strong>Clean Expired Sessions</strong> task, so its run time determines when
+                                        devices are logged out.
+                                    </div>
+                                </div>
+                                <div class="hidden" id="sessionFields">
+                                    <div id="sessionRuleList"></div>
+                                    <button is="emby-button" type="button" id="btnAddSessionRule" class="raised jpk-button-small jpk-button-submit" style="margin-top:6px;"><span>Add rule</span></button>
+                                    <div id="sessionOverlapWarning" class="fieldDescription hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Password Requirements (per group) -->
                         <div class="jpk-collapsible-section">
                             <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
@@ -196,7 +223,8 @@
                                 </div>
                             </div>
                         </div>
-                            </div>
+
+                        </div>
                         </div>
                         <!-- /Other -->
 
