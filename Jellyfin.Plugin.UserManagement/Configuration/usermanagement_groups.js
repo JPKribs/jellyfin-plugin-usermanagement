@@ -1142,15 +1142,29 @@ export default function (view) {
     function renderUserCards() {
         var container = view.querySelector('#userCards');
         if (!container) return;
-        var staleCutoff = Date.now() - 30 * 86400000;
+        // Inactivity is per group, so the card counts the members the expiry task will actually
+        // disable: a member of a group with inactivity disabling on, whose last activity is older
+        // than that group's own window. Members who have never signed in are left alone, matching
+        // the task. Everyone else is simply active.
+        var cutoffFor = {};
+        (fullConfig.Groups || []).forEach(function (g) {
+            if (g.DisableInactiveUsers !== true || !(g.InactiveDays > 0)) return;
+            var cutoff = Date.now() - g.InactiveDays * 86400000;
+            (g.MemberIds || []).forEach(function (id) {
+                if (cutoffFor[id] === undefined || cutoff > cutoffFor[id]) cutoffFor[id] = cutoff;
+            });
+        });
+
         var admins = 0, active = 0, inactive = 0, disabled = 0;
         var adminIds = {};
         allUsers.forEach(function (u) {
             var p = u.Policy || {};
             if (p.IsAdministrator) { admins++; adminIds[u.Id] = true; return; }
             if (p.IsDisabled) { disabled++; return; }
+            var cutoff = cutoffFor[u.Id];
             var last = u.LastActivityDate || u.LastLoginDate;
-            if (last && new Date(last).getTime() >= staleCutoff) { active++; } else { inactive++; }
+            if (cutoff !== undefined && last && new Date(last).getTime() < cutoff) { inactive++; }
+            else { active++; }
         });
 
         var today = new Date(); today.setHours(0, 0, 0, 0);

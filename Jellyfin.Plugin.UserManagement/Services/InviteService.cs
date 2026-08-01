@@ -301,11 +301,7 @@ public sealed class InviteService : IDisposable
 
         if (removed)
         {
-            var data = _statusStore.Load();
-            if (data.Invites.Remove(id))
-            {
-                _statusStore.Save(data);
-            }
+            _statusStore.Update(data => data.Invites.Remove(id));
         }
 
         return removed;
@@ -411,12 +407,16 @@ public sealed class InviteService : IDisposable
     /// </summary>
     private void ClearPinFailures(Guid id)
     {
-        var data = _statusStore.Load();
-        if (data.Invites.TryGetValue(id, out var status) && status.FailedPinAttempts != 0)
+        _statusStore.Update(data =>
         {
+            if (!data.Invites.TryGetValue(id, out var status) || status.FailedPinAttempts == 0)
+            {
+                return false;
+            }
+
             status.FailedPinAttempts = 0;
-            _statusStore.Save(data);
-        }
+            return true;
+        });
     }
 
     /// <summary>
@@ -639,13 +639,19 @@ public sealed class InviteService : IDisposable
             {
                 plugin.MutateConfiguration(cfg =>
                 {
+                    var stored = cfg.Groups.FirstOrDefault(g => g.Id.Equals(targetGroup.Id));
+                    if (stored is null)
+                    {
+                        return false;
+                    }
+
                     foreach (var g in cfg.Groups)
                     {
                         g.MemberIds.Remove(userId);
                     }
 
-                    var stored = cfg.Groups.FirstOrDefault(g => g.Id.Equals(targetGroup.Id));
-                    (stored ?? targetGroup).MemberIds.Add(userId);
+                    stored.MemberIds.Add(userId);
+                    plugin.Normalize(cfg, keepMember: userId);
                     return true;
                 });
 

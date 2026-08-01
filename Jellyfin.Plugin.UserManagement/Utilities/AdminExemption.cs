@@ -6,8 +6,9 @@ namespace Jellyfin.Plugin.UserManagement.Utilities;
 
 /// <summary>
 /// Cross-cutting "is this user exempt from plugin enforcement?" check. Administrators are always
-/// exempt from group enforcement — groups never modify an admin's policy. (The plugin additionally
-/// hard-blocks removing the administrator flag or disabling the last admin as a backstop.)
+/// exempt from group enforcement — groups never modify an admin's policy, never disable or delete an
+/// admin account, and never log an admin's devices out. Membership normalization drops administrators
+/// from group lists on save, so a promoted member stops being enforced against on the next write.
 /// </summary>
 public static class AdminExemption
 {

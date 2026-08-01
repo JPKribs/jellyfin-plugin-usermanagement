@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "10.11.5.0"
+version: "10.11.5.1"
 targetAbi: "10.11.10.0"
 framework: "net9.0"
 overview: "Group policy templates, display and playback preferences, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
@@ -17,7 +17,17 @@ artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
   features:
-  - Groups can log out member devices that have not checked in within a set number of days
-  - Cleanup rules target all clients, only selected clients, or all except selected clients
-  - Overlapping rules resolve to the shortest window
-  - New Clean Expired Sessions scheduled task
+  - Invites can target the default group instead of a fixed one
+  - The invite group list marks which group is the default
+  - Group expiry and inactivity disabling now write activity log warnings
+  fixes:
+  - A member promoted to administrator is reverted to their original authentication provider
+  - Administrators are dropped from group member lists on save
+  - Users deleted from Jellyfin no longer linger in groups or enrollment records
+  - A new user could land in no group when a save ran at the same moment
+  - The Inactive card counts each member against their own group's window
+  - Invite usage counters no longer race with deleting or re-enabling an invite
+  - A configuration save no longer discards a concurrent membership write
+  - Select fields no longer render overlapping dropdown arrows
+  developer:
+  - Bump Base to 2026.7.31

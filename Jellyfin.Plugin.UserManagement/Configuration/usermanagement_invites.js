@@ -102,18 +102,40 @@ export default function (view) {
         return pw.Enabled === true && mode;
     }
 
+    // Sentinel option value: the invite follows whatever group is the default at redeem time rather
+    // than pinning one, which is what UseDefaultGroup means on the server.
+    var DEFAULT_OPTION = '__default__';
+
+    function defaultGroup() {
+        if (!_defaultGroupId) return null;
+        var found = _groups.filter(function (g) { return g.Id === _defaultGroupId; })[0];
+        return (found && !blocksInvites(found)) ? found : null;
+    }
+
     function populateGroups() {
         var sel = Shared.getEl('selGroup');
         if (!sel) return;
+        var def = defaultGroup();
         sel.innerHTML = '';
+
+        if (def) {
+            var defOpt = document.createElement('option');
+            defOpt.value = DEFAULT_OPTION;
+            defOpt.textContent = 'Default group (' + (def.Name || 'Unnamed group') + ')';
+            sel.appendChild(defOpt);
+        }
+
         _groups.forEach(function (g) {
             if (blocksInvites(g)) return;
             var opt = document.createElement('option');
             opt.value = g.Id;
-            opt.textContent = g.Name || 'Unnamed group';
+            opt.textContent = (g.Name || 'Unnamed group') + (g.Id === _defaultGroupId ? ' (Default)' : '');
             sel.appendChild(opt);
         });
-        if (_defaultGroupId && _groups.some(function (g) { return g.Id === _defaultGroupId; })) {
+
+        if (def) {
+            sel.value = DEFAULT_OPTION;
+        } else if (_defaultGroupId && _groups.some(function (g) { return g.Id === _defaultGroupId; })) {
             sel.value = _defaultGroupId;
         }
     }
@@ -161,7 +183,7 @@ export default function (view) {
             var uses = (inv.UsedCount || 0) + (inv.MaxUses > 0 ? ' / ' + inv.MaxUses : ' / ∞');
             var meta = [];
             meta.push('Uses: ' + uses);
-            if (inv.UseDefaultGroup) meta.push('Group: Default');
+            if (inv.UseDefaultGroup) meta.push('Group: Default' + (_defaultGroupId ? ' (' + esc(groupName(_defaultGroupId)) + ')' : ''));
             else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
             if (inv.HasPin) meta.push('PIN set');
 
@@ -258,9 +280,10 @@ export default function (view) {
         renderResourceList();
 
         var sel = Shared.getEl('selGroup');
-        var groupId = inv.UseDefaultGroup ? _defaultGroupId : inv.GroupId;
-        if (sel && groupId && _groups.some(function (g) { return g.Id === groupId; })) {
-            sel.value = groupId;
+        if (sel) {
+            var wanted = inv.UseDefaultGroup ? DEFAULT_OPTION : inv.GroupId;
+            var hasOption = Array.prototype.some.call(sel.options, function (o) { return o.value === wanted; });
+            if (hasOption) sel.value = wanted;
         }
 
         var hasExpiry = !!inv.ExpiresAt;
@@ -308,13 +331,14 @@ export default function (view) {
             return;
         }
 
+        var useDefault = groupId === DEFAULT_OPTION;
         var payload = {
             Label: Shared.getEl('txtLabel').value || '',
             Message: Shared.getEl('txtMessage').value || '',
             Resources: _newResources.slice(),
             Pin: pin,
-            UseDefaultGroup: false,
-            GroupId: groupId,
+            UseDefaultGroup: useDefault,
+            GroupId: useDefault ? null : groupId,
             ExpiresAt: (setExpiry && expVal) ? expVal + 'T00:00:00' : null,
             MaxUses: (setMaxUses && maxUses >= 1) ? maxUses : 0
         };

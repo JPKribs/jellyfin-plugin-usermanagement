@@ -4,6 +4,7 @@ using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Authentication;
 using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Activity;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +28,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             ActivityLoggerAccessor.Instance = log;
             return log;
         });
-        serviceCollection.AddSingleton<GroupService>();
+        serviceCollection.AddSingleton<GroupService>(sp =>
+        {
+            UserManagerAccessor.Instance = sp.GetRequiredService<IUserManager>();
+            return ActivatorUtilities.CreateInstance<GroupService>(sp);
+        });
         serviceCollection.AddSingleton<SessionCleanupService>();
         serviceCollection.AddSingleton<InviteService>();
         serviceCollection.AddSingleton<InviteStatusStore>();

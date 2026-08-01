@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Data.Events.Users;
@@ -52,7 +53,11 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
             {
                 plugin.MutateConfiguration(cfg =>
                 {
-                    if (defaultGroup.MemberIds.Contains(user.Id))
+                    // Re-resolve inside the lock: a dashboard save between the read above and here
+                    // replaces the configuration object, and adding to the group read earlier would
+                    // write to a copy that is never persisted.
+                    var stored = cfg.Groups.FirstOrDefault(g => g.Id.Equals(defaultGroup.Id));
+                    if (stored is null || stored.MemberIds.Contains(user.Id))
                     {
                         return false;
                     }
@@ -62,7 +67,8 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
                         group.MemberIds.Remove(user.Id);
                     }
 
-                    defaultGroup.MemberIds.Add(user.Id);
+                    stored.MemberIds.Add(user.Id);
+                    plugin.Normalize(cfg, keepMember: user.Id);
                     return true;
                 });
 

@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Data;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Users;
@@ -15,6 +19,8 @@ namespace Jellyfin.Plugin.UserManagement.Tests;
 [Collection("Plugin")]
 public class GroupServiceStatefulTests
 {
+    private const string DefaultProviderId = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider";
+
     [Fact]
     public async Task DisableInactiveMembers_InactiveMember_IsDisabled()
     {
@@ -171,6 +177,57 @@ public class GroupServiceStatefulTests
 
         Assert.Equal(ldapProvider, user.AuthenticationProviderId);
         Assert.Equal(0, plugin.ReadConfiguration(c => c.ProviderEnrollments.Count));
+        await um.DidNotReceive().UpdatePolicyAsync(Arg.Any<Guid>(), Arg.Any<UserPolicy>());
+    }
+
+    [Fact]
+    public async Task Reconcile_EnrolledMemberPromotedToAdmin_IsRevertedToTheirOriginalProvider()
+    {
+        // Left enrolled, they stay on this plugin's authentication provider, and removing the plugin
+        // leaves Jellyfin with no provider for that id, which locks the account out entirely.
+        var plugin = TestSupport.NewPlugin();
+        var um = TestSupport.NewUserManager();
+        var svc = TestSupport.NewGroupService(um);
+        var admin = TestSupport.NewUser("admin");
+        admin.SetPermission(PermissionKind.IsAdministrator, true);
+        admin.AuthenticationProviderId = typeof(Services.PasswordRuleAuthenticationProvider).FullName!;
+        um.GetUsers().Returns(new List<User> { admin });
+
+        plugin.MutateConfiguration(cfg =>
+        {
+            cfg.Groups.Add(new GroupDefinition
+            {
+                Id = Guid.NewGuid(),
+                Password = new PasswordPolicy { Enabled = true },
+                MemberIds = { admin.Id }
+            });
+            cfg.ProviderEnrollments.Add(new ProviderEnrollment
+            {
+                UserId = admin.Id,
+                OriginalProviderId = DefaultProviderId
+            });
+            return true;
+        });
+
+        await svc.ReconcileEnrollmentAsync();
+
+        await um.Received().UpdatePolicyAsync(admin.Id, Arg.Is<UserPolicy>(p => p.AuthenticationProviderId == DefaultProviderId));
+        Assert.Equal(0, plugin.ReadConfiguration(c => c.ProviderEnrollments.Count));
+    }
+
+    [Fact]
+    public async Task Reconcile_AdminWhoWasNeverEnrolled_IsLeftAlone()
+    {
+        var plugin = TestSupport.NewPlugin();
+        var um = TestSupport.NewUserManager();
+        var svc = TestSupport.NewGroupService(um);
+        var admin = TestSupport.NewUser("admin");
+        admin.SetPermission(PermissionKind.IsAdministrator, true);
+        um.GetUsers().Returns(new List<User> { admin });
+
+        await svc.ReconcileEnrollmentAsync();
+
+        Assert.Equal(DefaultProviderId, admin.AuthenticationProviderId);
         await um.DidNotReceive().UpdatePolicyAsync(Arg.Any<Guid>(), Arg.Any<UserPolicy>());
     }
 }

@@ -41,23 +41,7 @@ public sealed class InviteStatusStore
     {
         lock (_lock)
         {
-            try
-            {
-                if (File.Exists(_path))
-                {
-                    var data = JsonSerializer.Deserialize<InviteStatusData>(File.ReadAllText(_path), Options);
-                    if (data is not null)
-                    {
-                        return data;
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-            {
-                _logger.LogWarning(ex, "Could not read the invite status store, starting fresh.");
-            }
-
-            return new InviteStatusData();
+            return LoadUnlocked();
         }
     }
 
@@ -70,14 +54,58 @@ public sealed class InviteStatusStore
         ArgumentNullException.ThrowIfNull(data);
         lock (_lock)
         {
-            try
+            WriteUnlocked(data);
+        }
+    }
+
+    /// <summary>
+    /// Reads, mutates and writes the status as one atomic step, so a caller that only needs to adjust a
+    /// counter cannot lose a concurrent write between its own read and write.
+    /// </summary>
+    /// <param name="mutate">Mutation to apply; return <c>true</c> to persist the change.</param>
+    public void Update(Func<InviteStatusData, bool> mutate)
+    {
+        ArgumentNullException.ThrowIfNull(mutate);
+        lock (_lock)
+        {
+            var data = LoadUnlocked();
+            if (mutate(data))
             {
-                File.WriteAllText(_path, JsonSerializer.Serialize(data, Options));
+                WriteUnlocked(data);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        }
+    }
+
+    private InviteStatusData LoadUnlocked()
+    {
+        try
+        {
+            if (File.Exists(_path))
             {
-                _logger.LogWarning(ex, "Could not write the invite status store.");
+                var data = JsonSerializer.Deserialize<InviteStatusData>(File.ReadAllText(_path), Options);
+                if (data is not null)
+                {
+                    return data;
+                }
             }
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not read the invite status store, starting fresh.");
+        }
+
+        return new InviteStatusData();
+    }
+
+    private void WriteUnlocked(InviteStatusData data)
+    {
+        try
+        {
+            File.WriteAllText(_path, JsonSerializer.Serialize(data, Options));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not write the invite status store.");
         }
     }
 }

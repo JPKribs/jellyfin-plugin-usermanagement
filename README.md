@@ -35,7 +35,7 @@ A **Password changes** dropdown controls whether members may set or change their
 
 #### Note:
 
-* **Administrators are exempt.** Group password rules *never* apply to admin accounts, and admins can never be enrolled in enforcement.
+* **Administrators are exempt.** Group password rules *never* apply to admin accounts, and admins can never be enrolled in enforcement. A member who is promoted to administrator is dropped from their group's member list on the next save and put back on their original authentication provider by the next sync, so a promotion can never strand them on this plugin's provider.
 * **Allowing empty passwords takes priority.** When **Disallow empty passwords** is false, an empty password is accepted even if it fails the other rules, because an empty password means the account deliberately has no password. This is why **Disallow empty passwords** is true by default.
 * **Disallowed groups cannot take invites.** A group whose members may never set a password is admin managed by definition, so it cannot be chosen for invite links. Switching a group to **Disallowed** also disables its outstanding invites, including default group invites when it is the default group. An invite is only allows if a user can set their password *at least on creation*.
 
@@ -63,6 +63,8 @@ Administrators are exempt: their devices are never logged out by session cleanup
 ### Invites
 Create a shareable signup link tied to a group. Anyone with the link can create their own account on your server. All users that use the link will be created using the group assigned to it. For added security, there is an optionally PIN that can be set and the user will have to provide it to use the link. Additionally, you can set a rate limit of how many times the link can be used over a period of time to avoid spam.
 
+Pick either a specific group or **Default group**. A specific group is fixed for the life of the link. **Default group** resolves at the moment the link is redeemed, so the invite follows whichever group is marked default on the Groups tab, even if that changes after the link is sent.
+
 Each invite can also carry:
 
 * **Name** — An admin name for the invite. It is only shown on the dashboard so this field is for admin reference only.
@@ -82,6 +84,8 @@ The plugin writes its notable events to Jellyfin's activity log (Dashboard → A
 * **Password change rejected** — A new password failed the group's rules, logged as a warning with the reasons.
 * **Invite created / redeemed / consumed / expired** — The invite lifecycle, including the user each redemption created.
 * **Incorrect PIN / invite locked** — A wrong PIN attempt and the lockout after too many, both logged as warnings.
+* **Account disabled / deleted by group expiry** — A member was disabled or deleted because their group's expiry date passed, logged as a warning.
+* **Account disabled for inactivity** — A member was disabled by their group's inactivity window, logged as a warning.
 
 ### Password Resets
 When a user starts Jellyfin's **Forgot Password** flow, the server writes a reset code to a file on its filesystem. The **Resets** tab can surface those codes so an administrator can pass one along without needing file access to the server. The feature is **off by default** and must be enabled on the tab. **Only enable it when the dashboard is reached over HTTPS**, since over plain http the codes are readable by anyone watching the connection. Codes are masked on screen until revealed, and can be copied directly.
@@ -92,7 +96,16 @@ When a user starts Jellyfin's **Forgot Password** flow, the server writes a rese
 
 **If a group enforces password requirements, turn that enforcement off (or delete the group) and let the sync run before uninstalling the plugin.** Members of such groups are switched onto this plugin's authentication provider while enrolled, and disabling the enforcement switches every member back to the provider they had before. If the plugin is removed while users are still enrolled, Jellyfin assigns those users an invalid authentication provider and **they cannot sign in** until an administrator reassigns the authentication provider on each user's profile page.
 
-This only affects members of groups with password requirements enabled. Users outside those groups and administrators (who are never enrolled) are unaffected.
+The safe order is:
+
+1. Open the **Groups** tab and turn **Enforce password requirements** off on every group that has it (or delete those groups).
+2. Save. The save runs an apply, which reverts every enrolled member to the provider they had before.
+3. Confirm on Dashboard → Activity that a **Removed from group password rules** entry exists for each member.
+4. Uninstall the plugin.
+
+This only affects members of groups with password requirements enabled. Users outside those groups and administrators are unaffected.
+
+If the plugin is already gone and users cannot sign in, the recovery is per user: Dashboard → Users → the user → **Authentication provider** → set it back to **Default**.
 
 ---
 

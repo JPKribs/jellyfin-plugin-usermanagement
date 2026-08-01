@@ -48,4 +48,33 @@ public static class GroupMembership
 
         return removed;
     }
+
+    /// <summary>
+    /// Removes every membership whose user id matches the predicate, in place.
+    /// </summary>
+    /// <param name="groups">The group definitions to normalize.</param>
+    /// <param name="shouldRemove">Returns whether a user id should lose its membership.</param>
+    /// <returns>The user ids that were removed from at least one group.</returns>
+    public static IReadOnlyCollection<Guid> RemoveMembers(IEnumerable<GroupDefinition> groups, Func<Guid, bool> shouldRemove)
+    {
+        ArgumentNullException.ThrowIfNull(groups);
+        ArgumentNullException.ThrowIfNull(shouldRemove);
+
+        var removed = new HashSet<Guid>();
+        foreach (var group in groups)
+        {
+            group.MemberIds.RemoveAll(id =>
+            {
+                if (!shouldRemove(id))
+                {
+                    return false;
+                }
+
+                removed.Add(id);
+                return true;
+            });
+        }
+
+        return removed;
+    }
 }

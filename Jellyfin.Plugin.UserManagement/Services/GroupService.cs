@@ -129,9 +129,14 @@ public class GroupService
             return false;
         }
 
+        // Membership normalization drops administrators from the lists, but an existing configuration
+        // can still carry one until the next save, so the apply path skips them on their own account.
         if (AdminExemption.IsExempt(user))
         {
-            _logger.LogDebug("Skipping group sync for admin {UserId}", user.Id);
+            _logger.LogInformation(
+                "Skipping group {GroupId} for {Username}: administrators are exempt from group enforcement",
+                group.Id,
+                user.Username);
             return false;
         }
 
@@ -222,6 +227,11 @@ public class GroupService
             return;
         }
 
+        // Applying is the one moment the plugin walks every membership, so it is also where a
+        // configuration written before the normalize pass existed gets its administrators and deleted
+        // accounts cleaned out.
+        plugin.MutateConfiguration(cfg => plugin.Normalize(cfg));
+
         var work = plugin.ReadConfiguration(c =>
         {
             var seen = new HashSet<Guid>();
@@ -282,14 +292,14 @@ public class GroupService
 
         foreach (var user in _userManager.GetUsers())
         {
-            if (AdminExemption.IsExempt(user))
-            {
-                continue;
-            }
+            // The exemption decides which side of the branch a user falls on, not whether they are
+            // looked at: an enrolled member who has since been promoted has to be reverted here, or
+            // they stay on this plugin's authentication provider and cannot sign in once it is gone.
+            var shouldEnroll = !AdminExemption.IsExempt(user) && enforced.Contains(user.Id);
 
             try
             {
-                if (enforced.Contains(user.Id))
+                if (shouldEnroll)
                 {
                     await EnrollAsync(user).ConfigureAwait(false);
                 }
@@ -457,9 +467,15 @@ public class GroupService
                     {
                         if (action == GroupExpiryAction.Delete)
                         {
+                            var username = user.Username;
                             await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
                             deleted.Add(userId);
                             _logger.LogInformation("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
+                            _activity.Log(
+                                "Account deleted by group expiry: " + username,
+                                "UserManagement.GroupExpiryDeleted",
+                                overview: "The group's expiry date passed and its expiration method is Delete.",
+                                severity: LogLevel.Warning);
                         }
                         else
                         {
@@ -469,6 +485,12 @@ public class GroupService
                                 policy.IsDisabled = true;
                                 await _userManager.UpdatePolicyAsync(userId, policy).ConfigureAwait(false);
                                 _logger.LogInformation("Disabled expired user {UserId} from group {GroupId}", userId, groupId);
+                                _activity.Log(
+                                    "Account disabled by group expiry: " + user.Username,
+                                    "UserManagement.GroupExpiryDisabled",
+                                    overview: "The group's expiry date passed.",
+                                    severity: LogLevel.Warning,
+                                    userId: userId);
                             }
                         }
                     }
@@ -548,6 +570,12 @@ public class GroupService
                         dto.Policy.IsDisabled = true;
                         await _userManager.UpdatePolicyAsync(userId, dto.Policy).ConfigureAwait(false);
                         _logger.LogInformation("Disabled inactive user {UserId} from group {GroupId}", userId, groupId);
+                        _activity.Log(
+                            "Account disabled for inactivity: " + user.Username,
+                            "UserManagement.InactiveDisabled",
+                            overview: "No activity in the last " + days + " days.",
+                            severity: LogLevel.Warning,
+                            userId: userId);
                     }
                 }
                 catch (Exception ex)
