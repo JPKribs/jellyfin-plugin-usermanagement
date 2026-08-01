@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "10.11.5.1",
+        "changelog": "## Features\r\n- Invites can target the default group instead of a fixed one\r\n- The invite group list marks which group is the default\r\n- Group expiry and inactivity disabling now write activity log warnings\r\n\r\n## Fixes\r\n- A member promoted to administrator is reverted to their original authentication provider\r\n- Administrators are dropped from group member lists on save\r\n- Users deleted from Jellyfin no longer linger in groups or enrollment records\r\n- A new user could land in no group when a save ran at the same moment\r\n- The Inactive card counts each member against their own group's window\r\n- Invite usage counters no longer race with deleting or re-enabling an invite\r\n- A configuration save no longer discards a concurrent membership write\r\n- Select fields no longer render overlapping dropdown arrows\r\n\r\n## Developer\r\n- Bump Base to 2026.7.31",
+        "targetAbi": "10.11.10.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v10.11.5.1/jellyfin-plugin-usermanagement-10.11.5.1.zip",
+        "checksum": "345ca9080293611cd9af55bdfb2943d8",
+        "timestamp": "2026-08-01T02:47:55Z"
+      },
+      {
         "version": "10.11.5.0",
         "changelog": "## Features\r\n- Groups can log out member devices that have not checked in within a set number of days\r\n- Cleanup rules target all clients, only selected clients, or all except selected clients\r\n- Overlapping rules resolve to the shortest window\r\n- New Clean Expired Sessions scheduled task",
         "targetAbi": "10.11.10.0",
