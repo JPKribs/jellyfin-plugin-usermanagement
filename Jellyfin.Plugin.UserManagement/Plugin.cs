@@ -192,7 +192,8 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
             EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_groups.html",
             MenuSection = "server",
             DisplayName = "User Management",
-            EnableInMainMenu = true
+            EnableInMainMenu = true,
+            MenuIcon = "manage_accounts"
         };
 
         yield return new PluginPageInfo
