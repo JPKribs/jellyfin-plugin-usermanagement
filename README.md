@@ -114,15 +114,15 @@ If the plugin is already gone and users cannot sign in, the recovery is per user
 Releases use a four-part version, `JJ.JJ.F.B`, that matches the supported Jellyfin version with the plugin's own feature/bug count:
 
 ```
-10.11.1.2
-└───┘ └┬┘
-  │    └── 1 = Plugin feature release
-  │        2 = Plugin bug/patch release within that feature
-  │
-  └─── 10.11 = Jellyfin version this build was tested/released for
+12.0.1.2
+└──┘ └┬┘
+ │    └── 1 = Plugin feature release
+ │        2 = Plugin bug/patch release within that feature
+ │
+ └─── 12.0 = Jellyfin version this build was tested/released for
 ```
 
-Targets **Jellyfin 10.11.x** (`net9.0`, ABI `10.11.0.0`).
+Targets **Jellyfin 12.0.x** (`net10.0`, ABI `12.0.0.0`).
 
 ## Installation
 

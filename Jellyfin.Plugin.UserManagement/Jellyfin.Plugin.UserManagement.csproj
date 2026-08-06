@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.UserManagement</RootNamespace>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Nullable>enable</Nullable>
@@ -17,11 +17,11 @@
 
   <ItemGroup>
     <PackageReference Include="JPKribs.Jellyfin.Base" Version="2026.7.31" />
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.10">
+    <PackageReference Include="Jellyfin.Controller" Version="12.0.0-rc4">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Jellyfin.Model" Version="10.11.10">
+    <PackageReference Include="Jellyfin.Model" Version="12.0.0-rc4">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
