@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "12.0.0.0",
+        "changelog": "## Developer\r\n- Rebuilt for Jellyfin 12.0 on .NET 10, with the target ABI raised to 12.0.0.0\r\n- The dashboard menu entry now shows a icon instead of the generic folder\r\n- CI builds, tests, and CodeQL now run on .NET 10, and label sync has the token scope it needs",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v12.0.0.0/jellyfin-plugin-usermanagement-12.0.0.0.zip",
+        "checksum": "04404d23ed5f653402891ed70c5ad5e4",
+        "timestamp": "2026-09-08T02:45:38Z"
+      },
+      {
         "version": "10.11.5.1",
         "changelog": "## Features\r\n- Invites can target the default group instead of a fixed one\r\n- The invite group list marks which group is the default\r\n- Group expiry and inactivity disabling now write activity log warnings\r\n\r\n## Fixes\r\n- A member promoted to administrator is reverted to their original authentication provider\r\n- Administrators are dropped from group member lists on save\r\n- Users deleted from Jellyfin no longer linger in groups or enrollment records\r\n- A new user could land in no group when a save ran at the same moment\r\n- The Inactive card counts each member against their own group's window\r\n- Invite usage counters no longer race with deleting or re-enabling an invite\r\n- A configuration save no longer discards a concurrent membership write\r\n- Select fields no longer render overlapping dropdown arrows\r\n\r\n## Developer\r\n- Bump Base to 2026.7.31",
         "targetAbi": "10.11.10.0",
