@@ -77,13 +77,6 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
     }
 
     /// <inheritdoc />
-    public bool HasPassword(User user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-        return !string.IsNullOrEmpty(user.Password);
-    }
-
-    /// <inheritdoc />
     public Task ChangePassword(User user, string newPassword)
     {
         ArgumentNullException.ThrowIfNull(user);
