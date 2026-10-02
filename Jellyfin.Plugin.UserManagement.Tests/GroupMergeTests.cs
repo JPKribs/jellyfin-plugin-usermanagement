@@ -34,6 +34,52 @@ public class GroupMergeTests
     }
 
     [Fact]
+    public void Merge_ManagedUserPreferenceAccess_OverwritesPolicy()
+    {
+        var policy = new UserPolicy { EnableUserPreferenceAccess = true };
+        var perms = new GroupPermissions { ManageEnableUserPreferenceAccess = true, EnableUserPreferenceAccess = false };
+
+        perms.ApplyTo(policy, Guid.NewGuid());
+
+        Assert.False(policy.EnableUserPreferenceAccess);
+    }
+
+    [Fact]
+    public void Merge_ManagedSyncTranscoding_OverwritesPolicy()
+    {
+        var policy = new UserPolicy { EnableSyncTranscoding = true };
+        var perms = new GroupPermissions { ManageEnableSyncTranscoding = true, EnableSyncTranscoding = false };
+
+        perms.ApplyTo(policy, Guid.NewGuid());
+
+        Assert.False(policy.EnableSyncTranscoding);
+    }
+
+    [Fact]
+    public void Merge_ManagedPublicSharing_OverwritesPolicy()
+    {
+        var policy = new UserPolicy { EnablePublicSharing = true };
+        var perms = new GroupPermissions { ManageEnablePublicSharing = true, EnablePublicSharing = false };
+
+        perms.ApplyTo(policy, Guid.NewGuid());
+
+        Assert.False(policy.EnablePublicSharing);
+    }
+
+    [Fact]
+    public void Merge_UnmanagedNewPermissions_LeavePolicyUntouched()
+    {
+        var policy = new UserPolicy { EnableUserPreferenceAccess = false, EnableSyncTranscoding = false, EnablePublicSharing = false };
+        var perms = new GroupPermissions();
+
+        perms.ApplyTo(policy, Guid.NewGuid());
+
+        Assert.False(policy.EnableUserPreferenceAccess);
+        Assert.False(policy.EnableSyncTranscoding);
+        Assert.False(policy.EnablePublicSharing);
+    }
+
+    [Fact]
     public void Merge_ManagedLibraryAccess_AppliesFoldersAndFlag()
     {
         var folder = Guid.NewGuid();

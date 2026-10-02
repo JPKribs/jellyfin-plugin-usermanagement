@@ -64,6 +64,11 @@ public static class GroupConfigurationExtensions
             config.DisplayMissingEpisodes = c.DisplayMissingEpisodes;
         }
 
+        if (c.ManageDisplayCollectionsView)
+        {
+            config.DisplayCollectionsView = c.DisplayCollectionsView;
+        }
+
         if (c.ManageHidePlayedInLatest)
         {
             config.HidePlayedInLatest = c.HidePlayedInLatest;
@@ -103,6 +108,7 @@ public static class GroupConfigurationExtensions
             || c.ManageEnableNextEpisodeAutoPlay
             || c.ManageCastReceiverId
             || c.ManageDisplayMissingEpisodes
+            || c.ManageDisplayCollectionsView
             || c.ManageHidePlayedInLatest
             || c.ManageOrderedViews
             || c.ManageMyMediaExcludes

@@ -39,9 +39,19 @@ public static class GroupPermissionsExtensions
             policy.EnableLyricManagement = p.EnableLyricManagement;
         }
 
+        if (p.ManageEnableUserPreferenceAccess)
+        {
+            policy.EnableUserPreferenceAccess = p.EnableUserPreferenceAccess;
+        }
+
         if (p.ManageEnableMediaConversion)
         {
             policy.EnableMediaConversion = p.EnableMediaConversion;
+        }
+
+        if (p.ManageEnableSyncTranscoding)
+        {
+            policy.EnableSyncTranscoding = p.EnableSyncTranscoding;
         }
 
         if (p.ManageEnableLiveTvAccess)
@@ -109,6 +119,11 @@ public static class GroupPermissionsExtensions
         if (p.ManageEnableContentDownloading)
         {
             policy.EnableContentDownloading = p.EnableContentDownloading;
+        }
+
+        if (p.ManageEnablePublicSharing)
+        {
+            policy.EnablePublicSharing = p.EnablePublicSharing;
         }
 
         if (p.ManageIsDisabled)

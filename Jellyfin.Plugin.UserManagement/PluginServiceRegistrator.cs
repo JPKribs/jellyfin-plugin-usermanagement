@@ -38,6 +38,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<InviteStatusStore>();
         serviceCollection.AddSingleton<ResetCodeService>();
         serviceCollection.AddSingleton<IEventConsumer<UserCreatedEventArgs>, GroupEventConsumer>();
+        serviceCollection.AddSingleton<IEventConsumer<UserDeletedEventArgs>, UserDeletedEventConsumer>();
 
         serviceCollection.AddSingleton<IAuthenticationProvider, PasswordRuleAuthenticationProvider>();
     }

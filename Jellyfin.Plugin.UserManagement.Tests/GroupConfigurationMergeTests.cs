@@ -121,6 +121,34 @@ public class GroupConfigurationMergeTests
     }
 
     [Fact]
+    public void Merge_ManagedDisplayCollectionsView_OverwritesConfiguration()
+    {
+        var config = new UserConfiguration { DisplayCollectionsView = false };
+        var cfg = new GroupConfiguration { ManageDisplayCollectionsView = true, DisplayCollectionsView = true };
+
+        cfg.ApplyTo(config);
+
+        Assert.True(config.DisplayCollectionsView);
+    }
+
+    [Fact]
+    public void Merge_UnmanagedDisplayCollectionsView_LeavesConfigurationUntouched()
+    {
+        var config = new UserConfiguration { DisplayCollectionsView = true };
+        var cfg = new GroupConfiguration { ManageDisplayCollectionsView = false, DisplayCollectionsView = false };
+
+        cfg.ApplyTo(config);
+
+        Assert.True(config.DisplayCollectionsView);
+    }
+
+    [Fact]
+    public void ManagesAnything_IsTrue_WhenDisplayCollectionsViewManaged()
+    {
+        Assert.True(new GroupConfiguration { ManageDisplayCollectionsView = true }.ManagesAnything());
+    }
+
+    [Fact]
     public void ManagesAnything_IsFalse_ForFreshConfiguration()
     {
         Assert.False(new GroupConfiguration().ManagesAnything());

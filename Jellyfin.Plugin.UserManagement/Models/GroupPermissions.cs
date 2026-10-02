@@ -34,11 +34,23 @@ public class GroupPermissions
     /// <summary>Gets or sets the lyric management value.</summary>
     public bool EnableLyricManagement { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the group manages user preference access.</summary>
+    public bool ManageEnableUserPreferenceAccess { get; set; }
+
+    /// <summary>Gets or sets whether members may change their own display and playback preferences.</summary>
+    public bool EnableUserPreferenceAccess { get; set; } = true;
+
     /// <summary>Gets or sets a value indicating whether the group manages media conversion.</summary>
     public bool ManageEnableMediaConversion { get; set; }
 
     /// <summary>Gets or sets the media conversion value.</summary>
     public bool EnableMediaConversion { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the group manages sync transcoding.</summary>
+    public bool ManageEnableSyncTranscoding { get; set; }
+
+    /// <summary>Gets or sets whether the server may transcode media a client downloads for offline use.</summary>
+    public bool EnableSyncTranscoding { get; set; } = true;
 
     /// <summary>Gets or sets a value indicating whether the group manages Live TV access.</summary>
     public bool ManageEnableLiveTvAccess { get; set; }
@@ -120,6 +132,12 @@ public class GroupPermissions
 
     /// <summary>Gets or sets the content downloading value.</summary>
     public bool EnableContentDownloading { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the group manages public sharing.</summary>
+    public bool ManageEnablePublicSharing { get; set; }
+
+    /// <summary>Gets or sets whether members may create public share links.</summary>
+    public bool EnablePublicSharing { get; set; } = true;
 
     /// <summary>Gets or sets a value indicating whether the group manages the disabled flag.</summary>
     public bool ManageIsDisabled { get; set; }

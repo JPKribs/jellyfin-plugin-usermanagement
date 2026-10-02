@@ -87,12 +87,18 @@ export default function (view) {
                 desc: 'If unchecked, all remote connections will be blocked.' },
             { key: 'EnableCollectionManagement', label: 'Allow this user to manage collections', type: 'bool' },
             { key: 'EnableSubtitleManagement', label: 'Allow this user to edit subtitles', type: 'bool' },
-            { key: 'EnableLyricManagement', label: 'Allow this user to edit lyrics', type: 'bool' }
+            { key: 'EnableLyricManagement', label: 'Allow this user to edit lyrics', type: 'bool' },
+            { key: 'EnableUserPreferenceAccess', label: 'Allow this user to change their own preferences', type: 'bool',
+                desc: 'If unchecked, display and playback preferences can only be changed by an administrator or by this group.' }
         ] },
         { title: 'Other', perms: [
             { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
                 desc: 'Users can download media and store it on their devices. Book libraries require this enabled to function properly.' },
             { key: 'EnableMediaConversion', label: 'Allow media conversion', type: 'bool' },
+            { key: 'EnableSyncTranscoding', label: 'Allow sync transcoding', type: 'bool',
+                desc: 'Allows the server to transcode media that a client downloads for offline use.' },
+            { key: 'EnablePublicSharing', label: 'Allow public sharing', type: 'bool',
+                desc: 'Allows this user to create public share links for media.' },
             { key: 'IsDisabled', label: 'Disable this user', type: 'bool',
                 desc: 'The server will not allow any connections from this user.' },
             { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool' },
@@ -149,7 +155,9 @@ export default function (view) {
         ] },
         { title: 'Display', perms: [
             { key: 'DisplayMissingEpisodes', label: 'Display missing episodes within seasons', type: 'bool',
-                desc: 'This must also be enabled for TV libraries in the server configuration.' }
+                desc: 'This must also be enabled for TV libraries in the server configuration.' },
+            { key: 'DisplayCollectionsView', label: "Display a 'Collections' view", type: 'bool',
+                desc: 'Shows a Collections entry alongside the libraries on the home screen.' }
         ] },
         { title: 'Home', perms: [
             { key: 'HomeSections', label: 'Customize how the Home Sections are presented to this group.', type: 'homesections',
