@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.UserManagement.Services;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Model.Tasks;
 
 namespace Jellyfin.Plugin.UserManagement.Tasks;
@@ -11,7 +12,7 @@ namespace Jellyfin.Plugin.UserManagement.Tasks;
 /// Scheduled task that logs out stale devices for members of groups with session cleanup enabled,
 /// so the run time determines when cleanup windows take effect.
 /// </summary>
-public class SessionCleanupTask : IScheduledTask
+public class SessionCleanupTask : PluginScheduledTask
 {
     private readonly SessionCleanupService _sessionCleanup;
 
@@ -24,31 +25,27 @@ public class SessionCleanupTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public string Name => "Clean Expired Sessions";
+    public override string Name => "Clean Expired Sessions";
 
     /// <inheritdoc />
-    public string Key => "UserManagementSessionCleanup";
+    public override string Key => "UserManagementSessionCleanup";
 
     /// <inheritdoc />
-    public string Description => "Logs out devices that have not checked back into the server within their group's session cleanup windows.";
+    public override string Description => "Logs out devices that have not checked back into the server within their group's session cleanup windows.";
 
     /// <inheritdoc />
-    public string Category => "User Management";
+    public override string Category => "User Management";
 
     /// <inheritdoc />
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
+    public override async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         await _sessionCleanup.CleanupAsync(progress, cancellationToken).ConfigureAwait(false);
         progress.Report(100);
     }
 
     /// <inheritdoc />
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    public override IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        yield return new TaskTriggerInfo
-        {
-            Type = TaskTriggerInfoType.DailyTrigger,
-            TimeOfDayTicks = TimeSpan.Zero.Ticks
-        };
+        yield return Daily(TimeSpan.Zero);
     }
 }

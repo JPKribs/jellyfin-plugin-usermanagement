@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.UserManagement.Services;
 
@@ -11,7 +12,7 @@ namespace Jellyfin.Plugin.UserManagement.Tasks;
 /// Scheduled task that reconciles every group-assigned member back to their group's policy,
 /// repairing drift caused by direct dashboard edits.
 /// </summary>
-public class GroupSyncTask : IScheduledTask
+public class GroupSyncTask : PluginScheduledTask
 {
     private readonly GroupService _groupService;
 
@@ -24,27 +25,24 @@ public class GroupSyncTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public string Name => "Apply group permissions";
+    public override string Name => "Apply group permissions";
 
     /// <inheritdoc />
-    public string Key => "UserManagementGroupSync";
+    public override string Key => "UserManagementGroupSync";
 
     /// <inheritdoc />
-    public string Description => "Re-applies each group's permission template to its members.";
+    public override string Description => "Re-applies each group's permission template to its members.";
 
     /// <inheritdoc />
-    public string Category => "User Management";
+    public override string Category => "User Management";
 
     /// <inheritdoc />
-    public Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
+    public override Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         => _groupService.SyncAllAsync(progress, cancellationToken);
 
     /// <inheritdoc />
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    public override IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        yield return new TaskTriggerInfo
-        {
-            Type = TaskTriggerInfoType.StartupTrigger
-        };
+        yield return OnStartup();
     }
 }

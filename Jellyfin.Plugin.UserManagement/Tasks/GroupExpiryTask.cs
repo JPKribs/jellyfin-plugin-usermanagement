@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.UserManagement.Services;
 
@@ -12,7 +13,7 @@ namespace Jellyfin.Plugin.UserManagement.Tasks;
 /// date has passed, and disables invites whose expiry date has passed. Expiry takes effect when this
 /// task runs, so the run time is the effective expiration time. Administrators are never affected.
 /// </summary>
-public class GroupExpiryTask : IScheduledTask
+public class GroupExpiryTask : PluginScheduledTask
 {
     private readonly GroupService _groupService;
     private readonly InviteService _inviteService;
@@ -27,19 +28,19 @@ public class GroupExpiryTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public string Name => "Process expired and inactive users";
+    public override string Name => "Process expired and inactive users";
 
     /// <inheritdoc />
-    public string Key => "UserManagementGroupExpiry";
+    public override string Key => "UserManagementGroupExpiry";
 
     /// <inheritdoc />
-    public string Description => "Disables or deletes members of expired groups, disables inactive members, and disables expired invites.";
+    public override string Description => "Disables or deletes members of expired groups, disables inactive members, and disables expired invites.";
 
     /// <inheritdoc />
-    public string Category => "User Management";
+    public override string Category => "User Management";
 
     /// <inheritdoc />
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
+    public override async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         await _groupService.ExpireGroupsAsync(progress, cancellationToken).ConfigureAwait(false);
         await _groupService.DisableInactiveMembersAsync(cancellationToken).ConfigureAwait(false);
@@ -48,12 +49,8 @@ public class GroupExpiryTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    public override IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        yield return new TaskTriggerInfo
-        {
-            Type = TaskTriggerInfoType.DailyTrigger,
-            TimeOfDayTicks = TimeSpan.Zero.Ticks
-        };
+        yield return Daily(TimeSpan.Zero);
     }
 }

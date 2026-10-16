@@ -1,13 +1,9 @@
+import { createPage } from './configurationpage?name=usermanagement_shared.js';
+
 export default function (view) {
     'use strict';
 
-    var getTabs;
     var Shared = null;
-    var _sharedPromise = import('/web/configurationpage?name=usermanagement_shared.js').then(function (mod) {
-        getTabs = mod.getTabs;
-        Shared = mod.createShared(view);
-    });
-
     var _invites = [];
     var _groups = [];
     var _base = '';
@@ -33,33 +29,31 @@ export default function (view) {
     }
 
     function loadAll() {
-        _sharedPromise.then(function () {
-            Promise.all([
-                Shared.apiRequest('Invites', 'GET'),
-                Shared.getConfig()
-            ]).then(function (results) {
-                _invites = results[0] || [];
-                _groups = (results[1] && results[1].Groups) || [];
-                _base = (results[1] && results[1].InviteBaseUrl) || '';
-                _defaultGroupId = (results[1] && results[1].DefaultGroupId) || '';
-                var urlEl = Shared.getEl('txtInviteBaseUrl');
-                if (urlEl) urlEl.value = _base;
-                var rcEl = Shared.getEl('txtRateCount');
-                if (rcEl) rcEl.value = (results[1] && results[1].InviteRateLimitCount) || 0;
-                var rwEl = Shared.getEl('txtRateWindow');
-                if (rwEl) rwEl.value = (results[1] && results[1].InviteRateLimitWindowMinutes) || 0;
-                updateHttpsWarning();
-                var pinHelp = Shared.getEl('pinHelp');
-                if (pinHelp) {
-                    var attempts = (results[1] && results[1].MaxPinAttempts) || 5;
-                    pinHelp.textContent = 'A short code the invitee must enter. The invite locks itself after ' + attempts + ' wrong tries.';
-                }
-                populateGroups();
-                renderInvites();
-            }).catch(function () {
-                _invites = [];
-                renderInvites();
-            });
+        Promise.all([
+            Shared.apiRequest('Invites', 'GET'),
+            Shared.getConfig()
+        ]).then(function (results) {
+            _invites = results[0] || [];
+            _groups = (results[1] && results[1].Groups) || [];
+            _base = (results[1] && results[1].InviteBaseUrl) || '';
+            _defaultGroupId = (results[1] && results[1].DefaultGroupId) || '';
+            var urlEl = Shared.getEl('txtInviteBaseUrl');
+            if (urlEl) urlEl.value = _base;
+            var rcEl = Shared.getEl('txtRateCount');
+            if (rcEl) rcEl.value = (results[1] && results[1].InviteRateLimitCount) || 0;
+            var rwEl = Shared.getEl('txtRateWindow');
+            if (rwEl) rwEl.value = (results[1] && results[1].InviteRateLimitWindowMinutes) || 0;
+            updateHttpsWarning();
+            var pinHelp = Shared.getEl('pinHelp');
+            if (pinHelp) {
+                var attempts = (results[1] && results[1].MaxPinAttempts) || 5;
+                pinHelp.textContent = 'A short code the invitee must enter. The invite locks itself after ' + attempts + ' wrong tries.';
+            }
+            populateGroups();
+            renderInvites();
+        }).catch(function () {
+            _invites = [];
+            renderInvites();
         });
     }
 
@@ -237,14 +231,9 @@ export default function (view) {
     function copyUrl(input) {
         if (!input) return;
         input.select();
-        var done = function () { Shared.setStatus('inviteStatus', 'Link copied.', false); };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(input.value).then(done).catch(function () {
-                document.execCommand('copy'); done();
-            });
-        } else {
-            document.execCommand('copy'); done();
-        }
+        Shared.copyToClipboard(input.value).then(function () {
+            Shared.setStatus('inviteStatus', 'Link copied.', false);
+        });
     }
 
     function updateExpiryState() {
@@ -440,14 +429,7 @@ export default function (view) {
             });
     }
 
-    view.addEventListener('viewshow', function () {
-        _sharedPromise.then(function () {
-            LibraryMenu.setTabs('usermanagement', 1, getTabs);
-            loadAll();
-        });
-    });
-
-    _sharedPromise.then(function () {
+    function bind() {
         Shared.initCollapsibles();
         var btn = Shared.getEl('btnCreateInvite');
         if (btn) btn.addEventListener('click', createInvite);
@@ -470,5 +452,7 @@ export default function (view) {
         });
         updateExpiryState();
         updateMaxUsesState();
-    });
+    }
+
+    Shared = createPage(view, 1, { bind: bind, load: loadAll }).shared;
 }

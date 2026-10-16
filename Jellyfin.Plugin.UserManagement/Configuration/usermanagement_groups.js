@@ -1,16 +1,13 @@
+import { createPage, generateGuid, createUserMultiSelector, bindDialog, confirmDialog } from './configurationpage?name=usermanagement_shared.js';
+
 export default function (view) {
     'use strict';
 
-    var getTabs, generateGuid, createUserMultiSelector;
     var Shared = null;
     var memberSel = null;
     var memberNotes = {};
-    var _sharedPromise = import('/web/configurationpage?name=usermanagement_shared.js').then(function (mod) {
-        getTabs = mod.getTabs;
-        generateGuid = mod.generateGuid;
-        createUserMultiSelector = mod.createUserMultiSelector;
-        Shared = mod.createShared(view);
-    });
+    var inputDialog = null;
+    var inputCallback = null;
 
     var pluginId = '670167bd-e7f8-4549-98e2-5ab2e11bc89f';
     var fullConfig = null;
@@ -1314,36 +1311,32 @@ export default function (view) {
         if (el) el.textContent = n + ' member' + (n !== 1 ? 's' : '') + ' in this group';
     }
 
+    // The name modal is markup in the page; bindDialog gives it Escape, backdrop and close button
+    // dismissal plus focus trapping. OK closes with the field's text, every other way closes with null.
+    function bindInputModal() {
+        var field = view.querySelector('#inputModalField');
+        inputDialog = bindDialog('inputModal', {
+            root: view,
+            onClose: function (value) {
+                var callback = inputCallback;
+                inputCallback = null;
+                if (callback) callback(typeof value === 'string' ? value : null);
+            }
+        });
+        view.querySelector('#btnConfirmInputModal').addEventListener('click', function () { inputDialog.close(field.value); });
+        view.querySelector('#btnCancelInputModal').addEventListener('click', function () { inputDialog.close(null); });
+        field.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); inputDialog.close(field.value); }
+        });
+    }
+
     function showInputModal(title, value, callback) {
-        var modal = view.querySelector('#inputModal');
         var field = view.querySelector('#inputModalField');
         view.querySelector('#inputModalTitle').textContent = title;
         field.value = value || '';
-        modal.style.display = 'flex';
+        inputCallback = callback;
+        inputDialog.open();
         setTimeout(function () { field.focus(); field.select(); }, 50);
-
-        var confirm = view.querySelector('#btnConfirmInputModal');
-        var cancel = view.querySelector('#btnCancelInputModal');
-        var close = view.querySelector('#btnCloseInputModal');
-
-        function cleanup() {
-            confirm.removeEventListener('click', onOk);
-            cancel.removeEventListener('click', onCancel);
-            close.removeEventListener('click', onCancel);
-            field.removeEventListener('keydown', onKey);
-            modal.style.display = 'none';
-        }
-        function onOk() { var v = field.value; cleanup(); callback(v); }
-        function onCancel() { cleanup(); callback(null); }
-        function onKey(e) {
-            if (e.key === 'Enter') { e.preventDefault(); onOk(); }
-            else if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
-        }
-
-        confirm.addEventListener('click', onOk);
-        cancel.addEventListener('click', onCancel);
-        close.addEventListener('click', onCancel);
-        field.addEventListener('keydown', onKey);
     }
 
     function nameExists(name, exceptId) {
@@ -1385,7 +1378,7 @@ export default function (view) {
     function deleteGroup() {
         var group = getCurrentGroup();
         if (!group) return;
-        Dashboard.confirm('Delete group "' + group.Name + '"? Members will be unassigned.', 'Delete Group', function (ok) {
+        confirmDialog('Delete group "' + group.Name + '"? Members will be unassigned.', { title: 'Delete Group', confirmText: 'OK' }).then(function (ok) {
             if (!ok) return;
             if (fullConfig.DefaultGroupId === group.Id) fullConfig.DefaultGroupId = null;
             fullConfig.Groups = fullConfig.Groups.filter(function (g) { return g.Id !== group.Id; });
@@ -1420,30 +1413,8 @@ export default function (view) {
         });
     }
 
-    function onBeforeUnload(e) {
-        if (_dirty) {
-            e.preventDefault();
-            e.returnValue = '';
-        }
-    }
-
-    view.addEventListener('viewshow', function () {
-        _sharedPromise.then(function () {
-            LibraryMenu.setTabs('usermanagement', 0, getTabs);
-            window.addEventListener('beforeunload', onBeforeUnload);
-            loadAll();
-        });
-    });
-
-    view.addEventListener('viewbeforehide', function (e) {
-        window.removeEventListener('beforeunload', onBeforeUnload);
-        if (_dirty && !confirm('You have unsaved changes. Leave without saving?')) {
-            e.preventDefault();
-            LibraryMenu.setTabs('usermanagement', 0, getTabs);
-        }
-    });
-
-    _sharedPromise.then(function () {
+    function bind() {
+        bindInputModal();
         view.querySelector('#selectGroup').addEventListener('change', function () {
             collectCurrentGroup();
             currentGroupId = this.value;
@@ -1499,5 +1470,8 @@ export default function (view) {
             form.addEventListener('change', checkDirty);
             form.addEventListener('input', checkDirty);
         }
-    });
+    }
+
+    // Leaving with unsaved changes asks first, and closing the browser tab warns.
+    Shared = createPage(view, 0, { bind: bind, load: loadAll, isDirty: function () { return _dirty; } }).shared;
 }

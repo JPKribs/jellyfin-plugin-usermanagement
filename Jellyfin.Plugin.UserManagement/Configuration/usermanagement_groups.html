@@ -118,7 +118,7 @@
                                         Enforce password rules to the members of this group.
                                     </div>
                                 </div>
-                                <div class="um-indent hidden" id="pwFields">
+                                <div class="jpk-indent hidden" id="pwFields">
                                 <div class="checkboxContainer checkboxContainer-withDescription">
                                     <label class="emby-checkbox-label">
                                         <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
@@ -182,7 +182,7 @@
                                         <span class="checkboxLabel">Set an expiration for the members of this group</span>
                                     </label>
                                 </div>
-                                <div class="um-indent hidden" id="grpExpiryFields">
+                                <div class="jpk-indent hidden" id="grpExpiryFields">
                                 <div class="inputContainer">
                                     <label for="grpExpiryDate">Expiry date:</label>
                                     <input type="date" id="grpExpiryDate" />
@@ -213,7 +213,7 @@
                                         <span class="checkboxLabel">Disable inactive users</span>
                                     </label>
                                 </div>
-                                <div class="um-indent hidden" id="inactiveFields">
+                                <div class="jpk-indent hidden" id="inactiveFields">
                                 <div class="inputContainer">
                                     <label for="grpInactiveDays">Days of inactivity before disabling:</label>
                                     <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
@@ -245,7 +245,7 @@
     </div>
 
     <!-- Input Modal (name) -->
-    <div id="inputModal" class="jpk-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
+    <div id="inputModal" class="jpk-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
         <div class="jpk-dialog-content jpk-dialog-content-narrow">
             <button type="button" id="btnCloseInputModal" class="jpk-dialog-close" aria-label="Close">&times;</button>
             <h2 class="jpk-modal-title" id="inputModalTitle"></h2>

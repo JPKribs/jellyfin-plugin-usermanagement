@@ -1,7 +1,7 @@
 using System;
 using System.IO;
-using System.Text.Json;
 using Jellyfin.Plugin.UserManagement.Models;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -15,10 +15,7 @@ namespace Jellyfin.Plugin.UserManagement.Services;
 /// </summary>
 public sealed class InviteStatusStore
 {
-    private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
-
-    private readonly object _lock = new();
-    private readonly string _path;
+    private readonly JsonFileStore<InviteStatusData> _store;
     private readonly ILogger<InviteStatusStore> _logger;
 
     /// <summary>
@@ -30,78 +27,47 @@ public sealed class InviteStatusStore
     {
         ArgumentNullException.ThrowIfNull(paths);
         _logger = logger;
-        _path = Path.Join(paths.PluginConfigurationsPath, "Jellyfin.Plugin.UserManagement.InviteStatus.json");
+        _store = new JsonFileStore<InviteStatusData>(
+            Path.Join(paths.PluginConfigurationsPath, "Jellyfin.Plugin.UserManagement.InviteStatus.json"),
+            logger);
     }
 
     /// <summary>
     /// Reads the stored status, or a fresh empty status when none exists or it cannot be read.
     /// </summary>
     /// <returns>The status data.</returns>
-    public InviteStatusData Load()
-    {
-        lock (_lock)
-        {
-            return LoadUnlocked();
-        }
-    }
+    public InviteStatusData Load() => _store.Load();
 
     /// <summary>
-    /// Writes the status to disk.
+    /// Writes the status to disk. A failed write is logged rather than thrown, so a full or read only
+    /// disk never fails the signup or PIN check that triggered it.
     /// </summary>
     /// <param name="data">The status to persist.</param>
     public void Save(InviteStatusData data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        lock (_lock)
+        try
         {
-            WriteUnlocked(data);
+            _store.Save(data);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not write the invite status store.");
         }
     }
 
     /// <summary>
     /// Reads, mutates and writes the status as one atomic step, so a caller that only needs to adjust a
-    /// counter cannot lose a concurrent write between its own read and write.
+    /// counter cannot lose a concurrent write between its own read and write. A failed write is logged
+    /// rather than thrown, as in <see cref="Save"/>.
     /// </summary>
     /// <param name="mutate">Mutation to apply; return <c>true</c> to persist the change.</param>
     public void Update(Func<InviteStatusData, bool> mutate)
     {
         ArgumentNullException.ThrowIfNull(mutate);
-        lock (_lock)
-        {
-            var data = LoadUnlocked();
-            if (mutate(data))
-            {
-                WriteUnlocked(data);
-            }
-        }
-    }
-
-    private InviteStatusData LoadUnlocked()
-    {
         try
         {
-            if (File.Exists(_path))
-            {
-                var data = JsonSerializer.Deserialize<InviteStatusData>(File.ReadAllText(_path), Options);
-                if (data is not null)
-                {
-                    return data;
-                }
-            }
-        }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-        {
-            _logger.LogWarning(ex, "Could not read the invite status store, starting fresh.");
-        }
-
-        return new InviteStatusData();
-    }
-
-    private void WriteUnlocked(InviteStatusData data)
-    {
-        try
-        {
-            File.WriteAllText(_path, JsonSerializer.Serialize(data, Options));
+            _store.UpdateIf(mutate);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using JPKribs.Jellyfin.Base;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.UserManagement.Services;
 
@@ -11,7 +12,7 @@ namespace Jellyfin.Plugin.UserManagement.Tasks;
 /// Scheduled task that adds users who are not yet in any group to the default group, so new
 /// accounts inherit the default group's permissions on the next apply.
 /// </summary>
-public class GroupAssignmentTask : IScheduledTask
+public class GroupAssignmentTask : PluginScheduledTask
 {
     private readonly GroupService _groupService;
 
@@ -24,19 +25,19 @@ public class GroupAssignmentTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public string Name => "Add users to groups";
+    public override string Name => "Add users to groups";
 
     /// <inheritdoc />
-    public string Key => "UserManagementAssignUsers";
+    public override string Key => "UserManagementAssignUsers";
 
     /// <inheritdoc />
-    public string Description => "Adds users not yet in any group to the default group.";
+    public override string Description => "Adds users not yet in any group to the default group.";
 
     /// <inheritdoc />
-    public string Category => "User Management";
+    public override string Category => "User Management";
 
     /// <inheritdoc />
-    public Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
+    public override Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         _groupService.AssignUnassignedToDefault();
         progress.Report(100);
@@ -44,11 +45,8 @@ public class GroupAssignmentTask : IScheduledTask
     }
 
     /// <inheritdoc />
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    public override IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
-        yield return new TaskTriggerInfo
-        {
-            Type = TaskTriggerInfoType.StartupTrigger
-        };
+        yield return OnStartup();
     }
 }

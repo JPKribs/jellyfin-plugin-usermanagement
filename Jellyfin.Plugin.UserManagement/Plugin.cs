@@ -49,27 +49,16 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
 
     /// <summary>
     /// Normalizes incoming configuration before it is persisted, and audits group creation and deletion.
+    /// Runs under the base class's configuration lock, so an internal write in flight (an invite
+    /// redemption adding a member) cannot interleave with the swap.
     /// </summary>
-    /// <param name="configuration">The incoming configuration.</param>
-    public override void UpdateConfiguration(BasePluginConfiguration configuration)
+    /// <param name="incoming">The incoming configuration.</param>
+    /// <param name="stored">The configuration currently in effect.</param>
+    protected override void OnConfigurationSaving(PluginConfiguration incoming, PluginConfiguration stored)
     {
-        if (configuration is not PluginConfiguration config)
-        {
-            base.UpdateConfiguration(configuration);
-            return;
-        }
-
-        // MutateConfiguration is the only handle on the base class's configuration lock, and the swap
-        // has to happen under it: an internal write in flight (an invite redemption adding a member)
-        // targets the live configuration object, which this save is about to replace. The lambda
-        // returns false because the swap persists the incoming configuration itself.
-        MutateConfiguration(_ =>
-        {
-            LogGroupChanges(config);
-            Normalize(config);
-            base.UpdateConfiguration(config);
-            return false;
-        });
+        ArgumentNullException.ThrowIfNull(incoming);
+        LogGroupChanges(incoming, stored);
+        Normalize(incoming);
     }
 
     /// <summary>
@@ -161,21 +150,22 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
     /// can be observed for auditing.
     /// </summary>
     /// <param name="config">The incoming configuration.</param>
-    private void LogGroupChanges(PluginConfiguration config)
+    /// <param name="stored">The configuration currently in effect.</param>
+    private static void LogGroupChanges(PluginConfiguration config, PluginConfiguration? stored)
     {
-        // Configuration can be null on the very first save, before any file exists.
-        var existing = new HashSet<Guid>(Configuration?.Groups.Select(g => g.Id) ?? Enumerable.Empty<Guid>());
+        // The stored configuration can be null on the very first save, before any file exists.
+        var existing = new HashSet<Guid>(stored?.Groups.Select(g => g.Id) ?? Enumerable.Empty<Guid>());
         foreach (var group in config.Groups.Where(g => !existing.Contains(g.Id)))
         {
-            ActivityLoggerAccessor.Instance?.Log(
+            ActivityLogger.Current?.Log(
                 "Group created: " + group.Name,
                 "UserManagement.GroupCreated");
         }
 
         var incoming = new HashSet<Guid>(config.Groups.Select(g => g.Id));
-        foreach (var group in (Configuration?.Groups ?? Enumerable.Empty<GroupDefinition>()).Where(g => !incoming.Contains(g.Id)))
+        foreach (var group in (stored?.Groups ?? Enumerable.Empty<GroupDefinition>()).Where(g => !incoming.Contains(g.Id)))
         {
-            ActivityLoggerAccessor.Instance?.Log(
+            ActivityLogger.Current?.Log(
                 "Group deleted: " + group.Name,
                 "UserManagement.GroupDeleted");
         }

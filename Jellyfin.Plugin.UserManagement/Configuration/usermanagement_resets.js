@@ -1,15 +1,10 @@
+import { createPage } from './configurationpage?name=usermanagement_shared.js';
+
 export default function (view) {
     'use strict';
 
-    var getTabs;
     var Shared = null;
-    var _sharedPromise = import('/web/configurationpage?name=usermanagement_shared.js').then(function (mod) {
-        getTabs = mod.getTabs;
-        Shared = mod.createShared(view);
-    });
-
     var _resets = [];
-    var _bound = false;
 
     function mask() { return '••••••'; }
 
@@ -86,19 +81,9 @@ export default function (view) {
 
     function copyCode(index) {
         if (!_resets[index]) return;
-        var pin = _resets[index].Pin;
-        var done = function () { Shared.setStatus('resetStatus', 'Code copied.', false); };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(pin).then(done).catch(done);
-        } else {
-            var tmp = document.createElement('textarea');
-            tmp.value = pin;
-            view.appendChild(tmp);
-            tmp.select();
-            try { document.execCommand('copy'); } catch (e) { /* ignore */ }
-            view.removeChild(tmp);
-            done();
-        }
+        Shared.copyToClipboard(_resets[index].Pin).then(function () {
+            Shared.setStatus('resetStatus', 'Code copied.', false);
+        });
     }
 
     function load() {
@@ -140,11 +125,5 @@ export default function (view) {
         });
     }
 
-    view.addEventListener('viewshow', function () {
-        _sharedPromise.then(function () {
-            LibraryMenu.setTabs('usermanagement', 2, getTabs);
-            if (!_bound) { bind(); _bound = true; }
-            load();
-        });
-    });
+    Shared = createPage(view, 2, { bind: bind, load: load }).shared;
 }

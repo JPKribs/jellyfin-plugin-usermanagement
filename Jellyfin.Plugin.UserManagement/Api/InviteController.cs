@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,17 +42,7 @@ public class InviteController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult Favicon()
-    {
-        var favicon = FaviconResolver.Resolve(_paths);
-        if (favicon is null)
-        {
-            return NotFound();
-        }
-
-        Response.Headers["Cache-Control"] = "public, max-age=86400";
-        return File(favicon.Value.Bytes, favicon.Value.ContentType);
-    }
+    public IActionResult Favicon() => PublicPage.Favicon(_paths, Response);
 
     /// <summary>Serves the public signup page (static HTML; reads the token from the URL client-side).</summary>
     /// <param name="token">The invite token (used by the page's script, not here).</param>
@@ -65,7 +53,7 @@ public class InviteController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ContentResult Page(string token)
     {
-        ApplyHardeningHeaders();
+        PublicPage.ApplyHardeningHeaders(Response);
         return Content(GetPageHtml(), "text/html");
     }
 
@@ -77,7 +65,7 @@ public class InviteController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult Info(string token)
     {
-        ApplyHardeningHeaders();
+        PublicPage.ApplyHardeningHeaders(Response);
         var invite = _inviteService.FindByToken(token);
         if (invite is null || !_inviteService.IsRedeemableNow(invite))
         {
@@ -106,23 +94,12 @@ public class InviteController : ControllerBase
         [FromBody] RedeemInviteRequest request,
         CancellationToken cancellationToken)
     {
-        ApplyHardeningHeaders();
+        PublicPage.ApplyHardeningHeaders(Response);
         var result = await _inviteService
             .RedeemAsync(token, request?.Pin, request?.Username, request?.Password, cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(new { result.Success, result.Message, result.Resources });
-    }
-
-    /// <summary>
-    /// Sets response headers that keep the token out of referrers and caches, applied by the plugin
-    /// itself so it does not depend on a reverse proxy.
-    /// </summary>
-    private void ApplyHardeningHeaders()
-    {
-        Response.Headers["Referrer-Policy"] = "no-referrer";
-        Response.Headers["Cache-Control"] = "no-store";
-        Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
     }
 
     private static string GetPageHtml()
@@ -144,15 +121,8 @@ public class InviteController : ControllerBase
             }
         }
 
-        _pageHtml = TemplateLoader.Fill("status", new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["TITLE"] = "Invite",
-            ["HEADING"] = string.Empty,
-            ["MESSAGE"] = string.Empty,
-            ["SPINNER"] = string.Empty,
-            ["BUTTON"] = string.Empty,
-            ["CONTENT"] = content
-        });
+        // The page's script fills the card, so the heading and message stay empty and there is no button.
+        _pageHtml = StatusPage.Render(string.Empty, string.Empty, title: "Invite", buttonText: null, content: content);
         return _pageHtml;
     }
 }

@@ -313,14 +313,6 @@
     margin-bottom: 8px;
 }
 
-/* ===== Indented sub fields under a gating checkbox ===== */
-.um-indent {
-    margin-left: 1.85em;
-    padding-left: 1em;
-    margin-top: 4px;
-    border-left: 2px solid rgba(255, 255, 255, 0.12);
-}
-
 /* ===== Invite status badges ===== */
 /* Match the summary card color scheme (Active = green, Locked = yellow, Used up = purple,
    Expired = red). The base badge palette maps these statuses differently, so override per status.
