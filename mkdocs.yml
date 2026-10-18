@@ -1,0 +1,58 @@
+site_name: User Management
+site_description: A Jellyfin plugin for managing Jellyfin users via groups.
+site_url: https://jpkribs.github.io/jellyfin-plugin-usermanagement/
+repo_url: https://github.com/JPKribs/jellyfin-plugin-usermanagement
+repo_name: JPKribs/jellyfin-plugin-usermanagement
+edit_uri: edit/master/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  logo: assets/icon.png
+  favicon: assets/icon.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Overview: index.md
+  - Getting Started:
+      - Installation: Installation.md
+  - Features:
+      - Groups: Groups.md
+      - Passwords: Passwords.md
+      - Expiration: Expiration.md
+      - Inactivity: Inactivity.md
+      - Sessions: Sessions.md
+      - Invites: Invites.md
+      - Activity Log: ActivityLog.md
+      - Password Resets: PasswordResets.md
+  - Reference:
+      - Uninstalling: Uninstalling.md
+      - Versioning: Versioning.md
