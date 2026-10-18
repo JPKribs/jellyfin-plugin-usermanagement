@@ -2,6 +2,10 @@
 
 The plugin writes its notable events to Jellyfin's activity log (**Dashboard → Activity**), so administrative changes stay auditable without opening the server log.
 
+Plugin entries show up alongside Jellyfin's own, with warnings flagged in the Level column.
+
+![Plugin entries in the activity log](screenshots/Activity%20Log.png)
+
 * **Group created / deleted**: A group was added to or removed from the configuration.
 * **Password rules enrolled / unenrolled**: A user was placed under, or released from, a group's password rules.
 * **Password change blocked**: A self service change was attempted in a group that disallows them, logged as a warning.

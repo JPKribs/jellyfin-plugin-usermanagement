@@ -12,4 +12,8 @@ Cleanup is driven by one or more **rules**. Each rule sets a number of days and 
 
 Multiple rules let different clients age out on different schedules, for example cleaning up Jellyfin Web after a week while giving TV apps three months. When several rules cover the same client, **the shortest window wins**, and the dashboard points out which clients overlap. The client list is built from the devices that have connected to your server, plus any clients already selected in a rule, so a saved selection never disappears when its devices do.
 
+Here one rule logs out Jellyfin Web after a week and a second rule catches every other client after 90 days.
+
+![Session cleanup rules](screenshots/Sessions.png)
+
 Administrators are exempt: their devices are never logged out by session cleanup.

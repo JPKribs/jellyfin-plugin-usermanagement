@@ -4,5 +4,9 @@ When a user starts Jellyfin's **Forgot Password** flow, the server writes a rese
 
 The feature is **off by default** and must be enabled on the tab.
 
+Once enabled, each pending reset is listed by user with its expiration and a masked code.
+
+![Pending password resets](screenshots/Password%20Resets.png)
+
 !!! warning
     **Only enable it when the dashboard is reached over HTTPS**, since over plain http the codes are readable by anyone watching the connection.
