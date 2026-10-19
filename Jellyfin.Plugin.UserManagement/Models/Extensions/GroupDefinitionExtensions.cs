@@ -1,3 +1,6 @@
+using System;
+using Jellyfin.Plugin.UserManagement.Utilities;
+
 namespace Jellyfin.Plugin.UserManagement.Models;
 
 /// <summary>
@@ -14,4 +17,22 @@ public static class GroupDefinitionExtensions
     /// <returns><c>true</c> when the group's enforced password policy disallows all password changes.</returns>
     public static bool BlocksInvites(this GroupDefinition? group)
         => group?.Password is { Enabled: true, ChangeMode: PasswordChangeMode.Disallowed };
+
+    /// <summary>
+    /// Returns whether the group has reached its expiry date. Expiry is day based, matching the scheduled
+    /// task that applies the expiry action, so a group is expired on or after its expiry date.
+    /// </summary>
+    /// <param name="group">The group, or null when it no longer resolves.</param>
+    /// <returns><c>true</c> when the group has an expiry date that has been reached.</returns>
+    public static bool HasExpired(this GroupDefinition? group)
+        => group?.ExpiresOn is { } due && due.Date <= DateTime.UtcNow.Date;
+
+    /// <summary>
+    /// Returns a deep copy of the group, so a caller holding it outside the configuration lock never reads
+    /// a list that a concurrent save is changing, and never writes into the live configuration by accident.
+    /// </summary>
+    /// <param name="group">The group to copy.</param>
+    /// <returns>An independent copy.</returns>
+    public static GroupDefinition Snapshot(this GroupDefinition group)
+        => ModelSnapshot.Copy(group);
 }

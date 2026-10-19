@@ -200,9 +200,11 @@ public sealed class InviteService : IDisposable
             return null;
         }
 
+        // The match is copied under the configuration lock, so the caller can keep reading it while a
+        // dashboard save swaps the configuration underneath.
         var candidate = System.Text.Encoding.UTF8.GetBytes(token);
         return Plugin.Instance?.ReadConfiguration(c => c.Invites
-            .FirstOrDefault(i => TokenMatches(i.Token, candidate)));
+            .FirstOrDefault(i => TokenMatches(i.Token, candidate)) is { } match ? ModelSnapshot.Copy(match) : null);
     }
 
     private static bool TokenMatches(string? stored, byte[] candidate)
@@ -237,16 +239,31 @@ public sealed class InviteService : IDisposable
 
     /// <summary>
     /// Whether the invite is redeemable right now, reading the runtime status from the store and
-    /// checking that the target group still accepts invites.
+    /// checking that the group new accounts would land in still accepts invites and has not expired.
     /// </summary>
     /// <param name="invite">The invite.</param>
     /// <returns>Whether the invite can be redeemed right now.</returns>
     public bool IsRedeemableNow(Invite invite)
     {
         ArgumentNullException.ThrowIfNull(invite);
-        return IsRedeemable(invite, _statusStore.Load().Invites.GetValueOrDefault(invite.Id))
-            && !ResolveTargetGroup(invite).BlocksInvites();
+        if (!IsRedeemable(invite, _statusStore.Find(invite.Id)))
+        {
+            return false;
+        }
+
+        var group = ResolveRedemptionGroup(invite);
+        return !group.BlocksInvites() && !group.HasExpired();
     }
+
+    /// <summary>
+    /// Resolves the group a redemption actually places the new account in: the invite's target, or the
+    /// default group when the invite's own group has since been deleted, which is where a new account
+    /// lands when nothing else claims it.
+    /// </summary>
+    /// <param name="invite">The invite.</param>
+    /// <returns>The group, or <c>null</c> when neither resolves.</returns>
+    private GroupDefinition? ResolveRedemptionGroup(Invite invite)
+        => ResolveTargetGroup(invite) ?? _groupService.GetDefaultGroup();
 
     /// <summary>
     /// Whether the invite has reached its expiry date. Expiry is day based, so an invite is expired on or
@@ -465,7 +482,9 @@ public sealed class InviteService : IDisposable
     }
 
     /// <summary>
-    /// Validates an invite and, if everything checks out, creates a new (non-admin) account.
+    /// Validates an invite and, if everything checks out, creates a new (non-admin) account in the
+    /// invite's group. Runtime counters are only ever changed through atomic store updates, so a
+    /// concurrent dashboard action (clearing a PIN lockout, deleting the invite) is never overwritten.
     /// </summary>
     public async Task<InviteRedeemResult> RedeemAsync(
         string token,
@@ -494,8 +513,7 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("This invite has expired.");
             }
 
-            var statusData = _statusStore.Load();
-            var status = StatusFor(statusData, invite.Id);
+            var status = _statusStore.Find(invite.Id) ?? new InviteStatus();
 
             if (invite.MaxUses > 0 && status.UsedCount >= invite.MaxUses)
             {
@@ -515,39 +533,7 @@ public sealed class InviteService : IDisposable
 
             if (!string.IsNullOrEmpty(invite.PinHash) && !VerifyPin(invite, pin))
             {
-                status.FailedPinAttempts++;
-                _statusStore.Save(statusData);
-                _activity.Log(
-                    "Incorrect PIN entered for invite: " + DisplayName(invite),
-                    "UserManagement.InvitePinFailed",
-                    overview: "Failed attempts: " + status.FailedPinAttempts,
-                    severity: LogLevel.Warning);
-
-                if (status.FailedPinAttempts >= Math.Max(1, plugin.ReadConfiguration(c => c.MaxPinAttempts)))
-                {
-                    // The lockout itself flips the admin facing switch, which is a config write, but it
-                    // happens at most once per lockout rather than on every attempt.
-                    plugin.MutateConfiguration(cfg =>
-                    {
-                        var stored = cfg.Invites.FirstOrDefault(i => i.Id.Equals(invite.Id));
-                        if (stored is null || !stored.Enabled)
-                        {
-                            return false;
-                        }
-
-                        stored.Enabled = false;
-                        return true;
-                    });
-
-                    _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, status.FailedPinAttempts);
-                    _activity.Log(
-                        "Invite locked after too many incorrect PIN attempts: " + DisplayName(invite),
-                        "UserManagement.InviteLocked",
-                        severity: LogLevel.Warning);
-                    return InviteRedeemResult.Fail("Too many incorrect PIN attempts. This invite has been locked.");
-                }
-
-                return InviteRedeemResult.Fail("Incorrect PIN.");
+                return RecordWrongPin(plugin, invite);
             }
 
             username = username?.Trim() ?? string.Empty;
@@ -561,13 +547,20 @@ public sealed class InviteService : IDisposable
                 return InviteRedeemResult.Fail("Please choose a password.");
             }
 
-            var targetGroup = ResolveTargetGroup(invite);
+            var targetGroup = ResolveRedemptionGroup(invite);
 
             // Backstop for configuration drift, for example a default group switched to a blocking one
             // after this invite was issued but before the save path disabled it.
             if (targetGroup.BlocksInvites())
             {
                 return InviteRedeemResult.Fail("This invite is no longer available.");
+            }
+
+            // An expired group would disable or delete the new account on the next expiry run, so the
+            // signup is refused up front instead of creating an account that is already dead.
+            if (targetGroup.HasExpired())
+            {
+                return InviteRedeemResult.Fail("This invite's group has expired, so it can no longer be used to create accounts. Ask the server administrator for a new invite.");
             }
 
             var passwordErrors = PasswordValidator.Validate(password, targetGroup?.Password);
@@ -582,128 +575,58 @@ public sealed class InviteService : IDisposable
             }
 
             Guid userId;
-            try
-            {
-                var created = await _userManager.CreateUserAsync(username).ConfigureAwait(false);
-                userId = created.Id;
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invite redemption rejected invalid username");
-                return InviteRedeemResult.Fail("That username isn't allowed. Try a different one.");
-            }
 
-            try
+            // The scope covers creation and the first password. It tells the creation event that this
+            // redemption places the account itself (so the default group is never applied to it, and it
+            // is held disabled while it has no password), and lets the password rule provider recognize
+            // the account creation password rather than a member's self service change.
+            using (InviteRedemptionScope.Begin())
             {
-                // The scope lets the password rule provider recognize this as the account creation
-                // password rather than a member's self service change, which groups may disallow.
-                using (InviteRedemptionScope.Begin())
+                try
+                {
+                    var created = await _userManager.CreateUserAsync(username).ConfigureAwait(false);
+                    userId = created.Id;
+                }
+                catch (ArgumentException ex)
+                {
+                    _logger.LogWarning(ex, "Invite redemption rejected invalid username");
+                    return InviteRedeemResult.Fail("That username isn't allowed. Try a different one.");
+                }
+
+                try
                 {
                     await WithUserRetryAsync(userId, u => _userManager.ChangePassword(u.Id, password)).ConfigureAwait(false);
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to set password for invited user; rolling back");
+                    await RollBackAsync(plugin, userId).ConfigureAwait(false);
+                    return InviteRedeemResult.Fail("Could not create the account. Please try again.");
+                }
+            }
+
+            // Everything after creation either completes or undoes the account: a half set up account
+            // would be left on Jellyfin's defaults, or held disabled with its username taken so the
+            // invitee could not even retry.
+            try
+            {
+                await SetUpAccountAsync(plugin, invite, targetGroup, userId).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to set password for invited user; rolling back");
-                try
-                {
-                    await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
-                }
-                catch (Exception delEx)
-                {
-                    _logger.LogWarning(delEx, "Rollback delete failed for {UserId}", userId);
-                }
-
+                _logger.LogError(ex, "Failed to finish setting up invited user {UserId}; rolling back", userId);
+                await RollBackAsync(plugin, userId).ConfigureAwait(false);
                 return InviteRedeemResult.Fail("Could not create the account. Please try again.");
             }
 
-            status.UsedCount++;
-            status.FailedPinAttempts = 0;
-            if (rateLimitWindowMinutes > 0)
-            {
-                var cutoff = DateTime.UtcNow.AddMinutes(-rateLimitWindowMinutes);
-                status.RecentRedemptions.RemoveAll(t => t < cutoff);
-                status.RecentRedemptions.Add(DateTime.UtcNow);
-            }
-
-            // Drop status for invites that no longer exist so the store does not grow without bound.
-            var validIds = plugin.ReadConfiguration(c => c.Invites.Select(i => i.Id).ToHashSet());
-            foreach (var key in statusData.Invites.Keys.Where(k => !validIds.Contains(k)).ToList())
-            {
-                statusData.Invites.Remove(key);
-            }
-
-            _statusStore.Save(statusData);
-
-            if (targetGroup is not null)
-            {
-                plugin.MutateConfiguration(cfg =>
-                {
-                    var stored = cfg.Groups.FirstOrDefault(g => g.Id.Equals(targetGroup.Id));
-                    if (stored is null)
-                    {
-                        return false;
-                    }
-
-                    foreach (var g in cfg.Groups)
-                    {
-                        g.MemberIds.Remove(userId);
-                    }
-
-                    stored.MemberIds.Add(userId);
-                    plugin.Normalize(cfg, keepMember: userId);
-                    return true;
-                });
-
-                try
-                {
-                    await WithUserRetryAsync(userId, u => _groupService.ApplyGroupAsync(u, targetGroup)).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to apply invite group to {UserId}", userId);
-                }
-
-                if (targetGroup.Password is { Enabled: true })
-                {
-                    try
-                    {
-                        await WithUserRetryAsync(userId, u => _groupService.EnrollAsync(u)).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to enroll invited user {UserId} in password rules", userId);
-                    }
-                }
-            }
-            else
-            {
-                _logger.LogWarning("Invite {InviteId} resolved to no group; new user {UserId} left unassigned", invite.Id, userId);
-            }
-
-            try
-            {
-                await WithUserRetryAsync(userId, async u =>
-                {
-                    var policy = _userManager.GetUserDto(u, string.Empty).Policy;
-                    if (policy.IsAdministrator)
-                    {
-                        policy.IsAdministrator = false;
-                        await _userManager.UpdatePolicyAsync(u.Id, policy).ConfigureAwait(false);
-                    }
-                }).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to enforce non-admin for {UserId}", userId);
-            }
+            var usedCount = RecordRedemption(plugin, invite.Id, rateLimitWindowMinutes);
 
             _logger.LogInformation("Invite {InviteId} redeemed; created user {UserId}", invite.Id, userId);
             _activity.Log(
                 "User created via invite: " + DisplayName(invite) + ", user: " + username,
                 "UserManagement.InviteRedeemed",
                 userId: userId);
-            if (invite.MaxUses > 0 && status.UsedCount >= invite.MaxUses)
+            if (invite.MaxUses > 0 && usedCount >= invite.MaxUses)
             {
                 _activity.Log(
                     "Invite fully consumed: " + DisplayName(invite),
@@ -722,6 +645,190 @@ public sealed class InviteService : IDisposable
         finally
         {
             _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Counts a wrong PIN for the invite and locks the invite once the count reaches the configured
+    /// maximum. Anyone holding the link can enter PINs, so a run of wrong guesses from strangers locks it
+    /// for everyone until an administrator re-enables it.
+    /// </summary>
+    private InviteRedeemResult RecordWrongPin(Plugin plugin, Invite invite)
+    {
+        var failed = 0;
+        _statusStore.Update(data =>
+        {
+            failed = ++StatusFor(data, invite.Id).FailedPinAttempts;
+            return true;
+        });
+
+        _activity.Log(
+            "Incorrect PIN entered for invite: " + DisplayName(invite),
+            "UserManagement.InvitePinFailed",
+            overview: "Failed attempts: " + failed,
+            severity: LogLevel.Warning);
+
+        if (failed < Math.Max(1, plugin.ReadConfiguration(c => c.MaxPinAttempts)))
+        {
+            return InviteRedeemResult.Fail("Incorrect PIN.");
+        }
+
+        // The lockout itself flips the admin facing switch, which is a config write, but it happens at
+        // most once per lockout rather than on every attempt.
+        plugin.MutateConfiguration(cfg =>
+        {
+            var stored = cfg.Invites.FirstOrDefault(i => i.Id.Equals(invite.Id));
+            if (stored is null || !stored.Enabled)
+            {
+                return false;
+            }
+
+            stored.Enabled = false;
+            return true;
+        });
+
+        _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, failed);
+        _activity.Log(
+            "Invite locked after too many incorrect PIN attempts: " + DisplayName(invite),
+            "UserManagement.InviteLocked",
+            severity: LogLevel.Warning);
+        return InviteRedeemResult.Fail("Too many incorrect PIN attempts. This invite has been locked.");
+    }
+
+    /// <summary>
+    /// Counts a successful redemption: one more use, a clean PIN counter, and a rate limit timestamp.
+    /// Status for invites that no longer exist is dropped in the same write so the store does not grow
+    /// without bound, and an invite deleted while this redemption ran is not brought back.
+    /// </summary>
+    /// <returns>The invite's use count after this redemption.</returns>
+    private int RecordRedemption(Plugin plugin, Guid inviteId, int rateLimitWindowMinutes)
+    {
+        var usedCount = 0;
+        _statusStore.Update(data =>
+        {
+            var validIds = plugin.ReadConfiguration(c => c.Invites.Select(i => i.Id).ToHashSet());
+            foreach (var key in data.Invites.Keys.Where(k => !validIds.Contains(k)).ToList())
+            {
+                data.Invites.Remove(key);
+            }
+
+            if (!validIds.Contains(inviteId))
+            {
+                return true;
+            }
+
+            var status = StatusFor(data, inviteId);
+            status.UsedCount++;
+            status.FailedPinAttempts = 0;
+            if (rateLimitWindowMinutes > 0)
+            {
+                var cutoff = DateTime.UtcNow.AddMinutes(-rateLimitWindowMinutes);
+                status.RecentRedemptions.RemoveAll(t => t < cutoff);
+                status.RecentRedemptions.Add(DateTime.UtcNow);
+            }
+
+            usedCount = status.UsedCount;
+            return true;
+        });
+
+        return usedCount;
+    }
+
+    /// <summary>
+    /// Places a freshly created invite account in its group, aligns its password rule enrollment, and
+    /// releases the disabled hold. Throws when the account cannot be placed or released, so the caller
+    /// rolls it back rather than leaving it on Jellyfin's default policy.
+    /// </summary>
+    private async Task SetUpAccountAsync(Plugin plugin, Invite invite, GroupDefinition? targetGroup, Guid userId)
+    {
+        if (targetGroup is not null)
+        {
+            plugin.MutateConfiguration(cfg =>
+            {
+                var stored = cfg.Groups.FirstOrDefault(g => g.Id.Equals(targetGroup.Id));
+                if (stored is null)
+                {
+                    return false;
+                }
+
+                foreach (var g in cfg.Groups)
+                {
+                    g.MemberIds.Remove(userId);
+                }
+
+                stored.MemberIds.Add(userId);
+                plugin.Normalize(cfg, keepMember: userId);
+                return true;
+            });
+
+            await WithUserRetryAsync(userId, u => _groupService.ApplyGroupAsync(u, targetGroup)).ConfigureAwait(false);
+        }
+        else
+        {
+            _logger.LogWarning("Invite {InviteId} resolved to no group; new user {UserId} left unassigned", invite.Id, userId);
+        }
+
+        // Enrollment follows the final group only: enrolled when it enforces password rules, and on the
+        // built-in provider otherwise. A failure here is not fatal: the account already has its group's
+        // policy, and the next sync reconciles enrollment.
+        try
+        {
+            if (targetGroup?.Password is { Enabled: true })
+            {
+                await WithUserRetryAsync(userId, u => _groupService.EnrollAsync(u)).ConfigureAwait(false);
+            }
+            else
+            {
+                await WithUserRetryAsync(userId, u => _groupService.UnenrollAsync(u)).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to align password rule enrollment for invited user {UserId}", userId);
+        }
+
+        // Release the hold the creation event placed: the account becomes usable only now, with its
+        // password set and its group applied. A group that manages the disabled flag keeps its value.
+        var releaseDisabled = targetGroup is { Permissions.ManageIsDisabled: true } managed && managed.Permissions.IsDisabled;
+        await WithUserRetryAsync(userId, async u =>
+        {
+            var policy = _userManager.GetUserDto(u, string.Empty).Policy;
+            if (policy.IsAdministrator || policy.IsDisabled != releaseDisabled)
+            {
+                policy.IsAdministrator = false;
+                policy.IsDisabled = releaseDisabled;
+                await _userManager.UpdatePolicyAsync(u.Id, policy).ConfigureAwait(false);
+            }
+        }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Deletes a half created invite account and drops any membership or enrollment it already got. The
+    /// server's delete event normally cleans those up too; doing it here as well covers a delete that
+    /// fails or a consumer that never ran.
+    /// </summary>
+    private async Task RollBackAsync(Plugin plugin, Guid userId)
+    {
+        try
+        {
+            await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Rollback delete failed for {UserId}", userId);
+        }
+
+        try
+        {
+            plugin.MutateConfiguration(cfg =>
+            {
+                var removed = GroupMembership.RemoveMembers(cfg.Groups, id => id.Equals(userId)).Count > 0;
+                return cfg.ProviderEnrollments.RemoveAll(e => e.UserId.Equals(userId)) > 0 || removed;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Rollback could not clear group membership for {UserId}", userId);
         }
     }
 

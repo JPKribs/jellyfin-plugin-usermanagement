@@ -53,17 +53,19 @@ public class GroupService
     }
 
     /// <summary>
-    /// Finds a group definition by ID in the current configuration.
+    /// Finds a group definition by ID in the current configuration. The result is a copy taken under the
+    /// configuration lock, so it stays consistent while the caller uses it outside the lock.
     /// </summary>
     public GroupDefinition? FindGroup(Guid id)
-        => Plugin.Instance?.ReadConfiguration(c => c.Groups.FirstOrDefault(g => g.Id.Equals(id)));
+        => Plugin.Instance?.ReadConfiguration(c => c.Groups.FirstOrDefault(g => g.Id.Equals(id))?.Snapshot());
 
     /// <summary>
-    /// Gets the group new users should receive, or null if none is configured.
+    /// Gets the group new users should receive, or null if none is configured. The result is a copy
+    /// taken under the configuration lock, like <see cref="FindGroup"/>.
     /// </summary>
     public GroupDefinition? GetDefaultGroup()
         => Plugin.Instance?.ReadConfiguration(c =>
-            c.DefaultGroupId is { } id ? c.Groups.FirstOrDefault(g => g.Id.Equals(id)) : null);
+            c.DefaultGroupId is { } id ? c.Groups.FirstOrDefault(g => g.Id.Equals(id))?.Snapshot() : null);
 
     /// <summary>
     /// Adds every user who is not yet a member of any group to the default group, if one is set.
@@ -236,6 +238,7 @@ public class GroupService
         {
             var seen = new HashSet<Guid>();
             return c.Groups
+                .Select(g => g.Snapshot())
                 .SelectMany(g => g.MemberIds.Select(id => (Group: g, UserId: id)))
                 .Where(x => seen.Add(x.UserId))
                 .ToList();

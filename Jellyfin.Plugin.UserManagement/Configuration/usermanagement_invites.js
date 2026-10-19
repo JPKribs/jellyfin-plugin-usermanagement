@@ -21,10 +21,25 @@ export default function (view) {
         return '';
     }
 
+    // Group expiry is day based on the server (expired on or after the date, in UTC), so compare the
+    // date parts only.
+    function groupExpired(g) {
+        if (!g || !g.ExpiresOn) return false;
+        return String(g.ExpiresOn).slice(0, 10) <= new Date().toISOString().slice(0, 10);
+    }
+
+    function inviteGroup(inv) {
+        var gid = inv.UseDefaultGroup ? _defaultGroupId : inv.GroupId;
+        return _groups.filter(function (g) { return g.Id === gid; })[0] || null;
+    }
+
     function statusOf(inv) {
         if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= new Date()) return { cls: 'Expired', text: 'Expired' };
         if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
         if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'Disabled', text: 'Used up' };
+        // The server refuses signups into an expired group, so the link is dead until the group's
+        // expiration moves even though the invite itself is still enabled.
+        if (groupExpired(inviteGroup(inv))) return { cls: 'Expired', text: 'Group expired' };
         return { cls: 'Active', text: 'Active' };
     }
 
@@ -115,7 +130,7 @@ export default function (view) {
         if (def) {
             var defOpt = document.createElement('option');
             defOpt.value = DEFAULT_OPTION;
-            defOpt.textContent = 'Default group (' + (def.Name || 'Unnamed group') + ')';
+            defOpt.textContent = 'Default group (' + (def.Name || 'Unnamed group') + ')' + (groupExpired(def) ? ' (expired)' : '');
             sel.appendChild(defOpt);
         }
 
@@ -123,7 +138,7 @@ export default function (view) {
             if (blocksInvites(g)) return;
             var opt = document.createElement('option');
             opt.value = g.Id;
-            opt.textContent = (g.Name || 'Unnamed group') + (g.Id === _defaultGroupId ? ' (Default)' : '');
+            opt.textContent = (g.Name || 'Unnamed group') + (g.Id === _defaultGroupId ? ' (Default)' : '') + (groupExpired(g) ? ' (expired)' : '');
             sel.appendChild(opt);
         });
 
@@ -132,6 +147,18 @@ export default function (view) {
         } else if (_defaultGroupId && _groups.some(function (g) { return g.Id === _defaultGroupId; })) {
             sel.value = _defaultGroupId;
         }
+        updateGroupWarning();
+    }
+
+    function selectedGroup() {
+        var value = (Shared.getEl('selGroup') || {}).value || '';
+        if (!value) return null;
+        if (value === DEFAULT_OPTION) return defaultGroup();
+        return _groups.filter(function (g) { return g.Id === value; })[0] || null;
+    }
+
+    function updateGroupWarning() {
+        Shared.setVisible('groupExpiredWarn', groupExpired(selectedGroup()));
     }
 
     function card(cls, count, label) {
@@ -142,12 +169,12 @@ export default function (view) {
     function renderInviteCards() {
         var container = view.querySelector('#inviteCards');
         if (!container) return;
-        var now = new Date();
         var active = 0, expired = 0, locked = 0, consumed = 0;
         _invites.forEach(function (inv) {
-            if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= now) { expired++; }
-            else if (!inv.Enabled) { locked++; }
-            else if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) { consumed++; }
+            var cls = statusOf(inv).cls;
+            if (cls === 'Expired') { expired++; }
+            else if (cls === 'Locked') { locked++; }
+            else if (cls === 'Disabled') { consumed++; }
             else { active++; }
         });
         container.innerHTML =
@@ -180,6 +207,7 @@ export default function (view) {
             if (inv.UseDefaultGroup) meta.push('Group: Default' + (_defaultGroupId ? ' (' + esc(groupName(_defaultGroupId)) + ')' : ''));
             else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
             if (inv.HasPin) meta.push('PIN set');
+            if (groupExpired(inviteGroup(inv))) meta.push('<span style="color: var(--jpk-error, #d9534f);">Group has expired: signups are refused until its expiration is moved</span>');
 
             var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
             var toggleTitle = inv.Enabled ? 'Disable invite' : 'Enable invite';
@@ -332,9 +360,12 @@ export default function (view) {
             MaxUses: (setMaxUses && maxUses >= 1) ? maxUses : 0
         };
 
+        var expiredGroup = groupExpired(selectedGroup());
         Shared.apiRequest('Invites', 'POST', payload)
             .then(function () {
-                Shared.setStatus('inviteStatus', 'Invite created.', false);
+                Shared.setStatus('inviteStatus', expiredGroup
+                    ? "Invite created, but its group has expired. The link won't work until the group's expiration is moved or cleared."
+                    : 'Invite created.', expiredGroup);
                 Shared.getEl('txtLabel').value = '';
                 Shared.getEl('txtMessage').value = '';
                 _newResources = [];
@@ -437,6 +468,8 @@ export default function (view) {
         if (burl) burl.addEventListener('click', saveBaseUrl);
         var urlInput = Shared.getEl('txtInviteBaseUrl');
         if (urlInput) urlInput.addEventListener('input', updateHttpsWarning);
+        var selGroup = Shared.getEl('selGroup');
+        if (selGroup) selGroup.addEventListener('change', updateGroupWarning);
         var chkExp = Shared.getEl('chkSetExpiry');
         if (chkExp) chkExp.addEventListener('change', updateExpiryState);
         var chkMax = Shared.getEl('chkSetMaxUses');

@@ -100,9 +100,9 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                     .FirstOrDefault(p => p is { Enabled: true }));
 
             // InitialOnly lets a member with no password set their first one. Invite redemption is
-            // always allowed to set the account creation password: it runs anonymously (the new user
-            // can already be enrolled by the creation event before redemption sets the password), so
-            // without the explicit scope it would look like a member's self service attempt.
+            // always allowed to set the account creation password: it validates against its target
+            // group itself, and the explicit scope keeps it from ever being read as a member's self
+            // service attempt.
             if (policy is { Enabled: true } && policy.ChangeMode != PasswordChangeMode.Allowed)
             {
                 var settingFirst = string.IsNullOrEmpty(user.Password);

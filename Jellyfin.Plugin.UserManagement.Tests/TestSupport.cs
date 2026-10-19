@@ -27,11 +27,14 @@ namespace Jellyfin.Plugin.UserManagement.Tests;
 internal static class TestSupport
 {
     /// <summary>Creates a fresh plugin instance backed by a default in-memory configuration.</summary>
-    public static Plugin NewPlugin()
+    public static Plugin NewPlugin() => NewPlugin(out _);
+
+    /// <summary>Creates a fresh plugin and hands back its serializer, so a test can make saves fail.</summary>
+    public static Plugin NewPlugin(out IXmlSerializer xml)
     {
         var paths = Substitute.For<IApplicationPaths>();
         paths.PluginConfigurationsPath.Returns(Path.Combine(Path.GetTempPath(), "um-tests-" + Guid.NewGuid()));
-        var xml = Substitute.For<IXmlSerializer>();
+        xml = Substitute.For<IXmlSerializer>();
         var plugin = new Plugin(paths, xml, Substitute.For<ILogger<Plugin>>());
         plugin.UpdateConfiguration(new PluginConfiguration());
         return plugin;

@@ -45,7 +45,7 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
     public override Guid Id => Guid.Parse("670167bd-e7f8-4549-98e2-5ab2e11bc89f");
 
     /// <inheritdoc />
-    public override string Description => "Group policy templates, account lifecycle, and password hygiene for existing Jellyfin users.";
+    public override string Description => "Group policy templates, display and playback preferences, account lifecycle, password hygiene, and easier user onboarding for Jellyfin.";
 
     /// <summary>
     /// Normalizes incoming configuration before it is persisted, and audits group creation and deletion.

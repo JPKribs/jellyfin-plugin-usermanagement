@@ -56,6 +56,9 @@
                                 <label class="selectLabel" for="selGroup">Add new users to group:</label>
                                 <select is="emby-select" id="selGroup" class="emby-select-withcolor"></select>
                                 <div class="fieldDescription">Choosing the default group keeps the invite pointed at whichever group is the default when it is redeemed.</div>
+                                <div class="jpk-warn hidden" id="groupExpiredWarn" style="margin-top: 6px;">
+                                    This group has expired. Signups into it are refused until its expiration date is moved or cleared on the Groups tab.
+                                </div>
                             </div>
                             <div class="checkboxContainer">
                                 <label class="emby-checkbox-label">
@@ -115,7 +118,7 @@
                                     <input is="emby-input" type="number" id="txtRateWindow" min="0" style="max-width:90px;" />
                                     <span>minutes</span>
                                 </div>
-                                <div class="fieldDescription">After this many signups the link pauses for the window. Set either to 0 to disable.</div>
+                                <div class="fieldDescription">After this many signups through one invite, that link pauses for the window. Set either to 0 to disable. Separately, each network address is always limited to 10 signup attempts every 15 minutes, successful or not.</div>
                             </div>
                             <button is="emby-button" type="button" id="btnSaveInviteUrl" class="raised jpk-button-submit jpk-button-small" style="margin-top: 12px; margin-bottom: 16px;">
                                 <span>Save</span>

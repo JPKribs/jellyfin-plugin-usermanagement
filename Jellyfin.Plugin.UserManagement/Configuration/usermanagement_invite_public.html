@@ -17,7 +17,7 @@
 
 <div id="invalid" class="hidden">
     <h1>Invite unavailable</h1>
-    <p>This invite link is invalid, expired, or has been fully used.</p>
+    <p id="invalidMsg">This invite link is invalid, expired, or has been fully used.</p>
     <a class="jpk-btn" id="backLink" href="../web/">Back to Jellyfin</a>
 </div>
 
@@ -88,7 +88,11 @@
             .then(function (r) { return r.json(); })
             .then(function (info) {
                 hide('loading');
-                if (!info || !info.Valid) { show('invalid'); return; }
+                if (!info || !info.Valid) {
+                    if (info && info.Throttled && info.Message) { el('invalidMsg').textContent = info.Message; }
+                    show('invalid');
+                    return;
+                }
                 show('form');
                 if (info.Message) { el('message').textContent = info.Message; }
                 if (info.RequiresPin) { show('pinRow'); }

@@ -27,10 +27,12 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<SessionCleanupService>();
         serviceCollection.AddSingleton<InviteService>();
         serviceCollection.AddSingleton<InviteStatusStore>();
+        serviceCollection.AddSingleton<InviteAttemptLimiter>();
         serviceCollection.AddSingleton<ResetCodeService>();
         serviceCollection.AddSingleton<IEventConsumer<UserCreatedEventArgs>, GroupEventConsumer>();
         serviceCollection.AddSingleton<IEventConsumer<UserDeletedEventArgs>, UserDeletedEventConsumer>();
 
         serviceCollection.AddSingleton<IAuthenticationProvider, PasswordRuleAuthenticationProvider>();
+        serviceCollection.AddHostedService<UserManagerAccessorInitializer>();
     }
 }

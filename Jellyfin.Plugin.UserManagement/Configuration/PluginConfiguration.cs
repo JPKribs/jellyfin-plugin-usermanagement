@@ -31,11 +31,16 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the number of wrong PIN attempts before an invite locks itself.</summary>
     public int MaxPinAttempts { get; set; } = 5;
 
-    /// <summary>Gets or sets the number of redemptions allowed per invite within the rate-limit window. 0 disables rate limiting.</summary>
-    public int InviteRateLimitCount { get; set; }
+    /// <summary>
+    /// Gets or sets the number of successful signups allowed per invite within the rate-limit window. 0
+    /// disables this limit. Defaults to 10 per 60 minutes. A configuration file that already holds a value
+    /// keeps it; only a file without the setting (a new install, or one last saved by a version older than
+    /// the setting) picks up the default.
+    /// </summary>
+    public int InviteRateLimitCount { get; set; } = 10;
 
     /// <summary>Gets or sets the rate-limit window in minutes. 0 disables rate limiting.</summary>
-    public int InviteRateLimitWindowMinutes { get; set; }
+    public int InviteRateLimitWindowMinutes { get; set; } = 60;
 
     /// <summary>
     /// Gets or sets a value indicating whether the dashboard may read password reset codes from the
