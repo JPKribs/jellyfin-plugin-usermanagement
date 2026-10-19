@@ -66,6 +66,45 @@ public class GroupEventConsumerTests
     }
 
     [Fact]
+    public async Task OnEvent_AdminCreatedUser_KeepsEveryDefaultGroupRestrictionAfterEnrollment()
+    {
+        var (plugin, server, user) = Setup();
+        server.EntitySnapshots = true;
+        server.Policies[user.Id].EnableAllFolders = true;
+        var library = Guid.NewGuid();
+        var group = new GroupDefinition
+        {
+            Id = Guid.NewGuid(),
+            Permissions = new GroupPermissions
+            {
+                ManageLibraryAccess = true,
+                EnableAllFolders = false,
+                EnabledFolders = new() { library },
+                ManageEnableRemoteAccess = true,
+                EnableRemoteAccess = false
+            },
+            Password = new PasswordPolicy { Enabled = true, MinLength = 12 }
+        };
+        plugin.MutateConfiguration(cfg =>
+        {
+            cfg.Groups.Add(group);
+            cfg.DefaultGroupId = group.Id;
+            return true;
+        });
+
+        // Core hands the consumer the entity it just created, loaded before any group was applied.
+        await server.Consumer.OnEvent(new UserCreatedEventArgs(server.Load(user.Id)!));
+
+        var policy = server.Policies[user.Id];
+        Assert.False(policy.EnableAllFolders);
+        Assert.Equal(new[] { library }, policy.EnabledFolders);
+        Assert.False(policy.EnableRemoteAccess);
+        Assert.Equal(typeof(Services.PasswordRuleAuthenticationProvider).FullName, policy.AuthenticationProviderId);
+        Assert.Equal(new[] { user.Id }, plugin.ReadConfiguration(c => c.Groups.Single(g => g.Id == group.Id).MemberIds.ToList()));
+        Assert.Single(plugin.ReadConfiguration(c => c.ProviderEnrollments.ToList()), e => e.UserId == user.Id);
+    }
+
+    [Fact]
     public async Task OnEvent_DefaultGroupWithoutPasswordRules_DoesNotEnroll()
     {
         var (plugin, server, user) = Setup();

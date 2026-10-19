@@ -418,7 +418,12 @@ public class GroupService
     /// </summary>
     private async Task SetAuthenticationProviderAsync(User user, string providerId)
     {
-        var policy = _userManager.GetUserDto(user, string.Empty).Policy;
+        // Build the policy from the account as stored now, not from the entity the caller holds. Core
+        // reads the policy off the entity, and a caller's entity can predate a write made earlier in the
+        // same flow: the user created event passes the entity core created, before the default group was
+        // applied, so saving a policy built from it put back every permission the group had just set.
+        var current = _userManager.GetUserById(user.Id) ?? user;
+        var policy = _userManager.GetUserDto(current, string.Empty).Policy;
         policy.AuthenticationProviderId = providerId;
         await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
     }

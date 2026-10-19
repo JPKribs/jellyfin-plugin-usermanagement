@@ -33,15 +33,16 @@ internal sealed class FakeUserServer
         Consumer = new GroupEventConsumer(Groups, Um, Substitute.For<ILogger<GroupEventConsumer>>());
 
         Um.GetUsers().Returns(_ => Users.Values.ToList());
-        Um.GetUserById(Arg.Any<Guid>()).Returns(ci => Users.GetValueOrDefault(ci.Arg<Guid>()));
+        Um.GetUserById(Arg.Any<Guid>()).Returns(ci => EntitySnapshots ? Load(ci.Arg<Guid>()) : Users.GetValueOrDefault(ci.Arg<Guid>()));
         Um.GetUserByName(Arg.Any<string>()).Returns(ci => Users.Values.FirstOrDefault(u => u.Username == ci.Arg<string>()));
         Um.GetUserDto(Arg.Any<User>(), Arg.Any<string>()).Returns(ci =>
         {
             var user = ci.Arg<User>();
+            var policy = EntitySnapshots && _loaded.TryGetValue(user, out var snapshot) ? snapshot : Policies[user.Id];
             return new UserDto
             {
                 Id = user.Id,
-                Policy = Copy(Policies[user.Id]),
+                Policy = Copy(policy),
                 Configuration = new UserConfiguration()
             };
         });
@@ -103,6 +104,8 @@ internal sealed class FakeUserServer
         });
     }
 
+    private readonly Dictionary<User, UserPolicy> _loaded = new(ReferenceEqualityComparer.Instance);
+
     public IUserManager Um { get; }
 
     public GroupService Groups { get; }
@@ -127,7 +130,34 @@ internal sealed class FakeUserServer
 
     public Action<User>? OnCreated { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether loaded accounts behave like core's entities: each
+    /// <see cref="IUserManager.GetUserById"/> returns a new entity, <see cref="IUserManager.GetUserDto"/>
+    /// builds the policy from the entity it is given as it was when loaded, and a policy write never
+    /// reaches entities loaded before it.
+    /// </summary>
+    public bool EntitySnapshots { get; set; }
+
     public User Single(string name) => Users.Values.Single(u => u.Username == name);
+
+    /// <summary>Loads a new entity for the account, carrying its stored state at this moment.</summary>
+    /// <param name="id">The account id.</param>
+    /// <returns>The loaded entity, or null when there is no such account.</returns>
+    public User? Load(Guid id)
+    {
+        if (!Users.TryGetValue(id, out var stored))
+        {
+            return null;
+        }
+
+        var policy = Policies[id];
+        var user = TestSupport.NewUser(stored.Username, id);
+        user.AuthenticationProviderId = policy.AuthenticationProviderId;
+        user.SetPermission(PermissionKind.IsDisabled, policy.IsDisabled);
+        user.SetPermission(PermissionKind.IsAdministrator, policy.IsAdministrator);
+        _loaded.Add(user, Copy(policy));
+        return user;
+    }
 
     private static UserPolicy Copy(UserPolicy policy)
         => JsonSerializer.Deserialize<UserPolicy>(JsonSerializer.Serialize(policy))!;

@@ -1,8 +1,8 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "12.2.1.1"
-targetAbi: "12.0.0.0"
+version: "12.2.2.0"
+targetAbi: "12.2.0.0"
 framework: "net10.0"
 overview: "Group policy templates, display and playback preferences, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
 description: >
@@ -16,17 +16,8 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  security:
-  - Accounts created through an invite get only the invite's group, rather than also keeping settings and password rule enrollment from the default group
-  - Invite signups and lookups are limited per network address (per /64 block for IPv6), counting failed attempts as well as successful ones; the server warns once when invites arrive through a reverse proxy that is not in Known proxies
-  - If an invite signup fails partway, the half-created account is removed instead of being left on the server's default permissions, so the invitee can try again
-  - A new invited account cannot be signed in to until its password has been set
-  - Each invite now defaults to 10 signups per hour; servers whose saved plugin settings already include an invite rate limit keep it
   fixed:
-  - Invites into a group that has expired are refused with a clear message, and the Invites tab warns about them
-  - Invite usage and PIN counters no longer overwrite a lockout reset or invite deletion made at the same time from the dashboard
-  - Invite status is kept in memory instead of being read from disk on every invite page load
-  - Administrators and deleted users are cleaned out of group membership on every save, including saves made right after the server starts
-  - The plugin's category and description are now the same in the catalog and on the server
+  - Users created by an administrator now get all of the default group's restrictions, not just its membership and password rules.
   developer:
-  - Updated JPKribs.Jellyfin.Base to 2026.10.19.
+  - Built for Jellyfin 12.2 (target ABI 12.2.0.0). Servers on Jellyfin 12.0 or 12.1 keep the previous release.
+  - Updated test dependencies (Microsoft.NET.Test.Sdk 18.11, NSubstitute 6.2, xunit 2.9.3, xunit.runner.visualstudio 4.0.1).
