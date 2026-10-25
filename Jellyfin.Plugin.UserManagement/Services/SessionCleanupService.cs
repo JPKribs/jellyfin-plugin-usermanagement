@@ -129,15 +129,15 @@ public class SessionCleanupService
                         await _sessionManager.Logout(device).ConfigureAwait(false);
                         removed++;
                         _logger.LogInformation(
-                            "Logged out stale device {DeviceName} ({AppName}) of user {UserId} from group {GroupId}",
+                            "Logged out stale device {DeviceName} ({AppName}) of user {UserName} from group {GroupId}",
                             device.DeviceName,
                             device.AppName,
-                            userId,
+                            user.Username,
                             groupId);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to log out device {DeviceId} of user {UserId}", device.DeviceId, userId);
+                        _logger.LogError(ex, "Failed to log out device {DeviceId} of user {UserName}", device.DeviceId, user.Username);
                     }
                 }
 
