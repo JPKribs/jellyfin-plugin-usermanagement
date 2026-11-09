@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "12.2.2.3",
+        "changelog": "\n## Fixed\n- A damaged invite status file or an invite with empty resources no longer breaks the invite pages\n- The Invites page judges expiry by UTC date, as the server does, and shows the reason the server gives for a refused change\n\n## Developer\n- Built with JPKribs.Jellyfin.Base 2026.10.28.",
+        "targetAbi": "12.2.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v12.2.2.3/jellyfin-plugin-usermanagement-12.2.2.3.zip",
+        "checksum": "6a037ebebd04be41b1768f38609446ac",
+        "timestamp": "2026-11-09T16:04:24Z"
+      },
+      {
         "version": "12.2.2.2",
         "changelog": "\n## Fixed\n- Session cleanup logs now name the user whose device was logged out, instead of showing their user ID.",
         "targetAbi": "12.2.0.0",
