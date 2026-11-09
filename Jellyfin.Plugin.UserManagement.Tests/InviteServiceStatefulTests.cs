@@ -97,6 +97,28 @@ public class InviteServiceStatefulTests
         }));
     }
 
+    [Fact]
+    public void Create_NullResources_CreatesWithoutResources()
+    {
+        var (_, _, service) = Setup();
+
+        var invite = service.Create(new CreateInviteRequest { Resources = null!, UseDefaultGroup = false, GroupId = Guid.NewGuid() });
+
+        Assert.Empty(invite.Resources);
+    }
+
+    [Fact]
+    public void Create_NullResourceEntry_Throws()
+    {
+        var (_, _, service) = Setup();
+        Assert.Throws<ArgumentException>(() => service.Create(new CreateInviteRequest
+        {
+            Resources = { null! },
+            UseDefaultGroup = false,
+            GroupId = Guid.NewGuid()
+        }));
+    }
+
     private static GroupDefinition DisallowedGroup()
         => new()
         {

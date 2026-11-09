@@ -140,10 +140,10 @@ public sealed class InviteService : IDisposable
         }
 
         var resources = new List<InviteResource>();
-        foreach (var resource in request.Resources)
+        foreach (var resource in request.Resources ?? new List<InviteResource>())
         {
-            var title = resource.Title?.Trim() ?? string.Empty;
-            if (title.Length == 0 || !IsValidResourceUrl(resource.Url))
+            var title = resource?.Title?.Trim() ?? string.Empty;
+            if (resource is null || title.Length == 0 || !IsValidResourceUrl(resource.Url))
             {
                 throw new ArgumentException("Each resource needs a title and an absolute http or https URL.", nameof(request));
             }

@@ -460,7 +460,7 @@ public class GroupService
             return;
         }
 
-        var deleted = new List<Guid>();
+        var deleted = new HashSet<Guid>();
         var processed = 0;
         foreach (var (groupId, action, members) in work)
         {

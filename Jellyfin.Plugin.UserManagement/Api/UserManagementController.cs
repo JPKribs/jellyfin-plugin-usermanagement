@@ -114,9 +114,10 @@ public class UserManagementController : ControllerBase
             return BadRequest(new { Error = "The PIN must be exactly 6 digits, like a Quick Connect code." });
         }
 
-        foreach (var resource in request.Resources)
+        // A body with "Resources": null or a null entry is a bad request, not a server error.
+        foreach (var resource in request.Resources ?? new List<InviteResource>())
         {
-            if (string.IsNullOrWhiteSpace(resource.Title) || !InviteService.IsValidResourceUrl(resource.Url))
+            if (resource is null || string.IsNullOrWhiteSpace(resource.Title) || !InviteService.IsValidResourceUrl(resource.Url))
             {
                 return BadRequest(new { Error = "Each resource needs a title and a full http(s) URL." });
             }

@@ -129,4 +129,21 @@ public class InviteStatusStoreTests
 
         Assert.Equal(3, reopened.Find(id)!.FailedPinAttempts);
     }
+
+    [Fact]
+    public void NullEntriesInTheFile_AreReadAsEmptyStatus()
+    {
+        var (store, path) = NewStore();
+        var nullEntry = Guid.NewGuid();
+        var nullList = Guid.NewGuid();
+        File.WriteAllText(
+            path,
+            "{\"Invites\":{\"" + nullEntry + "\":null,\"" + nullList + "\":{\"UsedCount\":4,\"RecentRedemptions\":null}}}");
+
+        Assert.Equal(0, store.Find(nullEntry)!.UsedCount);
+        var status = store.Find(nullList)!;
+        Assert.Equal(4, status.UsedCount);
+        Assert.Empty(status.RecentRedemptions);
+        Assert.Equal(2, store.Load().Invites.Count);
+    }
 }

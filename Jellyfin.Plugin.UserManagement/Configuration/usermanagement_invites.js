@@ -24,8 +24,25 @@ export default function (view) {
     // Group expiry is day based on the server (expired on or after the date, in UTC), so compare the
     // date parts only.
     function groupExpired(g) {
-        if (!g || !g.ExpiresOn) return false;
-        return String(g.ExpiresOn).slice(0, 10) <= new Date().toISOString().slice(0, 10);
+        return !!g && dateReached(g.ExpiresOn);
+    }
+
+    // Invite expiry is day based on the server too, so an invite reads as expired on the same UTC day
+    // the server starts refusing it, whatever the browser's time zone.
+    function inviteExpired(inv) {
+        return !!inv && dateReached(inv.ExpiresAt);
+    }
+
+    function dateReached(value) {
+        if (!value) return false;
+        return String(value).slice(0, 10) <= new Date().toISOString().slice(0, 10);
+    }
+
+    // Shows the reason the server gave for a refused request, such as an expired invite, or the fallback.
+    function showError(statusId, err, fallback) {
+        Shared.errorText(err, fallback).then(function (text) {
+            Shared.setStatus(statusId, text, true);
+        });
     }
 
     function inviteGroup(inv) {
@@ -34,7 +51,7 @@ export default function (view) {
     }
 
     function statusOf(inv) {
-        if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= new Date()) return { cls: 'Expired', text: 'Expired' };
+        if (inviteExpired(inv)) return { cls: 'Expired', text: 'Expired' };
         if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
         if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'Disabled', text: 'Used up' };
         // The server refuses signups into an expired group, so the link is dead until the group's
@@ -379,8 +396,8 @@ export default function (view) {
                 updateMaxUsesState();
                 loadAll();
             })
-            .catch(function () {
-                Shared.setStatus('inviteStatus', 'Failed to create invite.', true);
+            .catch(function (err) {
+                showError('inviteStatus', err, 'Failed to create invite.');
             });
     }
 
@@ -397,14 +414,14 @@ export default function (view) {
             var rw = parseInt((Shared.getEl('txtRateWindow') || {}).value, 10);
             config.InviteRateLimitCount = isNaN(rc) || rc < 0 ? 0 : rc;
             config.InviteRateLimitWindowMinutes = isNaN(rw) || rw < 0 ? 0 : rw;
-            Shared.saveConfig(config).then(function () {
+            return Shared.saveConfig(config).then(function () {
                 _base = config.InviteBaseUrl;
                 Shared.setStatus('inviteUrlStatus', 'Invite settings saved.', false);
                 updateHttpsWarning();
                 renderInvites();
-            }).catch(function () {
-                Shared.setStatus('inviteUrlStatus', 'Failed to save invite settings.', true);
             });
+        }).catch(function () {
+            Shared.setStatus('inviteUrlStatus', 'Failed to save invite settings.', true);
         });
     }
 
@@ -415,8 +432,8 @@ export default function (view) {
                 Shared.setStatus('inviteStatus', 'Invite expiry updated.', false);
                 loadAll();
             })
-            .catch(function () {
-                Shared.setStatus('inviteStatus', 'Failed to update expiry.', true);
+            .catch(function (err) {
+                showError('inviteStatus', err, 'Failed to update expiry.');
             });
     }
 
@@ -425,7 +442,7 @@ export default function (view) {
         if (enabled) {
             var inv = _invites.filter(function (i) { return i.Id === id; })[0];
             if (inv) {
-                if (inv.ExpiresAt && new Date(inv.ExpiresAt) <= new Date()) {
+                if (inviteExpired(inv)) {
                     Shared.setStatus('inviteStatus', 'This invite has expired. Move its expiration forward to re-enable it.', true);
                     return;
                 }
@@ -443,8 +460,8 @@ export default function (view) {
                 Shared.setStatus('inviteStatus', enabled ? 'Invite enabled.' : 'Invite disabled.', false);
                 loadAll();
             })
-            .catch(function () {
-                Shared.setStatus('inviteStatus', 'Failed to update invite.', true);
+            .catch(function (err) {
+                showError('inviteStatus', err, 'Failed to update invite.');
             });
     }
 
@@ -455,8 +472,8 @@ export default function (view) {
                 Shared.setStatus('inviteStatus', 'Invite deleted.', false);
                 loadAll();
             })
-            .catch(function () {
-                Shared.setStatus('inviteStatus', 'Failed to delete invite.', true);
+            .catch(function (err) {
+                showError('inviteStatus', err, 'Failed to delete invite.');
             });
     }
 

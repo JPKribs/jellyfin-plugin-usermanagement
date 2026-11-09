@@ -145,6 +145,15 @@ public sealed class InviteStatusStore
             {
                 data = JsonSerializer.Deserialize<InviteStatusData>(json) ?? data;
                 data.Invites ??= new Dictionary<Guid, InviteStatus>();
+
+                // A null entry or list in a hand edited or restored file reads as empty, so one damaged
+                // entry never fails every invite request.
+                foreach (var key in data.Invites.Keys.ToList())
+                {
+                    var status = data.Invites[key] ?? new InviteStatus();
+                    status.RecentRedemptions ??= new List<DateTime>();
+                    data.Invites[key] = status;
+                }
             }
 
             return true;
