@@ -24,7 +24,7 @@ Each invite can also carry:
 
 ## Managing Invites
 
-Every invite is listed with its link, usage, group and expiration, along with buttons to copy, lock or delete it.
+Every invite is listed with its link, usage, group and expiration, along with buttons to copy its link, duplicate, lock or delete it.
 
 ![Invite list](screenshots/Invite%20List.png)
 
@@ -51,7 +51,7 @@ Invite links are public, so a few limits apply to them:
 
 ## Disabled Invites
 
-A group whose [password changes](Passwords.md#password-changes) are set to **Disallowed** cannot be used for invites, and switching a group to that mode disables its outstanding invite links. A disabled invite, or one past its expiration, cannot be manually reenabled until the cause is fixed.
+A group whose [password changes](Passwords.md#password-changes) are set to **Disallowed** cannot be used for invites, and switching a group to that mode disables its outstanding invite links. A disabled invite, or one past its expiration, cannot be manually re-enabled until the cause is fixed.
 
 !!! tip
     To prevent abuse, it is recommended to create a new link for each user that you want to onboard!

@@ -1,6 +1,6 @@
 # Expiration
 
-Give a group an expiration date and its members are disabled once that date passes. This is checked by the `Process expired and inactive users` **Scheduled Task**, so you determine what time of day these expirations occur.
+Give a group an expiration date and its members are disabled once that date is reached. This is checked by the `Process expired and inactive users` **Scheduled Task**, so you determine what time of day these expirations occur.
 
 Turn on expiration and pick a date under **Expiry** in the group's **Other** section.
 

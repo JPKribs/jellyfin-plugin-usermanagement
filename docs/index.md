@@ -13,7 +13,7 @@ User Management is a Jellyfin plugin for managing Jellyfin users via groups. It 
 
 ## How It Works
 
-User Management uses groups to assign permissions and rules to all users who are a part of this group. New users can be onboarded from an invite link and have group permissions assigned to them on creation. On update, this plugin finds all users in these groups and updates their `UserDto.userConfiguration` using all overridden permissions and settings. Anything not found in the base `UserDto` is stored and referenced from the plugin storage.
+User Management uses groups to assign permissions and rules to all users who are a part of this group. New users can be onboarded from an invite link and have group permissions assigned to them on creation. On update, this plugin finds all users in these groups and updates their `UserDto.Policy` and `UserDto.Configuration` using all overridden permissions and settings. Anything not found in the base `UserDto`, such as password rules, expiry and invites, is stored in the plugin configuration.
 
 The plugin adds a **User Management** page to the dashboard with Groups, Invites and Resets tabs.
 
