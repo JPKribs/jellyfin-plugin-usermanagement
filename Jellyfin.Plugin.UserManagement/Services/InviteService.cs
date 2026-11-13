@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Database.Implementations.Entities;
-using Jellyfin.Plugin.UserManagement.Services;
-using Jellyfin.Plugin.UserManagement.Utilities;
+using Jellyfin.Plugin.UserManagement.Configuration;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Cryptography;
@@ -88,7 +89,7 @@ public sealed class InviteService : IDisposable
     /// </summary>
     /// <param name="config">The configuration to normalize in place.</param>
     /// <returns>The number of invites disabled.</returns>
-    public static int DisableInvitesForBlockedGroups(Configuration.PluginConfiguration config)
+    public static int DisableInvitesForBlockedGroups(PluginConfiguration config)
     {
         ArgumentNullException.ThrowIfNull(config);
 
@@ -202,7 +203,7 @@ public sealed class InviteService : IDisposable
 
         // The match is copied under the configuration lock, so the caller can keep reading it while a
         // dashboard save swaps the configuration underneath.
-        var candidate = System.Text.Encoding.UTF8.GetBytes(token);
+        var candidate = Encoding.UTF8.GetBytes(token);
         return Plugin.Instance?.ReadConfiguration(c => c.Invites
             .FirstOrDefault(i => TokenMatches(i.Token, candidate)) is { } match ? ModelSnapshot.Copy(match) : null);
     }
@@ -214,7 +215,7 @@ public sealed class InviteService : IDisposable
             return false;
         }
 
-        var storedBytes = System.Text.Encoding.UTF8.GetBytes(stored);
+        var storedBytes = Encoding.UTF8.GetBytes(stored);
         return storedBytes.Length == candidate.Length
             && CryptographicOperations.FixedTimeEquals(storedBytes, candidate);
     }
@@ -870,11 +871,6 @@ public sealed class InviteService : IDisposable
 
     private bool VerifyPin(Invite invite, string? pin)
     {
-        if (string.IsNullOrEmpty(invite.PinHash))
-        {
-            return true;
-        }
-
         try
         {
             return _cryptoProvider.Verify(PasswordHash.Parse(invite.PinHash), (pin ?? string.Empty).Trim());

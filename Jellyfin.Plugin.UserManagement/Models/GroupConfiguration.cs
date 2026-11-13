@@ -65,7 +65,7 @@ public class GroupConfiguration
     /// <summary>Gets or sets a value indicating whether the group manages the collections view.</summary>
     public bool ManageDisplayCollectionsView { get; set; }
 
-    /// <summary>Gets or sets whether a Collections view is shown alongside the member's libraries.</summary>
+    /// <summary>Gets or sets a value indicating whether a Collections view is shown alongside the member's libraries.</summary>
     public bool DisplayCollectionsView { get; set; }
 
     /// <summary>Gets or sets a value indicating whether missing episodes are displayed within seasons.</summary>

@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Jellyfin.Database.Implementations.Enums;
 using MediaBrowser.Model.Configuration;
 

@@ -3,8 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Data;
 using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
-using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Utilities;
 using MediaBrowser.Controller.Events;
 using MediaBrowser.Controller.Library;
@@ -109,7 +109,7 @@ public class GroupEventConsumer : IEventConsumer<UserCreatedEventArgs>
         }
     }
 
-    private async Task HoldDisabledAsync(Jellyfin.Database.Implementations.Entities.User user)
+    private async Task HoldDisabledAsync(User user)
     {
         try
         {

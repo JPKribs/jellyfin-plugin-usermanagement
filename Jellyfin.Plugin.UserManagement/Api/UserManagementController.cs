@@ -4,8 +4,8 @@ using System.Linq;
 using System.Net.Mime;
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.UserManagement.Api;
 
 /// <summary>
-/// Admin REST surface for the User Management plugin such as group apply & invite management.
+/// Admin REST surface for the User Management plugin such as group apply and invite management.
 /// </summary>
 [ApiController]
 [Authorize(Policy = "RequiresElevation")]

@@ -4,15 +4,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data;
-using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
-using Jellyfin.Plugin.UserManagement.Services;
-using Jellyfin.Plugin.UserManagement.Utilities;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Users;
 using Microsoft.Extensions.Logging;
 
@@ -198,7 +197,7 @@ public class GroupService
     /// Whether a member should currently stay disabled due to the group's lifecycle rules, so a group
     /// that force-enables its members does not re-enable someone the expiry/inactivity task disabled.
     /// </summary>
-    private static bool IsLifecycleDisabled(MediaBrowser.Model.Dto.UserDto dto, GroupDefinition group)
+    private static bool IsLifecycleDisabled(UserDto dto, GroupDefinition group)
     {
         if (group.ExpiresOn is { } due && due.Date <= DateTime.UtcNow.Date)
         {

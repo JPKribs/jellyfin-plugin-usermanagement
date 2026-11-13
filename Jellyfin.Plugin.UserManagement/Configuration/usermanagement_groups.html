@@ -75,155 +75,155 @@
                             <div class="jpk-section-title">Other</div>
                             <div class="jpk-section-content">
 
-                        <!-- Session Management (per group) -->
-                        <div class="jpk-collapsible-section">
-                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
-                                <span class="jpk-collapsible-title">Session Management</span>
-                                <span class="jpk-collapsible-icon">&#9660;</span>
-                            </button>
-                            <div id="grpSessionContent" class="jpk-collapsible-content collapsed">
-                                <div class="checkboxContainer checkboxContainer-withDescription">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
-                                        <span class="checkboxLabel">Clean up old sessions</span>
-                                    </label>
-                                    <div class="fieldDescription checkboxFieldDescription">
-                                        Log out devices belonging to this group's members once they have gone too long
-                                        without checking back into the server. Cleanup is performed by the
-                                        <strong>Clean Expired Sessions</strong> task, so its run time determines when
-                                        devices are logged out.
+                                <!-- Session Management (per group) -->
+                                <div class="jpk-collapsible-section">
+                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
+                                        <span class="jpk-collapsible-title">Session Management</span>
+                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                    </button>
+                                    <div id="grpSessionContent" class="jpk-collapsible-content collapsed">
+                                        <div class="checkboxContainer checkboxContainer-withDescription">
+                                            <label class="emby-checkbox-label">
+                                                <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
+                                                <span class="checkboxLabel">Clean up old sessions</span>
+                                            </label>
+                                            <div class="fieldDescription checkboxFieldDescription">
+                                                Log out devices belonging to this group's members once they have gone too long
+                                                without checking back into the server. Cleanup is performed by the
+                                                <strong>Clean Expired Sessions</strong> task, so its run time determines when
+                                                devices are logged out.
+                                            </div>
+                                        </div>
+                                        <div class="hidden" id="sessionFields">
+                                            <div id="sessionRuleList"></div>
+                                            <button is="emby-button" type="button" id="btnAddSessionRule" class="raised jpk-button-small jpk-button-submit" style="margin-top:6px;"><span>Add rule</span></button>
+                                            <div id="sessionOverlapWarning" class="fieldDescription hidden"></div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="hidden" id="sessionFields">
-                                    <div id="sessionRuleList"></div>
-                                    <button is="emby-button" type="button" id="btnAddSessionRule" class="raised jpk-button-small jpk-button-submit" style="margin-top:6px;"><span>Add rule</span></button>
-                                    <div id="sessionOverlapWarning" class="fieldDescription hidden"></div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Password Requirements (per group) -->
-                        <div class="jpk-collapsible-section">
-                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
-                                <span class="jpk-collapsible-title">Password Requirements</span>
-                                <span class="jpk-collapsible-icon">&#9660;</span>
-                            </button>
-                            <div id="grpPwContent" class="jpk-collapsible-content collapsed">
-                                <div class="checkboxContainer checkboxContainer-withDescription">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
-                                        <span class="checkboxLabel">Enforce password requirements for this group's members</span>
-                                    </label>
-                                    <div class="fieldDescription checkboxFieldDescription">
-                                        Enforce password rules to the members of this group.
+                                <!-- Password Requirements (per group) -->
+                                <div class="jpk-collapsible-section">
+                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
+                                        <span class="jpk-collapsible-title">Password Requirements</span>
+                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                    </button>
+                                    <div id="grpPwContent" class="jpk-collapsible-content collapsed">
+                                        <div class="checkboxContainer checkboxContainer-withDescription">
+                                            <label class="emby-checkbox-label">
+                                                <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
+                                                <span class="checkboxLabel">Enforce password requirements for this group's members</span>
+                                            </label>
+                                            <div class="fieldDescription checkboxFieldDescription">
+                                                Enforce password rules to the members of this group.
+                                            </div>
+                                        </div>
+                                        <div class="jpk-indent hidden" id="pwFields">
+                                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
+                                                    <span class="checkboxLabel">Disallow empty passwords</span>
+                                                </label>
+                                                <div class="fieldDescription">
+                                                    When unchecked, an empty password is always accepted and takes priority
+                                                    over the other rules, since an empty password means the account has no
+                                                    password at all.
+                                                </div>
+                                            </div>
+                                            <div class="inputContainer">
+                                                <label for="grpPwLength">Minimum length:</label>
+                                                <input is="emby-input" type="number" id="grpPwLength" min="1" />
+                                            </div>
+                                            <div class="selectContainer">
+                                                <label class="selectLabel" for="grpPwChangeMode">Password changes:</label>
+                                                <select is="emby-select" id="grpPwChangeMode">
+                                                    <option value="Allowed">Allowed</option>
+                                                    <option value="InitialOnly">Initial password only</option>
+                                                    <option value="Disallowed">Disallowed</option>
+                                                </select>
+                                                <div class="fieldDescription">
+                                                    Whether members may set or change their own password. With
+                                                    <strong>Initial password only</strong>, a member whose password is empty
+                                                    may still set one. Administrators can always change a member's password.
+                                                </div>
+                                            </div>
+                                            <div class="checkboxContainer">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpPwUpper" />
+                                                    <span class="checkboxLabel">Require a capital letter</span>
+                                                </label>
+                                            </div>
+                                            <div class="checkboxContainer">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpPwNumber" />
+                                                    <span class="checkboxLabel">Require a number</span>
+                                                </label>
+                                            </div>
+                                            <div class="checkboxContainer">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpPwSymbol" />
+                                                    <span class="checkboxLabel">Require a symbol</span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="jpk-indent hidden" id="pwFields">
-                                <div class="checkboxContainer checkboxContainer-withDescription">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
-                                        <span class="checkboxLabel">Disallow empty passwords</span>
-                                    </label>
-                                    <div class="fieldDescription">
-                                        When unchecked, an empty password is always accepted and takes priority
-                                        over the other rules, since an empty password means the account has no
-                                        password at all.
+
+                                <!-- Expiry (per group) -->
+                                <div class="jpk-collapsible-section">
+                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
+                                        <span class="jpk-collapsible-title">Expiry</span>
+                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                    </button>
+                                    <div id="grpExpiryContent" class="jpk-collapsible-content collapsed">
+                                        <div class="checkboxContainer">
+                                            <label class="emby-checkbox-label">
+                                                <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
+                                                <span class="checkboxLabel">Set an expiration for the members of this group</span>
+                                            </label>
+                                        </div>
+                                        <div class="jpk-indent hidden" id="grpExpiryFields">
+                                            <div class="inputContainer">
+                                                <label for="grpExpiryDate">Expiry date:</label>
+                                                <input type="date" id="grpExpiryDate" />
+                                                <div class="fieldDescription">Members are expired by the next <strong>Process expired and inactive users</strong> task run on or after this date.</div>
+                                            </div>
+                                            <div class="selectContainer">
+                                                <label class="selectLabel" for="grpExpiryAction">Expiration method</label>
+                                                <select is="emby-select" id="grpExpiryAction" class="emby-select-withcolor">
+                                                    <option value="Disable">Disable</option>
+                                                    <option value="Delete">Delete</option>
+                                                </select>
+                                                <div class="fieldDescription">Disable sets the account to inactive which can be reversed. Delete permanently deletes the user and their data.</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="inputContainer">
-                                    <label for="grpPwLength">Minimum length:</label>
-                                    <input is="emby-input" type="number" id="grpPwLength" min="1" />
-                                </div>
-                                <div class="selectContainer">
-                                    <label class="selectLabel" for="grpPwChangeMode">Password changes:</label>
-                                    <select is="emby-select" id="grpPwChangeMode">
-                                        <option value="Allowed">Allowed</option>
-                                        <option value="InitialOnly">Initial password only</option>
-                                        <option value="Disallowed">Disallowed</option>
-                                    </select>
-                                    <div class="fieldDescription">
-                                        Whether members may set or change their own password. With
-                                        <strong>Initial password only</strong>, a member whose password is empty
-                                        may still set one. Administrators can always change a member's password.
+
+                                <!-- Inactivity (per group) -->
+                                <div class="jpk-collapsible-section">
+                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
+                                        <span class="jpk-collapsible-title">Inactivity</span>
+                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                    </button>
+                                    <div id="grpInactiveContent" class="jpk-collapsible-content collapsed">
+                                        <div class="checkboxContainer">
+                                            <label class="emby-checkbox-label">
+                                                <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
+                                                <span class="checkboxLabel">Disable inactive users</span>
+                                            </label>
+                                        </div>
+                                        <div class="jpk-indent hidden" id="inactiveFields">
+                                            <div class="inputContainer">
+                                                <label for="grpInactiveDays">Days of inactivity before disabling:</label>
+                                                <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
+                                                <div class="fieldDescription">Members with no activity for this many days are disabled by the next <strong>Process expired and inactive users</strong> task run. Members who have never signed in are left alone.</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="checkboxContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpPwUpper" />
-                                        <span class="checkboxLabel">Require a capital letter</span>
-                                    </label>
-                                </div>
-                                <div class="checkboxContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpPwNumber" />
-                                        <span class="checkboxLabel">Require a number</span>
-                                    </label>
-                                </div>
-                                <div class="checkboxContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpPwSymbol" />
-                                        <span class="checkboxLabel">Require a symbol</span>
-                                    </label>
-                                </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Expiry (per group) -->
-                        <div class="jpk-collapsible-section">
-                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
-                                <span class="jpk-collapsible-title">Expiry</span>
-                                <span class="jpk-collapsible-icon">&#9660;</span>
-                            </button>
-                            <div id="grpExpiryContent" class="jpk-collapsible-content collapsed">
-                                <div class="checkboxContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
-                                        <span class="checkboxLabel">Set an expiration for the members of this group</span>
-                                    </label>
-                                </div>
-                                <div class="jpk-indent hidden" id="grpExpiryFields">
-                                <div class="inputContainer">
-                                    <label for="grpExpiryDate">Expiry date:</label>
-                                    <input type="date" id="grpExpiryDate" />
-                                    <div class="fieldDescription">Members are expired by the next <strong>Process expired and inactive users</strong> task run on or after this date.</div>
-                                </div>
-                                <div class="selectContainer">
-                                    <label class="selectLabel" for="grpExpiryAction">Expiration method</label>
-                                    <select is="emby-select" id="grpExpiryAction" class="emby-select-withcolor">
-                                        <option value="Disable">Disable</option>
-                                        <option value="Delete">Delete</option>
-                                    </select>
-                                    <div class="fieldDescription">Disable sets the account to inactive which can be reversed. Delete permanently deletes the user and their data.</div>
-                                </div>
-                                </div>
                             </div>
-                        </div>
-
-                        <!-- Inactivity (per group) -->
-                        <div class="jpk-collapsible-section">
-                            <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
-                                <span class="jpk-collapsible-title">Inactivity</span>
-                                <span class="jpk-collapsible-icon">&#9660;</span>
-                            </button>
-                            <div id="grpInactiveContent" class="jpk-collapsible-content collapsed">
-                                <div class="checkboxContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
-                                        <span class="checkboxLabel">Disable inactive users</span>
-                                    </label>
-                                </div>
-                                <div class="jpk-indent hidden" id="inactiveFields">
-                                <div class="inputContainer">
-                                    <label for="grpInactiveDays">Days of inactivity before disabling:</label>
-                                    <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
-                                    <div class="fieldDescription">Members with no activity for this many days are disabled by the next <strong>Process expired and inactive users</strong> task run. Members who have never signed in are left alone.</div>
-                                </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        </div>
                         </div>
                         <!-- /Other -->
 

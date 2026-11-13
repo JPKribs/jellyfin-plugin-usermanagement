@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.UserManagement.Services;
 using JPKribs.Jellyfin.Base;
 using MediaBrowser.Model.Tasks;
-using Jellyfin.Plugin.UserManagement.Services;
 
 namespace Jellyfin.Plugin.UserManagement.Tasks;
 

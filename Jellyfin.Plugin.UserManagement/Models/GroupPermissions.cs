@@ -37,7 +37,7 @@ public class GroupPermissions
     /// <summary>Gets or sets a value indicating whether the group manages user preference access.</summary>
     public bool ManageEnableUserPreferenceAccess { get; set; }
 
-    /// <summary>Gets or sets whether members may change their own display and playback preferences.</summary>
+    /// <summary>Gets or sets a value indicating whether members may change their own display and playback preferences.</summary>
     public bool EnableUserPreferenceAccess { get; set; } = true;
 
     /// <summary>Gets or sets a value indicating whether the group manages media conversion.</summary>
@@ -49,7 +49,7 @@ public class GroupPermissions
     /// <summary>Gets or sets a value indicating whether the group manages sync transcoding.</summary>
     public bool ManageEnableSyncTranscoding { get; set; }
 
-    /// <summary>Gets or sets whether the server may transcode media a client downloads for offline use.</summary>
+    /// <summary>Gets or sets a value indicating whether the server may transcode media a client downloads for offline use.</summary>
     public bool EnableSyncTranscoding { get; set; } = true;
 
     /// <summary>Gets or sets a value indicating whether the group manages Live TV access.</summary>
@@ -136,7 +136,7 @@ public class GroupPermissions
     /// <summary>Gets or sets a value indicating whether the group manages public sharing.</summary>
     public bool ManageEnablePublicSharing { get; set; }
 
-    /// <summary>Gets or sets whether members may create public share links.</summary>
+    /// <summary>Gets or sets a value indicating whether members may create public share links.</summary>
     public bool EnablePublicSharing { get; set; } = true;
 
     /// <summary>Gets or sets a value indicating whether the group manages the disabled flag.</summary>

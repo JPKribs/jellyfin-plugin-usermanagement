@@ -289,7 +289,6 @@ export default function (view) {
         Shared.setVisible('maxUsesFields', !!(Shared.getEl('chkSetMaxUses') || {}).checked);
     }
 
-
     function openCreateSection() {
         var header = view.querySelector('.jpk-collapsible-header[data-target="newInviteContent"]');
         var content = Shared.getEl('newInviteContent');
@@ -446,8 +445,7 @@ export default function (view) {
                     Shared.setStatus('inviteStatus', 'This invite has expired. Move its expiration forward to re-enable it.', true);
                     return;
                 }
-                var gid = inv.UseDefaultGroup ? _defaultGroupId : inv.GroupId;
-                var group = _groups.filter(function (g) { return g.Id === gid; })[0];
+                var group = inviteGroup(inv);
                 if (group && blocksInvites(group)) {
                     Shared.setStatus('inviteStatus', "This invite's group disallows all password changes, so it cannot be enabled.", true);
                     return;

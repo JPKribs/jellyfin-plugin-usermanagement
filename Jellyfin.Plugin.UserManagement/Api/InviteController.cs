@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Utilities;
 using JPKribs.Jellyfin.Base;
 using MediaBrowser.Controller;
@@ -157,7 +158,7 @@ public class InviteController : ControllerBase
     /// reverse proxy the server does not trust, so every visitor shares the proxy's address and one
     /// attempt budget. Logged once per process, since the setup does not change between requests.
     /// </summary>
-    private void WarnIfProxyIsNotTrusted(System.Net.IPAddress? remote)
+    private void WarnIfProxyIsNotTrusted(IPAddress? remote)
     {
         if (!ClientAddress.IsPrivate(remote)
             || Request?.Headers.ContainsKey("X-Forwarded-For") != true

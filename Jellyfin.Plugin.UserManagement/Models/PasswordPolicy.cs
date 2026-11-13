@@ -33,6 +33,6 @@ public class PasswordPolicy
     /// <summary>Gets or sets a value indicating whether a symbol is required.</summary>
     public bool RequireSymbol { get; set; }
 
-    /// <summary> Gets or sets whether members may set or change their own password. Administrators can always change a member's password.</summary>
+    /// <summary>Gets or sets whether members may set or change their own password. Administrators can always change a member's password.</summary>
     public PasswordChangeMode ChangeMode { get; set; } = PasswordChangeMode.Allowed;
 }

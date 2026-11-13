@@ -173,9 +173,8 @@ public static class GroupPermissionsExtensions
         if (p.ManageBlockUnratedItems)
         {
             policy.BlockUnratedItems = p.BlockUnratedItems
-                .Select(name => Enum.TryParse<UnratedItem>(name, out var item) ? (UnratedItem?)item : null)
-                .Where(item => item.HasValue)
-                .Select(item => item!.Value)
+                .Select(name => Enum.TryParse<UnratedItem>(name, out var item) ? item : (UnratedItem?)null)
+                .OfType<UnratedItem>()
                 .ToArray();
         }
 

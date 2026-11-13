@@ -361,7 +361,6 @@ export default function (view) {
     function renderPermRow(p, store) {
         var esc = Shared.escapeHtml;
         var control = '';
-        store = store || 'perm';
 
         if (p.type === 'bool') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
@@ -815,7 +814,7 @@ export default function (view) {
         var access = accessibleLibraryIds();
         var accessible = function (id) { return access === null || access[id] === true; };
         // Only configured libraries are access-gated. The order list also contains derived views such
-        // as Live TV and Collections (from GroupingOptions), which are not libraries and stay visible.
+        // as Live TV and Collections (from the user views call), which are not libraries and stay visible.
         var libIds = {};
         allLibraries.forEach(function (l) { libIds[l.ItemId] = true; });
 
@@ -1114,8 +1113,8 @@ export default function (view) {
         });
     }
 
-    // Option A conflict handling: where several rules cover the same client, the shortest window wins.
-    // This surfaces which clients that affects so overlapping rules are never a silent surprise.
+    // Where several rules cover the same client, the shortest window wins. This surfaces which clients
+    // that affects so overlapping rules are never a silent surprise.
     function updateSessionOverlaps() {
         var warn = view.querySelector('#sessionOverlapWarning');
         if (!warn) return;
@@ -1277,7 +1276,7 @@ export default function (view) {
 
     function ensureMemberSelector() {
         var mount = view.querySelector('#memberMount');
-        if (!mount || !createUserMultiSelector) return;
+        if (!mount) return;
         if (memberSel) { memberSel.refresh(); return; }
         memberSel = createUserMultiSelector({
             adminFilter: 'exclude',
