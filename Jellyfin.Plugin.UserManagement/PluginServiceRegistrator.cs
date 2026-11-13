@@ -19,6 +19,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddActivityLogger();
+        serviceCollection.AddSingleton<UserManagementActivity>();
         serviceCollection.AddSingleton<GroupService>(sp =>
         {
             UserManagerAccessor.Instance = sp.GetRequiredService<IUserManager>();

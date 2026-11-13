@@ -73,12 +73,20 @@ internal static class TestSupport
         return new ActivityLogger(manager, Substitute.For<ILogger<ActivityLogger>>());
     }
 
-    public static GroupService NewGroupService(IUserManager um, IDisplayPreferencesManager? displayPreferences = null)
+    public static GroupService NewGroupService(
+        IUserManager um,
+        IDisplayPreferencesManager? displayPreferences = null,
+        MediaBrowser.Model.Activity.IActivityManager? activityManager = null)
         => new(
             um,
             displayPreferences ?? Substitute.For<IDisplayPreferencesManager>(),
-            NewActivityLogger(),
+            NewActivityLogger(activityManager),
+            NewActivity(activityManager),
             Substitute.For<ILogger<GroupService>>());
+
+    /// <summary>Creates the plugin's summed activity entries over a substituted activity manager.</summary>
+    public static UserManagementActivity NewActivity(MediaBrowser.Model.Activity.IActivityManager? activityManager = null)
+        => new(NewActivityLogger(activityManager));
 
     /// <summary>Creates a status store backed by a fresh temp directory.</summary>
     public static InviteStatusStore NewInviteStatusStore()
@@ -91,7 +99,7 @@ internal static class TestSupport
     }
 
     public static InviteService NewInviteService(IUserManager um, GroupService groups, InviteStatusStore? statusStore = null)
-        => new(um, groups, Substitute.For<ICryptoProvider>(), statusStore ?? NewInviteStatusStore(), NewActivityLogger(), Substitute.For<ILogger<InviteService>>());
+        => new(um, groups, Substitute.For<ICryptoProvider>(), statusStore ?? NewInviteStatusStore(), NewActivityLogger(), NewActivity(), Substitute.For<ILogger<InviteService>>());
 }
 
 /// <summary>Serializes tests that mutate the static <see cref="Plugin.Instance"/> singleton.</summary>

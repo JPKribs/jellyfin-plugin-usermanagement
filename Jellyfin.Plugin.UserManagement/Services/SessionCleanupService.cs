@@ -100,6 +100,7 @@ public class SessionCleanupService
 
         var now = DateTime.UtcNow;
         var removed = 0;
+        var removedByApp = new Dictionary<string, int>(StringComparer.Ordinal);
         var processed = 0;
         foreach (var (groupId, rules, members) in work)
         {
@@ -128,6 +129,8 @@ public class SessionCleanupService
                     {
                         await _sessionManager.Logout(device).ConfigureAwait(false);
                         removed++;
+                        var app = string.IsNullOrWhiteSpace(device.AppName) ? "Unknown app" : device.AppName;
+                        removedByApp[app] = removedByApp.GetValueOrDefault(app) + 1;
                         _logger.LogInformation(
                             "Logged out stale device {DeviceName} ({AppName}) of user {UserName} from group {GroupId}",
                             device.DeviceName,
@@ -149,10 +152,22 @@ public class SessionCleanupService
         if (removed > 0)
         {
             _activity.Log(
-                "Session cleanup logged out " + removed + " stale session" + (removed == 1 ? string.Empty : "s"),
-                "UserManagement.SessionCleanup");
+                ActivityText.SummaryName(removed, "Logged Out", "Session"),
+                "UserManagement.SessionCleanup",
+                CleanupOverview(removed, removedByApp));
         }
 
         return removed;
     }
+
+    /// <summary>
+    /// The overview of a cleanup run's entry, as "3 stale sessions were logged out from Infuse (2), Swiftfin (1)".
+    /// </summary>
+    /// <param name="removed">How many sessions were logged out.</param>
+    /// <param name="removedByApp">How many from each client app.</param>
+    /// <returns>The overview.</returns>
+    public static string CleanupOverview(int removed, IReadOnlyDictionary<string, int> removedByApp)
+        => ActivityText.Sentence(
+            ActivityText.Count(removed, "stale session") + " " + ActivityText.WasOrWere(removed)
+            + " logged out from " + ActivityText.CountedList(removedByApp))!;
 }

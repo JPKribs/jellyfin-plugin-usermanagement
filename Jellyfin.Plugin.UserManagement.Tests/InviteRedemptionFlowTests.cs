@@ -258,7 +258,7 @@ public sealed class InviteRedemptionFlowTests : IDisposable
     {
         _plugin.MutateConfiguration(cfg => { cfg.MaxPinAttempts = 3; return true; });
         var target = AddGroup();
-        var service = new InviteService(_server.Um, _server.Groups, new FixedPinCrypto("123456"), _store, TestSupport.NewActivityLogger(), Substitute.For<ILogger<InviteService>>());
+        var service = new InviteService(_server.Um, _server.Groups, new FixedPinCrypto("123456"), _store, TestSupport.NewActivityLogger(), TestSupport.NewActivity(), Substitute.For<ILogger<InviteService>>());
         var invite = AddInvite(i =>
         {
             i.UseDefaultGroup = false;

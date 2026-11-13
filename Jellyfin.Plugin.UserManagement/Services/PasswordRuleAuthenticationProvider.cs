@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Jellyfin.Data;
@@ -112,9 +113,9 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                 {
                     _logger.LogInformation("Rejected password change for {UserId}: the group disallows self service changes", user.Id);
                     _activity.Log(
-                        "Password change blocked: " + user.Username,
+                        "Password Change Blocked for " + user.Username,
                         "UserManagement.PasswordChangeBlocked",
-                        overview: "The group disallows self-service password changes.",
+                        overview: "The group disallows self-service password changes",
                         severity: LogLevel.Warning,
                         userId: user.Id);
                     throw new ArgumentException("Password changes are disabled for your account. Ask your server administrator to change it for you.");
@@ -127,9 +128,9 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                 var reasons = string.Join(" ", errors);
                 _logger.LogWarning("Rejected password change for {UserId}: {Reasons}", user.Id, reasons);
                 _activity.Log(
-                    "Password change rejected by group password rules: " + user.Username,
+                    "Password Change Rejected for " + user.Username,
                     "UserManagement.PasswordChangeRejected",
-                    overview: reasons,
+                    overview: RejectedOverview(errors),
                     severity: LogLevel.Warning,
                     userId: user.Id);
 
@@ -156,5 +157,17 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
     {
         var principal = _httpContextAccessor?.HttpContext?.User;
         return principal?.Identity?.IsAuthenticated == true && !principal.IsInRole("Administrator");
+    }
+
+    /// <summary>
+    /// The overview of a rejected change's entry: the rules the password broke, as one sentence such as
+    /// "Password must contain at least one number; Password must contain at least one symbol".
+    /// </summary>
+    /// <param name="errors">The validation errors.</param>
+    /// <returns>The overview.</returns>
+    public static string RejectedOverview(IReadOnlyList<string> errors)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        return ActivityText.Sentence(string.Join("; ", errors.Select(e => e.Trim().TrimEnd('.')))) ?? string.Empty;
     }
 }

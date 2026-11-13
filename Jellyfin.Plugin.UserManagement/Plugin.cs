@@ -158,16 +158,18 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
         foreach (var group in config.Groups.Where(g => !existing.Contains(g.Id)))
         {
             ActivityLogger.Current?.Log(
-                "Group created: " + group.Name,
-                "UserManagement.GroupCreated");
+                "Group Created",
+                "UserManagement.GroupCreated",
+                "The group " + group.Name + " was created");
         }
 
         var incoming = new HashSet<Guid>(config.Groups.Select(g => g.Id));
         foreach (var group in (stored?.Groups ?? Enumerable.Empty<GroupDefinition>()).Where(g => !incoming.Contains(g.Id)))
         {
             ActivityLogger.Current?.Log(
-                "Group deleted: " + group.Name,
-                "UserManagement.GroupDeleted");
+                "Group Deleted",
+                "UserManagement.GroupDeleted",
+                "The group " + group.Name + " was deleted");
         }
     }
 

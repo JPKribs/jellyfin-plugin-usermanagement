@@ -34,6 +34,7 @@ public class GroupService
     private readonly IUserManager _userManager;
     private readonly IDisplayPreferencesManager _displayPreferences;
     private readonly ActivityLogger _activity;
+    private readonly UserManagementActivity _summary;
     private readonly ILogger<GroupService> _logger;
 
     /// <summary>
@@ -43,11 +44,13 @@ public class GroupService
         IUserManager userManager,
         IDisplayPreferencesManager displayPreferences,
         ActivityLogger activity,
+        UserManagementActivity summary,
         ILogger<GroupService> logger)
     {
         _userManager = userManager;
         _displayPreferences = displayPreferences;
         _activity = activity;
+        _summary = summary;
         _logger = logger;
     }
 
@@ -361,10 +364,7 @@ public class GroupService
         });
 
         await SetAuthenticationProviderAsync(user, providerId).ConfigureAwait(false);
-        _activity.Log(
-            "Enrolled in group password rules: " + user.Username,
-            "UserManagement.PasswordRulesEnrolled",
-            userId: user.Id);
+        _summary.Add(UserManagementActivity.PasswordRulesEnrolled, user.Username);
     }
 
     /// <summary>
@@ -405,10 +405,7 @@ public class GroupService
         });
 
         await SetAuthenticationProviderAsync(user, restore).ConfigureAwait(false);
-        _activity.Log(
-            "Removed from group password rules: " + user.Username,
-            "UserManagement.PasswordRulesUnenrolled",
-            userId: user.Id);
+        _summary.Add(UserManagementActivity.PasswordRulesUnenrolled, user.Username);
     }
 
     /// <summary>
@@ -443,7 +440,7 @@ public class GroupService
         var today = DateTime.UtcNow.Date;
         var work = plugin.ReadConfiguration(c => c.Groups
             .Where(g => g.ExpiresOn is { } due && due.Date <= today)
-            .Select(g => (g.Id, g.ExpiryAction, Members: g.MemberIds.ToList()))
+            .Select(g => (g.Id, g.Name, g.ExpiryAction, Members: g.MemberIds.ToList()))
             .ToList());
 
         if (work.Count == 0)
@@ -460,56 +457,60 @@ public class GroupService
         }
 
         var deleted = new HashSet<Guid>();
+        var deletedTally = new UserRunTally();
+        var disabledTally = new UserRunTally();
         var processed = 0;
-        foreach (var (groupId, action, members) in work)
-        {
-            foreach (var userId in members)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
 
-                var user = _userManager.GetUserById(userId);
-                if (user is not null && !AdminExemption.IsExempt(user))
+        // The entries are written even when the run is cancelled, so no change goes unrecorded.
+        try
+        {
+            foreach (var (groupId, groupName, action, members) in work)
+            {
+                foreach (var userId in members)
                 {
-                    try
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var user = _userManager.GetUserById(userId);
+                    if (user is not null && !AdminExemption.IsExempt(user))
                     {
-                        if (action == GroupExpiryAction.Delete)
+                        try
                         {
-                            var username = user.Username;
-                            await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
-                            deleted.Add(userId);
-                            _logger.LogInformation("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
-                            _activity.Log(
-                                "Account deleted by group expiry: " + username,
-                                "UserManagement.GroupExpiryDeleted",
-                                overview: "The group's expiry date passed and its expiration method is Delete.",
-                                severity: LogLevel.Warning);
-                        }
-                        else
-                        {
-                            var policy = _userManager.GetUserDto(user, string.Empty).Policy;
-                            if (!policy.IsDisabled)
+                            if (action == GroupExpiryAction.Delete)
                             {
-                                policy.IsDisabled = true;
-                                await _userManager.UpdatePolicyAsync(userId, policy).ConfigureAwait(false);
-                                _logger.LogInformation("Disabled expired user {UserId} from group {GroupId}", userId, groupId);
-                                _activity.Log(
-                                    "Account disabled by group expiry: " + user.Username,
-                                    "UserManagement.GroupExpiryDisabled",
-                                    overview: "The group's expiry date passed.",
-                                    severity: LogLevel.Warning,
-                                    userId: userId);
+                                var username = user.Username;
+                                await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
+                                deleted.Add(userId);
+                                _logger.LogInformation("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
+                                deletedTally.Add(groupName, username);
+                            }
+                            else
+                            {
+                                var policy = _userManager.GetUserDto(user, string.Empty).Policy;
+                                if (!policy.IsDisabled)
+                                {
+                                    policy.IsDisabled = true;
+                                    await _userManager.UpdatePolicyAsync(userId, policy).ConfigureAwait(false);
+                                    _logger.LogInformation("Disabled expired user {UserId} from group {GroupId}", userId, groupId);
+                                    disabledTally.Add(groupName, user.Username, userId);
+                                }
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to expire user {UserId} from group {GroupId}", userId, groupId);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to expire user {UserId} from group {GroupId}", userId, groupId);
-                    }
-                }
 
-                processed++;
-                progress?.Report(processed * 100.0 / total);
+                    processed++;
+                    progress?.Report(processed * 100.0 / total);
+                }
             }
+        }
+        finally
+        {
+            // A deleted account no longer exists, so its id is not attached to the entry.
+            deletedTally.Log(_activity, "Deleted", "deleted when their group expired", "UserManagement.GroupExpiryDeleted", attachUser: false);
+            disabledTally.Log(_activity, "Disabled", "disabled when their group expired", "UserManagement.GroupExpiryDisabled");
         }
 
         if (deleted.Count > 0)
@@ -541,7 +542,7 @@ public class GroupService
 
         var work = plugin.ReadConfiguration(c => c.Groups
             .Where(g => g.DisableInactiveUsers && g.InactiveDays > 0)
-            .Select(g => (g.Id, g.InactiveDays, Members: g.MemberIds.ToList()))
+            .Select(g => (g.Id, g.Name, g.InactiveDays, Members: g.MemberIds.ToList()))
             .ToList());
 
         if (work.Count == 0)
@@ -550,46 +551,52 @@ public class GroupService
         }
 
         var now = DateTime.UtcNow;
-        foreach (var (groupId, days, members) in work)
+        var disabledTally = new UserRunTally();
+
+        // The entry is written even when the run is cancelled, so no change goes unrecorded.
+        try
         {
-            var cutoff = now.AddDays(-days);
-            foreach (var userId in members)
+            foreach (var (groupId, groupName, days, members) in work)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var user = _userManager.GetUserById(userId);
-                if (user is null || AdminExemption.IsExempt(user))
+                var source = groupName + " after " + ActivityText.Count(days, "day");
+                var cutoff = now.AddDays(-days);
+                foreach (var userId in members)
                 {
-                    continue;
-                }
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                var dto = _userManager.GetUserDto(user, string.Empty);
-                var lastActive = dto.LastActivityDate ?? dto.LastLoginDate;
-                if (lastActive is null || lastActive >= cutoff)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    if (!dto.Policy.IsDisabled)
+                    var user = _userManager.GetUserById(userId);
+                    if (user is null || AdminExemption.IsExempt(user))
                     {
-                        dto.Policy.IsDisabled = true;
-                        await _userManager.UpdatePolicyAsync(userId, dto.Policy).ConfigureAwait(false);
-                        _logger.LogInformation("Disabled inactive user {UserId} from group {GroupId}", userId, groupId);
-                        _activity.Log(
-                            "Account disabled for inactivity: " + user.Username,
-                            "UserManagement.InactiveDisabled",
-                            overview: "No activity in the last " + days + " days.",
-                            severity: LogLevel.Warning,
-                            userId: userId);
+                        continue;
+                    }
+
+                    var dto = _userManager.GetUserDto(user, string.Empty);
+                    var lastActive = dto.LastActivityDate ?? dto.LastLoginDate;
+                    if (lastActive is null || lastActive >= cutoff)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        if (!dto.Policy.IsDisabled)
+                        {
+                            dto.Policy.IsDisabled = true;
+                            await _userManager.UpdatePolicyAsync(userId, dto.Policy).ConfigureAwait(false);
+                            _logger.LogInformation("Disabled inactive user {UserId} from group {GroupId}", userId, groupId);
+                            disabledTally.Add(source, user.Username, userId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to disable inactive user {UserId} from group {GroupId}", userId, groupId);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to disable inactive user {UserId} from group {GroupId}", userId, groupId);
-                }
             }
+        }
+        finally
+        {
+            disabledTally.Log(_activity, "Disabled", "disabled for inactivity", "UserManagement.InactiveDisabled");
         }
     }
 }

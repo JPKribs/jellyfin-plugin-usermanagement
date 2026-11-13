@@ -28,6 +28,7 @@ public sealed class InviteService : IDisposable
     private readonly ICryptoProvider _cryptoProvider;
     private readonly InviteStatusStore _statusStore;
     private readonly ActivityLogger _activity;
+    private readonly UserManagementActivity _summary;
     private readonly ILogger<InviteService> _logger;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -41,6 +42,7 @@ public sealed class InviteService : IDisposable
         ICryptoProvider cryptoProvider,
         InviteStatusStore statusStore,
         ActivityLogger activity,
+        UserManagementActivity summary,
         ILogger<InviteService> logger)
     {
         _userManager = userManager;
@@ -48,11 +50,25 @@ public sealed class InviteService : IDisposable
         _cryptoProvider = cryptoProvider;
         _statusStore = statusStore;
         _activity = activity;
+        _summary = summary;
         _logger = logger;
     }
 
     private static string DisplayName(Invite invite)
         => invite.Label.Length > 0 ? invite.Label : "Untitled invite";
+
+    /// <summary>
+    /// The overview of an expiry run's entry, as "2 invites were disabled at their expiry date: Family, Friends".
+    /// </summary>
+    /// <param name="names">The expired invites' names.</param>
+    /// <returns>The overview.</returns>
+    public static string ExpiredOverview(IReadOnlyList<string> names)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+        return ActivityText.Sentence(
+            ActivityText.Count(names.Count, "invite") + " " + ActivityText.WasOrWere(names.Count)
+            + " disabled at their expiry date: " + string.Join(", ", names))!;
+    }
 
     private static InviteStatus StatusFor(InviteStatusData data, Guid id)
         => data.Invites.TryGetValue(id, out var status) ? status : (data.Invites[id] = new InviteStatus());
@@ -183,7 +199,7 @@ public sealed class InviteService : IDisposable
             return true;
         });
 
-        _activity.Log("Invite created: " + DisplayName(invite), "UserManagement.InviteCreated");
+        _activity.Log("Invite Created", "UserManagement.InviteCreated", "The invite " + DisplayName(invite) + " was created");
         return invite;
     }
 
@@ -356,13 +372,12 @@ public sealed class InviteService : IDisposable
             return disabled > 0;
         });
 
-        foreach (var name in expiredNames)
-        {
-            _activity.Log("Invite expired and disabled: " + name, "UserManagement.InviteExpired");
-        }
-
         if (disabled > 0)
         {
+            _activity.Log(
+                ActivityText.SummaryName(disabled, "Expired", "Invite"),
+                "UserManagement.InviteExpired",
+                ExpiredOverview(expiredNames));
             _logger.LogInformation("Disabled {Count} expired invite(s)", disabled);
         }
 
@@ -624,14 +639,16 @@ public sealed class InviteService : IDisposable
 
             _logger.LogInformation("Invite {InviteId} redeemed; created user {UserId}", invite.Id, userId);
             _activity.Log(
-                "User created via invite: " + DisplayName(invite) + ", user: " + username,
+                "Account Created for " + username,
                 "UserManagement.InviteRedeemed",
+                "The invite " + DisplayName(invite) + " was redeemed by " + username,
                 userId: userId);
             if (invite.MaxUses > 0 && usedCount >= invite.MaxUses)
             {
                 _activity.Log(
-                    "Invite fully consumed: " + DisplayName(invite),
-                    "UserManagement.InviteConsumed");
+                    "Invite Used Up",
+                    "UserManagement.InviteConsumed",
+                    "The invite " + DisplayName(invite) + " reached its limit of " + ActivityText.Count(invite.MaxUses, "use"));
             }
 
             var success = InviteRedeemResult.Ok("Your account has been created!");
@@ -663,11 +680,7 @@ public sealed class InviteService : IDisposable
             return true;
         });
 
-        _activity.Log(
-            "Incorrect PIN entered for invite: " + DisplayName(invite),
-            "UserManagement.InvitePinFailed",
-            overview: "Failed attempts: " + failed,
-            severity: LogLevel.Warning);
+        _summary.Add(UserManagementActivity.InvitePinFailed, DisplayName(invite));
 
         if (failed < Math.Max(1, plugin.ReadConfiguration(c => c.MaxPinAttempts)))
         {
@@ -690,9 +703,10 @@ public sealed class InviteService : IDisposable
 
         _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, failed);
         _activity.Log(
-            "Invite locked after too many incorrect PIN attempts: " + DisplayName(invite),
+            "Invite Locked",
             "UserManagement.InviteLocked",
-            severity: LogLevel.Warning);
+            "The invite " + DisplayName(invite) + " was locked after " + ActivityText.Count(failed, "incorrect PIN attempt"),
+            LogLevel.Warning);
         return InviteRedeemResult.Fail("Too many incorrect PIN attempts. This invite has been locked.");
     }
 
