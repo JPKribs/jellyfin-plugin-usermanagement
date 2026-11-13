@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "12.4.2.5"
+version: "12.4.2.6"
 targetAbi: "12.4.0.0"
 framework: "net10.0"
 overview: "Group policy templates, display and playback preferences, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
@@ -16,7 +16,7 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  changed:
-  - Activity log entries share one shape and bursts are summed per outcome. Password rule enrollment and removal, wrong invite PINs, expired invites, group expiry and inactivity changes, and session cleanup are now one entry per run or burst naming who changed. Group, invite, account creation, and password change entries are renamed to match.
+  fixed:
+  - The arrows on collapsible sections are back to their usual size
   developer:
-  - Uses JPKribs.Jellyfin.Base 2026.11.13.2
+  - Uses JPKribs.Jellyfin.Base 2026.11.13.3
