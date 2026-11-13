@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "12.4.2.5",
+        "changelog": "\n## Changed\n- Activity log entries share one shape and bursts are summed per outcome. Password rule enrollment and removal, wrong invite PINs, expired invites, group expiry and inactivity changes, and session cleanup are now one entry per run or burst naming who changed. Group, invite, account creation, and password change entries are renamed to match.\n\n## Developer\n- Uses JPKribs.Jellyfin.Base 2026.11.13.2",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v12.4.2.5/jellyfin-plugin-usermanagement-12.4.2.5.zip",
+        "checksum": "01c87e541ffaa2443bebf4a273485ae6",
+        "timestamp": "2026-11-13T18:56:48Z"
+      },
+      {
         "version": "12.4.2.4",
         "changelog": "\n## Changed\n- The code and documentation are cleaned up with no change to what the plugin does\n- Built for Jellyfin 12.4. Servers on an earlier Jellyfin keep the previous release.\n\n## Developer\n- Jellyfin.Controller and Jellyfin.Model packages updated to 12.4.0",
         "targetAbi": "12.4.0.0",
