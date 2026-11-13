@@ -19,4 +19,4 @@ changelog:
   changed:
   - Activity log entries share one shape and bursts are summed per outcome. Password rule enrollment and removal, wrong invite PINs, expired invites, group expiry and inactivity changes, and session cleanup are now one entry per run or burst naming who changed. Group, invite, account creation, and password change entries are renamed to match.
   developer:
-  - Uses JPKribs.Jellyfin.Base 2026.11.13.1
+  - Uses JPKribs.Jellyfin.Base 2026.11.13.2
