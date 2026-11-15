@@ -380,6 +380,9 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | Records in priority order | `createSortableCardList` |
 | A short list in order, moved with up and down buttons | `createOrderedList` |
 | A plain list of records | `base-card-list` with `base-card-item-*` |
+| Rows that each open, or hold one control such as a copy field, like the invites and the pending resets | `createRecordList`, with `aside` for the control |
+| Records with several fields, added and removed in place, like session cleanup rules | `createRepeater` with `layout: 'card'` |
+| A setting that applies only when overridden, like every group setting | `createInheritField` with `toggle: 'checkbox'` |
 | Edit one record in a dialog | `openEditorDialog` |
 | A large searchable list | `createPaginatedTable` |
 | Edit table rows in place | `base-bulk-edit-bar` and `base-edit-row` |
@@ -468,15 +471,14 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 
 ## Hand Built Pieces
 
-These pieces are still built by hand in this plugin while Base has a component for them. Replace each when its page is next changed, and delete its `um-` styles in the same commit. Add nothing to this list.
+Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro, and `um-setting` around a group setting that is not a checkbox.
 
-| Hand built today | Replace with |
+The signup page is the content of Base's status card, so it uses the card's own classes. Two small rules stay in its `<style>` block until the card has them.
+
+| Hand built today | Missing from Base |
 | :--- | :--- |
-| `.um-perm-row`, the Override rows on the **Groups** tab | `createInheritField`, or `createMatrixGrid` for the rows of one section |
-| `.um-session-rule`, the session cleanup rule cards | `createRepeater` with `layout: 'card'` |
-| The invite and reset rows in `.um-table` | `createList` or `createRecordList` |
-| The masked reset code with its Show and Copy buttons | `createCopyField` with `secret` and `allowExpose`, once approved, since reset codes are a stop and ask item |
-| `.um-res-btn` on the signup page | The status card's `base-btn`, once approved, since the signup page is a stop and ask item |
+| `.base-note.um-error`, the red line under the signup form when a signup is refused | An error look for the status card's `base-note` |
+| `#resources`, which stacks the resource links full width | A stacked or secondary `base-btn` in the status card |
 
 ## Checklist
 

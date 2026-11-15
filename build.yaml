@@ -21,6 +21,11 @@ changelog:
   - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List
   - Invite resources are rows of a title and a URL, edited in place, and each invite link sits in a copy field
   - Group names are entered in a prompt, and deleting a group or an invite asks first in a dialog
+  - Each group setting is a Base Inherit Field with its Override checkbox beside it, and session cleanup rules are Base Repeater cards with a client picker
+  - Invites are a Base Record List with a Copy Link button on each row, and selecting one opens its link, expiration and state in a dialog
+  - Pending resets are a Base Record List, and each code sits in a masked copy field with an eye that shows it
+  - The count cards are compact, and the Invites and Pending Resets lists sit in fixed sections
+  - The signup page shows resource links as the status card's buttons
   fixed:
   - The arrows on collapsible sections are back to their usual size
   developer:

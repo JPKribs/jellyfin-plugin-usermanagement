@@ -24,7 +24,7 @@ Each invite can also carry:
 
 ## Managing Invites
 
-Every invite is listed with its link, usage, group and expiration, along with buttons to copy its link, duplicate, lock or delete it.
+Every invite is listed with its usage, group, status and expiration, and a button that copies its link. Select an invite to see its link, change its expiration, lock or unlock it, duplicate it, or delete it.
 
 ![Invite list](screenshots/Invite%20List.png)
 

@@ -4,7 +4,7 @@ Enable **Clean up old sessions** on a group and its members' stale devices are l
 
 ## Rules
 
-Cleanup is driven by one or more **rules**. Each rule sets a number of days and which clients it covers:
+Cleanup is driven by one or more **rules**, each a card added with **Add Rule**. Each rule sets **Days before logout** and which clients it applies to, picked by name under **Clients**:
 
 * **All Clients**: Every client is cleaned up by this rule.
 * **Only These Clients**: Only sessions on the selected clients are removed during cleanup.

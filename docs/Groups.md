@@ -8,6 +8,6 @@ Pick a group from the dropdown and tick the users who belong to it under **Membe
 
 This is performed by looping over all users assigned to a group and updating their `UserDto.Policy` to conform to your group settings. Any elements that are *not set* to override are retained from the original `UserDto.Policy` in the current user configuration.
 
-Each setting has an **Override** checkbox. Only overridden settings are pushed to members.
+Each setting has an **Override** checkbox beside it. A setting that is not overridden is dimmed and disabled. Only overridden settings are pushed to members.
 
 ![Group setting overrides](screenshots/Group%20Settings.png)

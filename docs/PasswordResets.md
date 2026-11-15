@@ -4,7 +4,7 @@ When a user starts Jellyfin's **Forgot Password** flow, the server writes a rese
 
 The feature is **off by default** and must be enabled on the tab.
 
-Once enabled, each pending reset is listed by user with its expiration and a masked code.
+Once enabled, each pending reset is listed by user with its expiration and state, active first. Its code sits in a masked copy field, where the eye shows it and the copy button copies it.
 
 ![Pending password resets](screenshots/Password%20Resets.png)
 

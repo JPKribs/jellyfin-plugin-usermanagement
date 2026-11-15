@@ -172,10 +172,10 @@ export function createPage(view, tabIndex, opts) {
 ### CSS
 
 ```css
-/* um-session-rule */
-/* One session cleanup rule, boxed, with its number and a remove button on top. */
-/* Example: <div class="um-session-rule"><div class="um-session-rule-head">...</div></div> */
-.um-session-rule { ... }
+/* um-intro */
+/* The one paragraph under a page title, with room before the first component. */
+/* Example: <div class="fieldDescription um-intro">Create a shareable signup link.</div> */
+.um-intro { ... }
 ```
 
 * Three lines above each component, the name, what it looks like, and one example.
