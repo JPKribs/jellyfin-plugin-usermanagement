@@ -11,67 +11,73 @@
                         <h1 class="sectionTitle">Groups</h1>
                     </div>
 
-                    <div class="fieldDescription" style="margin-bottom: 12px;">
+                    <!-- Intro -->
+                    <div class="fieldDescription um-intro">
                         Groups assign permissions and settings to multiple users at once. A setting marked as an
-                        <strong>override</strong> always uses the group's value. A setting that isn't overridden keeps
+                        <strong>override</strong> always uses the group's value. A setting that is not overridden keeps
                         whatever value each user already has. A user can belong to one group at a time.
                     </div>
 
-                    <div class="base-cards" id="userCards"></div>
+                    <div id="userCards"></div>
 
-                    <!-- Group selector -->
+                    <!-- Group Selector -->
+                    <!-- Picks the group to edit, with New, Rename, Delete, and Default. -->
                     <div class="base-selector">
-                        <select is="emby-select" id="selectGroup" class="base-selector-dropdown"></select>
+                        <select is="emby-select" id="selectGroup" class="base-selector-dropdown" aria-label="Group"></select>
                         <div class="base-selector-actions">
                             <button is="emby-button" type="button" id="btnNewGroup" class="raised base-button primary" title="New">
                                 <span class="material-icons" aria-hidden="true">add</span>
-                                <span class="icon-btn-label">New</span>
+                                <span>New</span>
                             </button>
                             <button is="emby-button" type="button" id="btnRenameGroup" class="raised base-button secondary" title="Rename">
                                 <span class="material-icons" aria-hidden="true">edit</span>
-                                <span class="icon-btn-label">Rename</span>
+                                <span>Rename</span>
                             </button>
                             <button is="emby-button" type="button" id="btnDeleteGroup" class="raised base-button destructive" title="Delete">
                                 <span class="material-icons" aria-hidden="true">delete</span>
-                                <span class="icon-btn-label">Delete</span>
+                                <span>Delete</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised base-button secondary" title="Set as default group">
+                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised base-button secondary" title="Set as Default">
                                 <span class="material-icons" aria-hidden="true">star_border</span>
-                                <span class="icon-btn-label">Default</span>
+                                <span>Default</span>
                             </button>
                         </div>
                     </div>
 
-                    <div id="emptyState" class="base-empty-section hidden">No groups yet. Click <strong>New</strong> to create one.</div>
+                    <div id="emptyState" class="base-empty-section hidden">No groups yet. Select <strong>New</strong> to add one.</div>
 
                     <div id="groupEditor">
-                        <!-- Membership (parent, no children) -->
-                        <div class="base-section um-parent-section">
+                        <!-- Membership -->
+                        <!-- Picks the users in the group. -->
+                        <div class="base-section">
                             <div class="base-section-title">Membership</div>
                             <div class="base-section-content">
-                                <div id="memberSummary" class="um-member-summary"></div>
-                                <div id="memberMount" class="um-member-panel"></div>
+                                <div id="memberSummary" class="fieldDescription"></div>
+                                <div id="memberMount"></div>
                             </div>
                         </div>
 
-                        <!-- Settings (UserPolicy sub-sections, rendered by JS) -->
-                        <div class="base-section um-parent-section">
+                        <!-- Settings -->
+                        <!-- The Jellyfin user policy settings, drawn by the script. -->
+                        <div class="base-section">
                             <div class="base-section-title">Settings</div>
                             <div class="base-section-content">
                                 <div id="permissionSections"></div>
                             </div>
                         </div>
 
-                        <!-- Configuration (UserConfiguration sub-sections, rendered by JS) -->
-                        <div class="base-section um-parent-section">
+                        <!-- Configuration -->
+                        <!-- The display and playback preferences, drawn by the script. -->
+                        <div class="base-section">
                             <div class="base-section-title">Configuration</div>
                             <div class="base-section-content">
                                 <div id="configSections"></div>
                             </div>
                         </div>
 
-                        <!-- Other (plugin lifecycle sub-sections) -->
-                        <div class="base-section um-parent-section">
+                        <!-- Other -->
+                        <!-- Session cleanup, password requirements, expiry, and inactivity. -->
+                        <div class="base-section">
                             <div class="base-section-title">Other</div>
                             <div class="base-section-content">
 
@@ -96,7 +102,7 @@
                                         </div>
                                         <div class="hidden" id="sessionFields">
                                             <div id="sessionRuleList"></div>
-                                            <button is="emby-button" type="button" id="btnAddSessionRule" class="raised base-button primary small" style="margin-top:6px;"><span>Add rule</span></button>
+                                            <button is="emby-button" type="button" id="btnAddSessionRule" class="raised base-button secondary small"><span class="material-icons" aria-hidden="true">add</span><span>Add Rule</span></button>
                                             <div id="sessionOverlapWarning" class="fieldDescription hidden"></div>
                                         </div>
                                     </div>
@@ -131,11 +137,11 @@
                                                 </div>
                                             </div>
                                             <div class="inputContainer">
-                                                <label for="grpPwLength">Minimum length:</label>
+                                                <label for="grpPwLength">Minimum length</label>
                                                 <input is="emby-input" type="number" id="grpPwLength" min="1" />
                                             </div>
                                             <div class="selectContainer">
-                                                <label class="selectLabel" for="grpPwChangeMode">Password changes:</label>
+                                                <label class="selectLabel" for="grpPwChangeMode">Password changes</label>
                                                 <select is="emby-select" id="grpPwChangeMode">
                                                     <option value="Allowed">Allowed</option>
                                                     <option value="InitialOnly">Initial password only</option>
@@ -184,7 +190,7 @@
                                         </div>
                                         <div class="base-indent hidden" id="grpExpiryFields">
                                             <div class="inputContainer">
-                                                <label for="grpExpiryDate">Expiry date:</label>
+                                                <label for="grpExpiryDate">Expiry date</label>
                                                 <input type="date" id="grpExpiryDate" />
                                                 <div class="fieldDescription">Members are expired by the next <strong>Process expired and inactive users</strong> task run on or after this date.</div>
                                             </div>
@@ -215,7 +221,7 @@
                                         </div>
                                         <div class="base-indent hidden" id="inactiveFields">
                                             <div class="inputContainer">
-                                                <label for="grpInactiveDays">Days of inactivity before disabling:</label>
+                                                <label for="grpInactiveDays">Days of inactivity before disabling</label>
                                                 <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
                                                 <div class="fieldDescription">Members with no activity for this many days are disabled by the next <strong>Process expired and inactive users</strong> task run. Members who have never signed in are left alone.</div>
                                             </div>
@@ -228,41 +234,17 @@
                         <!-- /Other -->
 
                         <!-- Save -->
-                        <div class="inputContainer" style="margin-top: 16px;">
-                            <button is="emby-button" type="button" id="btnSaveGroups" data-theme="b" class="raised base-button primary fill">
+                        <div class="um-save-row">
+                            <button is="emby-button" type="button" id="btnSaveGroups" class="raised base-button primary fill">
                                 <span>Save</span>
                             </button>
-                            <span id="unsavedIndicator" class="um-unsaved hidden">
-                                <span class="um-unsaved-dot"></span> Unsaved changes
-                            </span>
+                            <span id="unsavedIndicator" class="base-unsaved"><span class="base-unsaved-dot"></span>Unsaved changes</span>
                             <span id="groupStatus" class="base-status-text"></span>
                         </div>
                     </div>
 
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Input Modal (name) -->
-    <div id="inputModal" class="base-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
-        <div class="base-dialog-content">
-            <button type="button" id="btnCloseInputModal" class="base-dialog-close" aria-label="Close">&times;</button>
-            <h2 class="base-modal-title" id="inputModalTitle"></h2>
-            <div class="base-modal-body">
-                <div class="inputContainer">
-                    <label for="inputModalField">Name:</label>
-                    <input is="emby-input" type="text" id="inputModalField" />
-                </div>
-            </div>
-            <div class="base-modal-button-row">
-                <button is="emby-button" type="button" id="btnCancelInputModal" class="raised base-modal-button">
-                    <span>Cancel</span>
-                </button>
-                <button is="emby-button" type="button" id="btnConfirmInputModal" class="raised base-modal-button base-button primary">
-                    <span>OK</span>
-                </button>
-            </div>
         </div>
     </div>
 

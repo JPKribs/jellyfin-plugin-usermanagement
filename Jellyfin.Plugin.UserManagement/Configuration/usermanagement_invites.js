@@ -1,19 +1,45 @@
-import { createPage } from './configurationpage?name=usermanagement_shared.js';
+// usermanagement_invites.js
+// The Invites tab, which creates invite links, sets the invite Server URL and rate limit, and lists every invite.
 
+import { createPage, createKeyValueEditor, createCopyField, confirmDialog } from './configurationpage?name=usermanagement_shared.js';
+
+// Invites page
+// Builds the Invites tab.
+//
+// Inputs
+// view [HTMLElement]: The page the dashboard passes to the module.
 export default function (view) {
     'use strict';
 
     var Shared = null;
+    var _resourceEditor = null;
+    var _copyFields = [];
     var _invites = [];
     var _groups = [];
     var _base = '';
     var _defaultGroupId = '';
 
+    // inviteUrl
+    // Builds an invite's public link from the Server URL, or the server's own address when it is blank.
+    //
+    // Inputs
+    // token [string]: The invite's token.
+    //
+    // Output
+    // [string]: The link.
     function inviteUrl(token) {
         var base = (_base || ApiClient.serverAddress() || '').replace(/\/+$/, '');
         return base + '/invite/' + token;
     }
 
+    // groupName
+    // Looks up a group's name.
+    //
+    // Inputs
+    // id [string]: The group id.
+    //
+    // Output
+    // [string]: The name, or empty when the group is gone.
     function groupName(id) {
         for (var i = 0; i < _groups.length; i++) {
             if (_groups[i].Id === id) return _groups[i].Name;
@@ -21,45 +47,102 @@ export default function (view) {
         return '';
     }
 
-    // Group expiry is day based on the server (expired on or after the date, in UTC), so compare the
-    // date parts only.
+    // groupExpired
+    // Says whether a group has reached its expiration. The server counts whole UTC days, so only the dates are compared.
+    //
+    // Inputs
+    // g [object]: The group, or null.
+    //
+    // Output
+    // [boolean]: Whether it has expired.
     function groupExpired(g) {
         return !!g && dateReached(g.ExpiresOn);
     }
 
-    // Invite expiry is day based on the server too, so an invite reads as expired on the same UTC day
-    // the server starts refusing it, whatever the browser's time zone.
+    // inviteExpired
+    // Says whether an invite has reached its expiration, on the same UTC day the server starts refusing it.
+    //
+    // Inputs
+    // inv [object]: The invite, or null.
+    //
+    // Output
+    // [boolean]: Whether it has expired.
     function inviteExpired(inv) {
         return !!inv && dateReached(inv.ExpiresAt);
     }
 
+    // dateReached
+    // Says whether today, in UTC, is on or after a stored date.
+    //
+    // Inputs
+    // value [string]: The stored date, or empty.
+    //
+    // Output
+    // [boolean]: Whether the date has been reached.
     function dateReached(value) {
         if (!value) return false;
         return String(value).slice(0, 10) <= new Date().toISOString().slice(0, 10);
     }
 
+    // showError
     // Shows the reason the server gave for a refused request, such as an expired invite, or the fallback.
+    //
+    // Inputs
+    // statusId [string]: The status element.
+    // err [object]: The failed response.
+    // fallback [string]: The message when the server gave none.
     function showError(statusId, err, fallback) {
         Shared.errorText(err, fallback).then(function (text) {
             Shared.setStatus(statusId, text, true);
         });
     }
 
+    // inviteGroup
+    // Finds the group an invite signs users into, following the default group when the invite does.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [object]: The group, or null.
     function inviteGroup(inv) {
         var gid = inv.UseDefaultGroup ? _defaultGroupId : inv.GroupId;
         return _groups.filter(function (g) { return g.Id === gid; })[0] || null;
     }
 
+    // statusOf
+    // Picks an invite's status for its badge and the count cards.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [object]: { cls, text }, where cls is Active, Locked, UsedUp, or Expired.
     function statusOf(inv) {
         if (inviteExpired(inv)) return { cls: 'Expired', text: 'Expired' };
         if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
-        if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'Disabled', text: 'Used up' };
+        if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'UsedUp', text: 'Used up' };
         // The server refuses signups into an expired group, so the link is dead until the group's
         // expiration moves even though the invite itself is still enabled.
         if (groupExpired(inviteGroup(inv))) return { cls: 'Expired', text: 'Group expired' };
         return { cls: 'Active', text: 'Active' };
     }
 
+    // statusBadge
+    // Draws an invite's status badge. Used up has no Base state, so it takes the gray badge for off.
+    //
+    // Inputs
+    // st [object]: The status from statusOf.
+    //
+    // Output
+    // [string]: The badge HTML.
+    function statusBadge(st) {
+        if (st.cls === 'UsedUp') return Shared.badge('gray', st.text);
+        return Shared.statusBadge(st.text, st.cls);
+    }
+
+    // loadAll
+    // Reads the invites and the settings, then draws the form and the list.
     function loadAll() {
         Promise.all([
             Shared.apiRequest('Invites', 'GET'),
@@ -89,39 +172,47 @@ export default function (view) {
         });
     }
 
-    var _newResources = [];
-
-    function renderResourceList() {
-        var box = Shared.getEl('resList');
-        if (!box) return;
-        Shared.setVisible('resListWrap', _newResources.length > 0);
-        var esc = Shared.escapeHtml;
-        box.innerHTML = _newResources.map(function (res, i) {
-            return '<div class="base-table-row" style="align-items:center; gap:8px;">'
-                + '<div class="base-table-item-info" style="flex:1;">'
-                + '<div class="base-table-item-title" style="font-weight:bold;">' + esc(res.Title) + '</div>'
-                + '<div class="base-table-item-sub">' + esc(res.Url) + '</div>'
-                + '</div>'
-                + '<button type="button" class="um-btn um-res-del" data-index="' + i + '" title="Remove"><span class="material-icons">delete</span></button>'
-                + '</div>';
-        }).join('');
+    // ensureResourceEditor
+    // Draws the Resources editor once, as a Key Value Editor of titles and URLs.
+    function ensureResourceEditor() {
+        if (_resourceEditor) return;
+        _resourceEditor = createKeyValueEditor({
+            keyLabel: 'Title',
+            valueLabel: 'URL',
+            keyPlaceholder: 'Request shows',
+            valuePlaceholder: 'https://requests.example.com',
+            addText: 'Add Resource',
+            requiredText: 'Enter a title.',
+            duplicateKeys: true,
+            validate: function (key, value) {
+                if (!key && !value) return '';
+                if (!/^https?:\/\/.+/i.test((value || '').trim())) return 'Enter a full http or https URL.';
+                return '';
+            }
+        });
+        Shared.getEl('resourceMount').appendChild(_resourceEditor.element);
     }
 
-    function addResource() {
-        var title = (Shared.getEl('txtResTitle').value || '').trim();
-        var url = (Shared.getEl('txtResUrl').value || '').trim();
-        if (!title || !/^https?:\/\/.+/i.test(url)) {
-            Shared.setStatus('inviteStatus', 'A resource needs a title and a full http(s) URL.', true);
-            return;
-        }
-        _newResources.push({ Title: title, Url: url });
-        Shared.getEl('txtResTitle').value = '';
-        Shared.getEl('txtResUrl').value = '';
-        renderResourceList();
+    // readResources
+    // Reads the Resources editor as the API's resource list.
+    //
+    // Output
+    // [Array]: One { Title, Url } per filled row.
+    function readResources() {
+        return _resourceEditor.getValue().map(function (kv) {
+            return { Title: (kv.key || '').trim(), Url: (kv.value || '').trim() };
+        });
     }
 
-    // Groups that disallow all password changes are admin managed and cannot take invites, so they
-    // are left out of the dropdown. The server rejects them too.
+    // blocksInvites
+    // Says whether a group disallows all password changes. Such groups are admin managed and cannot take invites,
+    // so they are left out of the select. The server refuses them too.
+    //
+    // Inputs
+    // g [object]: The group.
+    //
+    // Output
+    // [boolean]: Whether it blocks invites.
     function blocksInvites(g) {
         var pw = g.Password || {};
         var mode = typeof pw.ChangeMode === 'number' ? pw.ChangeMode === 2 : pw.ChangeMode === 'Disallowed';
@@ -132,12 +223,19 @@ export default function (view) {
     // than pinning one, which is what UseDefaultGroup means on the server.
     var DEFAULT_OPTION = '__default__';
 
+    // defaultGroup
+    // Finds the default group when it can take invites.
+    //
+    // Output
+    // [object]: The group, or null.
     function defaultGroup() {
         if (!_defaultGroupId) return null;
         var found = _groups.filter(function (g) { return g.Id === _defaultGroupId; })[0];
         return (found && !blocksInvites(found)) ? found : null;
     }
 
+    // populateGroups
+    // Fills the group select, with the default group first when there is one.
     function populateGroups() {
         var sel = Shared.getEl('selGroup');
         if (!sel) return;
@@ -167,6 +265,11 @@ export default function (view) {
         updateGroupWarning();
     }
 
+    // selectedGroup
+    // Reads the group picked for a new invite.
+    //
+    // Output
+    // [object]: The group, or null.
     function selectedGroup() {
         var value = (Shared.getEl('selGroup') || {}).value || '';
         if (!value) return null;
@@ -174,35 +277,43 @@ export default function (view) {
         return _groups.filter(function (g) { return g.Id === value; })[0] || null;
     }
 
+    // updateGroupWarning
+    // Shows the warning when the picked group has expired.
     function updateGroupWarning() {
         Shared.setVisible('groupExpiredWarn', groupExpired(selectedGroup()));
     }
 
-    function card(cls, count, label) {
-        return '<div class="base-card ' + cls + '"><span class="base-card-count">' + count
-            + '</span><span class="base-card-label">' + label + '</span></div>';
-    }
-
+    // renderInviteCards
+    // Draws the count cards, one per status, in the badge colors.
     function renderInviteCards() {
-        var container = view.querySelector('#inviteCards');
-        if (!container) return;
         var active = 0, expired = 0, locked = 0, consumed = 0;
         _invites.forEach(function (inv) {
             var cls = statusOf(inv).cls;
             if (cls === 'Expired') { expired++; }
             else if (cls === 'Locked') { locked++; }
-            else if (cls === 'Disabled') { consumed++; }
+            else if (cls === 'UsedUp') { consumed++; }
             else { active++; }
         });
-        container.innerHTML =
-            card('green', active, 'Active') +
-            card('yellow', locked, 'Locked') +
-            card('purple', consumed, 'Consumed') +
-            card('red', expired, 'Expired');
+        Shared.renderCards('inviteCards', [
+            { count: active, label: 'Active', color: 'green' },
+            { count: locked, label: 'Locked', color: 'purple' },
+            { count: consumed, label: 'Consumed', color: 'gray' },
+            { count: expired, label: 'Expired', color: 'orange' }
+        ]);
     }
 
+    // clearCopyFields
+    // Tears down the link Copy Fields of the last draw.
+    function clearCopyFields() {
+        _copyFields.forEach(function (f) { f.destroy(); });
+        _copyFields = [];
+    }
+
+    // renderInvites
+    // Draws the count cards and one row per invite, with its link, status, actions, and expiration.
     function renderInvites() {
         renderInviteCards();
+        clearCopyFields();
         var body = view.querySelector('#inviteList');
         var footer = view.querySelector('#inviteFooter');
         if (!body) return;
@@ -224,41 +335,42 @@ export default function (view) {
             if (inv.UseDefaultGroup) meta.push('Group: Default' + (_defaultGroupId ? ' (' + esc(groupName(_defaultGroupId)) + ')' : ''));
             else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
             if (inv.HasPin) meta.push('PIN set');
-            if (groupExpired(inviteGroup(inv))) meta.push('<span style="color: var(--base-error, #d9534f);">Group has expired: signups are refused until its expiration is moved</span>');
+            if (groupExpired(inviteGroup(inv))) meta.push('<span class="um-text-red">Group has expired. Signups are refused until its expiration is moved.</span>');
 
             var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
-            var toggleTitle = inv.Enabled ? 'Disable invite' : 'Enable invite';
+            var toggleTitle = inv.Enabled ? 'Disable Invite' : 'Enable Invite';
 
-            html += '<div class="base-table-row" data-id="' + esc(inv.Id) + '" style="flex-direction:column; align-items:stretch; gap:8px;">'
-                + '<div style="display:flex; align-items:center; gap:8px;">'
-                + '<div class="base-table-item-info" style="flex:1;">'
-                + '<div class="base-table-item-title" style="font-weight: bold;">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
+            html += '<div class="base-table-row um-invite-row" data-id="' + esc(inv.Id) + '">'
+                + '<div class="um-row">'
+                + '<div class="base-table-item-info um-row-info">'
+                + '<div class="base-table-item-title">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
                 + '<div class="base-table-item-sub">' + meta.join(' • ') + '</div>'
                 + '</div>'
-                + '<span class="base-table-status-badge ' + st.cls + '">' + esc(st.text) + '</span>'
-                + '<button type="button" class="um-btn um-dup" title="Duplicate invite"><span class="material-icons">content_copy</span></button>'
-                + '<button type="button" class="um-btn um-toggle" title="' + toggleTitle + '"><span class="material-icons">' + toggleIcon + '</span></button>'
-                + '<button type="button" class="um-btn um-del" title="Delete"><span class="material-icons">delete</span></button>'
+                + statusBadge(st)
+                + '<button type="button" class="base-row-btn um-dup" title="Duplicate" aria-label="Duplicate"><span class="material-icons" aria-hidden="true">content_copy</span></button>'
+                + '<button type="button" class="base-row-btn um-toggle" title="' + toggleTitle + '" aria-label="' + toggleTitle + '"><span class="material-icons" aria-hidden="true">' + toggleIcon + '</span></button>'
+                + '<button type="button" class="base-row-btn destructive um-del" title="Delete" aria-label="Delete"><span class="material-icons" aria-hidden="true">delete</span></button>'
                 + '</div>'
-                + '<div style="display:flex; gap:8px; align-items:center;">'
-                + '<input class="base-edit-input um-url" readonly value="' + esc(url) + '" />'
-                + '<button is="emby-button" type="button" class="raised base-button secondary small um-copy"><span>Copy</span></button>'
-                + '</div>'
-                + '<div style="display:flex; gap:8px; align-items:center;">'
-                + '<label style="font-size:0.85em; opacity:0.7; min-width:54px;">Expires</label>'
-                + '<input type="date" class="base-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:240px;" />'
+                + '<div class="um-url-mount" data-url="' + esc(url) + '"></div>'
+                + '<div class="um-row">'
+                + '<label class="um-row-label" for="expiry-' + esc(inv.Id) + '">Expires</label>'
+                + '<input type="date" id="expiry-' + esc(inv.Id) + '" class="base-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" />'
                 + '</div>'
                 + '</div>';
         });
 
-        body.innerHTML = html;
-        if (footer) footer.textContent = _invites.length + ' invite' + (_invites.length !== 1 ? 's' : '');
+        body.innerHTML = '<div class="um-table">' + html + '</div>';
+        if (footer) footer.textContent = Shared.plural(_invites.length, 'invite');
 
-        body.querySelectorAll('.base-table-row').forEach(function (row) {
+        body.querySelectorAll('.um-invite-row').forEach(function (row) {
             var id = row.getAttribute('data-id');
             var del = row.querySelector('.um-del');
-            var copy = row.querySelector('.um-copy');
-            var urlInput = row.querySelector('.um-url');
+            var mount = row.querySelector('.um-url-mount');
+            if (mount) {
+                var field = createCopyField({ value: mount.getAttribute('data-url'), label: 'Invite link', copiedText: 'Link copied.' });
+                mount.appendChild(field.element);
+                _copyFields.push(field);
+            }
             var toggle = row.querySelector('.um-toggle');
             if (toggle) toggle.addEventListener('click', function () {
                 var inv = _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
@@ -267,28 +379,25 @@ export default function (view) {
             var expiryInput = row.querySelector('.um-expiry');
             if (expiryInput) expiryInput.addEventListener('change', function () { setInviteExpiry(id, this.value); });
             if (del) del.addEventListener('click', function () { deleteInvite(id); });
-            if (copy) copy.addEventListener('click', function () { copyUrl(urlInput); });
             var dup = row.querySelector('.um-dup');
             if (dup) dup.addEventListener('click', function () { duplicateInvite(id); });
         });
     }
 
-    function copyUrl(input) {
-        if (!input) return;
-        input.select();
-        Shared.copyToClipboard(input.value).then(function () {
-            Shared.setStatus('inviteStatus', 'Link copied.', false);
-        });
-    }
-
+    // updateExpiryState
+    // Shows the expiration date while its checkbox is on.
     function updateExpiryState() {
         Shared.setVisible('expiryFields', !!(Shared.getEl('chkSetExpiry') || {}).checked);
     }
 
+    // updateMaxUsesState
+    // Shows the usage count while its checkbox is on.
     function updateMaxUsesState() {
         Shared.setVisible('maxUsesFields', !!(Shared.getEl('chkSetMaxUses') || {}).checked);
     }
 
+    // openCreateSection
+    // Opens the Create Invite section and scrolls to it.
     function openCreateSection() {
         var header = view.querySelector('.base-collapsible-header[data-target="newInviteContent"]');
         var content = Shared.getEl('newInviteContent');
@@ -300,6 +409,11 @@ export default function (view) {
         }
     }
 
+    // duplicateInvite
+    // Copies an invite's settings into the Create Invite form. The PIN is stored hashed, so it is left blank.
+    //
+    // Inputs
+    // id [string]: The invite to copy.
     function duplicateInvite(id) {
         var inv = _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
         if (!inv) return;
@@ -307,10 +421,9 @@ export default function (view) {
         Shared.getEl('txtLabel').value = inv.Label ? inv.Label + ' copy' : '';
         Shared.getEl('txtMessage').value = inv.Message || '';
 
-        _newResources = (inv.Resources || []).map(function (r) {
-            return { Title: r.Title, Url: r.Url };
-        });
-        renderResourceList();
+        _resourceEditor.setValue((inv.Resources || []).map(function (r) {
+            return { key: r.Title, value: r.Url };
+        }));
 
         var sel = Shared.getEl('selGroup');
         if (sel) {
@@ -329,7 +442,6 @@ export default function (view) {
         Shared.getEl('txtMaxUses').value = hasMaxUses ? String(inv.MaxUses) : '1';
         updateMaxUsesState();
 
-        // The PIN is stored only as a salted hash, so it cannot be carried over.
         Shared.getEl('txtPin').value = '';
 
         openCreateSection();
@@ -338,6 +450,8 @@ export default function (view) {
             : 'Settings copied into the form. Review and create the invite.', false);
     }
 
+    // createInvite
+    // Checks the form and creates the invite.
     function createInvite() {
         var setExpiry = !!(Shared.getEl('chkSetExpiry') || {}).checked;
         var expVal = (Shared.getEl('dateExpiry') || {}).value || '';
@@ -346,11 +460,11 @@ export default function (view) {
         var groupId = Shared.getEl('selGroup').value || null;
 
         if (!groupId) {
-            Shared.setStatus('inviteStatus', _groups.length ? 'Choose a group for this invite.' : 'Create a group on the Groups tab first.', true);
+            Shared.setStatus('inviteStatus', _groups.length ? 'Select a group for this invite.' : 'Create a group on the Groups tab first.', true);
             return;
         }
         if (setExpiry && !expVal) {
-            Shared.setStatus('inviteStatus', 'Choose an expiration date or turn off the expiration.', true);
+            Shared.setStatus('inviteStatus', 'Select an expiration date or turn off the expiration.', true);
             return;
         }
         if (setMaxUses && (isNaN(maxUses) || maxUses < 1)) {
@@ -364,11 +478,16 @@ export default function (view) {
             return;
         }
 
+        if (!_resourceEditor.isValid()) {
+            Shared.setStatus('inviteStatus', 'Each resource needs a title and a full http or https URL.', true);
+            return;
+        }
+
         var useDefault = groupId === DEFAULT_OPTION;
         var payload = {
             Label: Shared.getEl('txtLabel').value || '',
             Message: Shared.getEl('txtMessage').value || '',
-            Resources: _newResources.slice(),
+            Resources: readResources(),
             Pin: pin,
             UseDefaultGroup: useDefault,
             GroupId: useDefault ? null : groupId,
@@ -380,12 +499,11 @@ export default function (view) {
         Shared.apiRequest('Invites', 'POST', payload)
             .then(function () {
                 Shared.setStatus('inviteStatus', expiredGroup
-                    ? "Invite created, but its group has expired. The link won't work until the group's expiration is moved or cleared."
+                    ? 'Invite created, but its group has expired. The link does not work until the group expiration is moved or cleared.'
                     : 'Invite created.', expiredGroup);
                 Shared.getEl('txtLabel').value = '';
                 Shared.getEl('txtMessage').value = '';
-                _newResources = [];
-                renderResourceList();
+                _resourceEditor.setValue([]);
                 Shared.getEl('txtPin').value = '';
                 Shared.getEl('chkSetExpiry').checked = false;
                 Shared.getEl('dateExpiry').value = '';
@@ -396,16 +514,20 @@ export default function (view) {
                 loadAll();
             })
             .catch(function (err) {
-                showError('inviteStatus', err, 'Failed to create invite.');
+                showError('inviteStatus', err, 'Could not create the invite.');
             });
     }
 
+    // updateHttpsWarning
+    // Shows the warning while invite links would use plain http.
     function updateHttpsWarning() {
         var v = ((Shared.getEl('txtInviteBaseUrl') || {}).value || '').trim().toLowerCase();
         var insecure = v.indexOf('http://') === 0 || (v === '' && location.protocol === 'http:');
         Shared.setVisible('httpsWarn', insecure);
     }
 
+    // saveBaseUrl
+    // Saves the Server URL and the rate limit.
     function saveBaseUrl() {
         Shared.getConfig().then(function (config) {
             config.InviteBaseUrl = ((Shared.getEl('txtInviteBaseUrl') || {}).value || '').trim().replace(/\/+$/, '');
@@ -420,10 +542,16 @@ export default function (view) {
                 renderInvites();
             });
         }).catch(function () {
-            Shared.setStatus('inviteUrlStatus', 'Failed to save invite settings.', true);
+            Shared.setStatus('inviteUrlStatus', 'Could not save the invite settings.', true);
         });
     }
 
+    // setInviteExpiry
+    // Saves an invite's expiration from its row.
+    //
+    // Inputs
+    // id [string]: The invite.
+    // dateStr [string]: The new date, or empty for none.
     function setInviteExpiry(id, dateStr) {
         var expiresAt = dateStr ? dateStr + 'T00:00:00' : null;
         Shared.apiRequest('Invites/' + id + '/Expiry', 'POST', { ExpiresAt: expiresAt })
@@ -432,12 +560,17 @@ export default function (view) {
                 loadAll();
             })
             .catch(function (err) {
-                showError('inviteStatus', err, 'Failed to update expiry.');
+                showError('inviteStatus', err, 'Could not update the expiry.');
             });
     }
 
+    // setInviteEnabled
+    // Enables or disables an invite, with the server's enable guards repeated here for clearer messages.
+    //
+    // Inputs
+    // id [string]: The invite.
+    // enabled [boolean]: The new state.
     function setInviteEnabled(id, enabled) {
-        // Mirror the server's enable guards with specific messages. The server enforces them too.
         if (enabled) {
             var inv = _invites.filter(function (i) { return i.Id === id; })[0];
             if (inv) {
@@ -459,24 +592,38 @@ export default function (view) {
                 loadAll();
             })
             .catch(function (err) {
-                showError('inviteStatus', err, 'Failed to update invite.');
+                showError('inviteStatus', err, 'Could not update the invite.');
             });
     }
 
+    // deleteInvite
+    // Asks first, then deletes an invite.
+    //
+    // Inputs
+    // id [string]: The invite.
     function deleteInvite(id) {
-        if (!confirm('Delete this invite? The link will stop working.')) return;
-        Shared.apiRequest('Invites/' + id, 'DELETE')
-            .then(function () {
-                Shared.setStatus('inviteStatus', 'Invite deleted.', false);
-                loadAll();
-            })
-            .catch(function (err) {
-                showError('inviteStatus', err, 'Failed to delete invite.');
-            });
+        confirmDialog('Delete this invite? The link stops working.', {
+            title: 'Delete Invite',
+            confirmText: 'Delete',
+            destructive: true
+        }).then(function (ok) {
+            if (!ok) return;
+            Shared.apiRequest('Invites/' + id, 'DELETE')
+                .then(function () {
+                    Shared.setStatus('inviteStatus', 'Invite deleted.', false);
+                    loadAll();
+                })
+                .catch(function (err) {
+                    showError('inviteStatus', err, 'Could not delete the invite.');
+                });
+        });
     }
 
+    // bind
+    // Wires the form once and draws the Resources editor.
     function bind() {
         Shared.initCollapsibles();
+        ensureResourceEditor();
         var btn = Shared.getEl('btnCreateInvite');
         if (btn) btn.addEventListener('click', createInvite);
         var burl = Shared.getEl('btnSaveInviteUrl');
@@ -489,18 +636,9 @@ export default function (view) {
         if (chkExp) chkExp.addEventListener('change', updateExpiryState);
         var chkMax = Shared.getEl('chkSetMaxUses');
         if (chkMax) chkMax.addEventListener('change', updateMaxUsesState);
-        var btnRes = Shared.getEl('btnAddResource');
-        if (btnRes) btnRes.addEventListener('click', addResource);
-        var resList = Shared.getEl('resList');
-        if (resList) resList.addEventListener('click', function (e) {
-            var del = e.target.closest('.um-res-del');
-            if (!del) return;
-            _newResources.splice(parseInt(del.getAttribute('data-index'), 10), 1);
-            renderResourceList();
-        });
         updateExpiryState();
         updateMaxUsesState();
     }
 
-    Shared = createPage(view, 1, { bind: bind, load: loadAll }).shared;
+    Shared = createPage(view, 1, { bind: bind, load: loadAll, onHide: clearCopyFields }).shared;
 }

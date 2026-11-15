@@ -11,15 +11,17 @@
                         <h1 class="sectionTitle">Password Resets</h1>
                     </div>
 
-                    <div class="fieldDescription" style="margin-bottom: 12px;">
+                    <!-- Intro -->
+                    <!-- Says where reset codes come from and why the tab shows them. -->
+                    <div class="fieldDescription um-intro">
                         When a user starts the <strong>Forgot Password</strong> flow, Jellyfin writes a reset
-                        code to a file on the server. This tab surfaces those codes so you can pass one to the
-                        user without needing file access to the server.
+                        code to a file on the server. This tab shows those codes so you can pass one to the
+                        user without file access to the server.
                     </div>
 
-                    <div class="base-cards hidden" id="resetCards"></div>
+                    <div class="hidden" id="resetCards"></div>
 
-                    <div class="base-warn" style="margin-bottom: 12px;">
+                    <div class="base-warn">
                         It is not recommended to use reset code extraction over a non-HTTPS connection. Reset
                         codes are sent over this connection so any non-encrypted traffic can be surveilled.
                     </div>
@@ -31,6 +33,8 @@
                         </label>
                     </div>
 
+                    <!-- Pending Resets -->
+                    <!-- Lists each pending code by user, active first, then expired. -->
                     <div class="base-section">
                         <div class="base-section-title">Pending resets</div>
                         <div class="base-section-content">
@@ -41,14 +45,14 @@
                             <div id="resetEmpty" class="base-empty-section hidden">No pending password resets.</div>
                             <div id="resetGroups">
                                 <div id="activeGroup" class="hidden">
-                                    <div style="font-weight:600; opacity:0.85; margin: 4px 0 6px;">Active</div>
-                                    <div class="base-table-wrapper">
+                                    <div class="base-subsection-title">Active</div>
+                                    <div class="um-table">
                                         <div class="base-table-body" id="activeList"></div>
                                     </div>
                                 </div>
-                                <div id="expiredGroup" class="hidden" style="margin-top: 14px;">
-                                    <div style="font-weight:600; opacity:0.85; margin: 4px 0 6px;">Expired</div>
-                                    <div class="base-table-wrapper">
+                                <div id="expiredGroup" class="hidden">
+                                    <div class="base-subsection-title">Expired</div>
+                                    <div class="um-table">
                                         <div class="base-table-body" id="expiredList"></div>
                                     </div>
                                 </div>

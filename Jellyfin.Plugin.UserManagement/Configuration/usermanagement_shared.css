@@ -1,174 +1,91 @@
-/* ============================================ */
-/* USER MANAGEMENT PLUGIN - LOCAL STYLES        */
-/* Generic components come from the shared       */
-/* JPKribs.Jellyfin.Base stylesheet (base-*).     */
-/* Only plugin specific pieces live here.        */
-/* ============================================ */
+/* usermanagement_shared.css */
+/* Layout that only User Management has. Every component comes from the Base stylesheet. */
 
-/* ===== Parent sections (Membership / Settings / Configuration / Other) ===== */
-/* Non-collapsible wrappers that hold the collapsible sub-sections. Scoped to the Groups page so
-   the base .base-section-title styling elsewhere (e.g. the Invites list) is left untouched. */
-#UserManagementGroupsPage .um-parent-section {
-    margin-bottom: 2em;
-}
-#UserManagementGroupsPage .um-parent-section > .base-section-title {
-    font-size: 1.35em;
-    font-weight: 600;
-    text-transform: none;
-    border-bottom-width: 2px;
-}
-#UserManagementGroupsPage .um-parent-section > .base-section-content {
-    padding-left: 8px;
-}
-#UserManagementGroupsPage .um-parent-section .base-collapsible-header {
-    font-size: 1em;
+/* um-intro */
+/* The one paragraph under a page title, with room before the first component. */
+/* Example: <div class="fieldDescription um-intro">Create a shareable signup link.</div> */
+.um-intro {
+    margin-bottom: var(--base-gap-wide);
 }
 
-/* ===== Date fields =====
-   Mirrors the Base form.css unified field rule, which covers text/number/password/search/url/email,
-   textarea, and select but not date inputs. Same surface, border, focus ring, and metrics, plus the
-   font inheritance inputs do not get by default. Candidate to move into Base form.css, after which
-   this block can be deleted. */
-.pluginConfigurationPage input[type="date"] {
-    width: 100%;
-    box-sizing: border-box;
-    background-color: var(--base-surface) !important;
-    color: inherit !important;
-    border: 1px solid var(--base-border) !important;
-    border-radius: 4px !important;
-    padding: 0.55em 0.7em;
-    font-family: inherit;
-    font-size: 110%;
-}
-
-.pluginConfigurationPage input[type="date"]:focus {
-    outline: none !important;
-    border-color: var(--base-accent) !important;
-}
-
-/* Inside table rows, date editors keep the compact base-edit-input metrics so they sit flush with
-   the read only link field beside them instead of the full form field size. */
-.pluginConfigurationPage .base-table-row input[type="date"] {
-    width: auto;
-    font-size: 0.9em;
-    padding: 0.3em 0.4em;
-}
-
-/* ===== Invite row action buttons (inside the base base-table rows) ===== */
-.um-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    color: inherit;
-    opacity: 0.6;
-    transition: opacity 0.2s, background 0.2s;
-}
-.um-btn:hover {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.1);
-}
-.um-btn .material-icons {
-    font-size: 20px;
-}
-.um-url {
-    flex: 1;
-}
-
-/* ===== Library / device checkbox grid ===== */
-.um-folder-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 6px;
-    margin-top: 8px;
-}
-
-/* ===== Ordered library list (home screen order) ===== */
-.um-order-list {
-    margin-top: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    overflow: hidden;
-}
-.um-order-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-.um-order-row:last-child {
-    border-bottom: none;
-}
-.um-order-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.um-order-actions {
-    display: flex;
-    gap: 4px;
-    flex: 0 0 auto;
-}
-.um-order-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: rgba(255, 255, 255, 0.08);
+/* um-table */
+/* A framed stack of base-table-row rows, such as the invite and reset lists. */
+/* Example: <div class="um-table"><div class="base-table-row">...</div></div> */
+.um-table {
     border: 1px solid var(--base-border);
-    border-radius: 4px;
-    color: inherit;
-    cursor: pointer;
-    opacity: 0.85;
-    transition: background 0.15s, opacity 0.15s;
-}
-.um-order-btn .material-icons {
-    font-size: 20px;
-}
-.um-order-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
-    opacity: 1;
-}
-.um-order-btn:disabled {
-    opacity: 0.3;
-    cursor: default;
-    background: transparent;
+    border-radius: var(--base-radius-small);
 }
 
-/* ===== Membership panel (wraps the base base-user-multi selector) ===== */
-.um-member-summary {
-    margin: 8px 0 4px;
+/* um-row */
+/* One line inside a row, with its text filling the room and its buttons at the end. */
+/* Example: <div class="um-row"><div class="um-row-info">Family</div><button class="base-row-btn">...</button></div> */
+.um-row {
+    display: flex;
+    align-items: center;
+    gap: var(--base-gap-narrow);
+    min-width: 0;
+}
+.um-row-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.um-row-label {
+    flex: 0 0 4rem;
+    font-size: var(--base-font-small);
     opacity: 0.7;
-    font-size: 0.9em;
-}
-.um-member-panel {
-    max-height: 280px;
-    overflow-y: auto;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    padding: 4px;
 }
 
-/* ===== Permission Rows (Override / Inherit) ===== */
+/* um-invite-row */
+/* An invite row, which stacks its title line, its link, and its expiration. */
+/* Example: <div class="base-table-row um-invite-row"><div class="um-row">...</div><div class="um-url-mount"></div></div> */
+.um-invite-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--base-gap-narrow);
+}
+
+/* um-text-red, um-text-orange */
+/* Text tinted for expired and soon to expire. */
+/* Example: <div class="base-table-item-sub um-text-red">Expired</div> */
+.um-text-red {
+    color: var(--base-red-fg);
+}
+.um-text-orange {
+    color: var(--base-orange-fg);
+}
+
+/* um-reset-code */
+/* A masked reset code, spaced so its digits read one by one. */
+/* Example: <code class="um-reset-code">123456</code> */
+.um-reset-code {
+    min-width: 6rem;
+    text-align: center;
+    letter-spacing: 2px;
+    font-family: var(--base-mono);
+}
+
+/* um-save-row */
+/* The Groups Save button with the unsaved indicator and the status beside it. */
+/* Example: <div class="um-save-row"><button class="base-button primary fill">Save</button></div> */
+.um-save-row {
+    margin-top: var(--base-gap-wide);
+}
+
+/* um-perm-row */
+/* A group setting with an Override checkbox on the left and its control on the right. */
+/* Example: <div class="um-perm-row inherited"><label class="um-perm-toggle">Override</label><div class="um-perm-main">...</div></div> */
 .um-perm-row {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    gap: var(--base-gap-wide);
+    padding: var(--base-gap-narrow) 0;
+    border-bottom: 1px solid var(--base-border);
 }
 .um-perm-row:last-child {
     border-bottom: none;
 }
 .um-perm-toggle {
-    flex: 0 0 110px;
-    margin: 0 !important;
+    flex: 0 0 7rem;
 }
 .um-perm-main {
     flex: 1;
@@ -176,160 +93,41 @@
 }
 .um-perm-label {
     font-weight: 500;
-    margin-bottom: 4px;
+    margin-bottom: var(--base-gap-narrow);
 }
-.um-perm-control .base-edit-input {
-    max-width: 220px;
-    border: 1px solid var(--base-border);
-}
-/* Inherited rows are dimmed; the value is whatever the user already has. */
 .um-perm-row.inherited .um-perm-main {
     opacity: 0.45;
 }
-
-/* ===== Unsaved Changes Indicator ===== */
-.um-unsaved {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-left: 12px;
-    font-size: 0.9em;
-    color: var(--base-orange-fg);
-    vertical-align: middle;
-}
-.um-unsaved-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--base-orange-fg);
-    display: inline-block;
+@media (max-width: 600px) {
+    .um-perm-row {
+        flex-direction: column;
+        gap: var(--base-gap-narrow);
+    }
+    .um-perm-toggle {
+        flex: 0 0 auto;
+    }
+    .um-perm-main {
+        width: 100%;
+    }
 }
 
-/* ===== Tag editor (per group permission rows) ===== */
-.um-tags {
-    margin-top: 4px;
-}
-.um-tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-.um-tag-list:empty {
-    display: none;
-}
-.um-tag-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--base-blue-bg);
-    color: #fff;
-    border: 1px solid rgba(52, 152, 219, 0.5);
-    border-radius: 14px;
-    padding: 3px 4px 3px 12px;
-    font-size: 0.9em;
-    line-height: 1.6;
-}
-.perm-tag-remove {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    font-size: 1em;
-    line-height: 1;
-    cursor: pointer;
-}
-.perm-tag-remove:hover {
-    background: var(--base-red-fg);
-}
-.um-tag-add-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-.um-tag-add-row .perm-tag-input {
-    flex: 1;
-    max-width: 280px;
-    margin: 0;
-}
-
-/* ===== Access schedule editor (per group permission rows) ===== */
-.um-schedules {
-    margin-top: 4px;
-}
-.perm-sched-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-.perm-sched-row select {
-    margin: 0;
-    min-width: 120px;
-}
-.perm-sched-row .perm-sched-day {
-    min-width: 140px;
-}
-.perm-sched-sep {
-    opacity: 0.6;
-}
-.perm-sched-row .perm-sched-remove {
-    margin-left: auto;
-}
-
-/* ===== Session cleanup rule cards (per group) ===== */
+/* um-session-rule */
+/* One session cleanup rule, boxed, with its number and a remove button on top. */
+/* Example: <div class="um-session-rule"><div class="um-session-rule-head"><span class="um-session-rule-title">Rule 1</span></div></div> */
 .um-session-rule {
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    padding: var(--base-gap-narrow) var(--base-gap-wide);
+    margin-bottom: var(--base-gap-narrow);
+    background: var(--base-wash);
+    border: 1px solid var(--base-border);
+    border-radius: var(--base-radius-small);
 }
 .um-session-rule-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 6px;
+    margin-bottom: var(--base-gap-narrow);
 }
 .um-session-rule-title {
     font-weight: 500;
     opacity: 0.85;
-}
-.um-session-rule .selectContainer,
-.um-session-rule .inputContainer {
-    margin-bottom: 8px;
-}
-.um-session-rule .sess-clients {
-    margin-bottom: 8px;
-}
-
-/* ===== Invite status badges ===== */
-/* Match the summary card color scheme (Active = green, Locked = yellow, Used up = purple,
-   Expired = red). The base badge palette maps these statuses differently, so override per status.
-   Scoped to the invites page id to win over the base rule regardless of stylesheet order. */
-#UserManagementInvitesPage .base-table-status-badge.Active {
-    background: var(--base-green-bg);
-    color: var(--base-green-fg);
-}
-#UserManagementInvitesPage .base-table-status-badge.Locked {
-    background: #e0c84e2e;
-    color: #e0c84e;
-}
-#UserManagementInvitesPage .base-table-status-badge.Disabled {
-    background: var(--base-purple-bg);
-    color: var(--base-purple-fg);
-}
-#UserManagementInvitesPage .base-table-status-badge.Expired {
-    background: var(--base-red-bg);
-    color: var(--base-red-fg);
 }

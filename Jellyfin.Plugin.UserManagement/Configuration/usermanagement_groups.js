@@ -1,13 +1,32 @@
-import { createPage, generateGuid, createUserMultiSelector, bindDialog, confirmDialog } from './configurationpage?name=usermanagement_shared.js';
+// usermanagement_groups.js
+// The Groups tab, which edits each group's members, settings, preferences, and lifecycle rules.
 
+import {
+    createPage,
+    generateGuid,
+    createUserMultiSelector,
+    createAccessSchedule,
+    createTagInput,
+    createOrderedList,
+    confirmDialog,
+    promptDialog
+} from './configurationpage?name=usermanagement_shared.js';
+
+// Groups page
+// Builds the Groups tab. Each setting row has an Override checkbox, and only overridden settings reach members.
+//
+// Inputs
+// view [HTMLElement]: The page the dashboard passes to the module.
 export default function (view) {
     'use strict';
 
     var Shared = null;
     var memberSel = null;
     var memberNotes = {};
-    var inputDialog = null;
-    var inputCallback = null;
+    var tracker = null;
+    var rowHandles = {};
+    var orderState = [];
+    var loading = false;
 
     var pluginId = '670167bd-e7f8-4549-98e2-5ab2e11bc89f';
     var fullConfig = null;
@@ -20,15 +39,11 @@ export default function (view) {
     var allCastReceivers = [];
     var allViews = [];
     var allGroupable = [];
-    var _snapshot = null;
-    var _dirty = false;
 
     var UNRATED_ITEMS = [
         ['Book', 'Books'], ['ChannelContent', 'Channels'], ['LiveTvChannel', 'Live TV'],
         ['Movie', 'Movies'], ['Music', 'Music'], ['Trailer', 'Trailers'], ['Series', 'Shows']
     ];
-
-    var DAY_OPTIONS = ['Everyday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Weekday', 'Weekend'];
 
     var PERMISSIONS = [
         { title: 'Library Access', perms: [
@@ -170,6 +185,11 @@ export default function (view) {
         ] }
     ];
 
+    // fetchCultures
+    // Reads the server's languages for the language selects.
+    //
+    // Output
+    // [Promise]: The cultures, or an empty list on failure.
     function fetchCultures() {
         try {
             return ApiClient.getCultures().then(function (r) { return r || []; }).catch(function () { return []; });
@@ -181,6 +201,11 @@ export default function (view) {
         { Id: '6F511C87', Name: 'Unstable' }
     ];
 
+    // fetchCastReceivers
+    // Reads the Google Cast receivers, falling back to Jellyfin's two defaults.
+    //
+    // Output
+    // [Promise]: The receivers.
     function fetchCastReceivers() {
         try {
             return ApiClient.getServerConfiguration()
@@ -192,6 +217,11 @@ export default function (view) {
         } catch (e) { return Promise.resolve(DEFAULT_CAST_RECEIVERS); }
     }
 
+    // fetchDevices
+    // Reads the devices known to the server.
+    //
+    // Output
+    // [Promise]: The devices, or an empty list on failure.
     function fetchDevices() {
         try {
             return ApiClient.getJSON(ApiClient.getUrl('Devices'))
@@ -200,9 +230,12 @@ export default function (view) {
         } catch (e) { return Promise.resolve([]); }
     }
 
-    // The user's home-screen views, matching Jellyfin's own "Library Order" list. Fetched for the
-    // current admin, this includes derived views such as Live TV and Collections that getVirtualFolders
-    // does not return.
+    // fetchUserViews
+    // Reads the home screen views, as Jellyfin's own library order lists them. They include derived views
+    // such as Live TV and Collections, which getVirtualFolders leaves out.
+    //
+    // Output
+    // [Promise]: The views, or an empty list on failure.
     function fetchUserViews() {
         try {
             var uid = ApiClient.getCurrentUserId();
@@ -212,8 +245,11 @@ export default function (view) {
         } catch (e) { return Promise.resolve([]); }
     }
 
-    // The folders that Jellyfin can group into type views ('Movies', 'Music', 'TV') - the "Library
-    // Folders" list. This is a filtered subset (movies/shows), not every library.
+    // fetchGroupingOptions
+    // Reads the folders Jellyfin can group into type views such as Movies and TV, which is a subset of the libraries.
+    //
+    // Output
+    // [Promise]: The folders, or an empty list on failure.
     function fetchGroupingOptions() {
         try {
             var uid = ApiClient.getCurrentUserId();
@@ -223,17 +259,25 @@ export default function (view) {
         } catch (e) { return Promise.resolve([]); }
     }
 
+    // fetchRatings
+    // Reads the parental ratings.
+    //
+    // Output
+    // [Promise]: The ratings, or an empty list on failure.
     function fetchRatings() {
         try {
             if (ApiClient.getParentalRatings) {
                 return ApiClient.getParentalRatings().then(function (r) { return r || []; }).catch(function () { return []; });
             }
-        } catch (e) { /* fall through */ }
+        } catch (e) {
+            return Promise.resolve([]);
+        }
         return Promise.resolve([]);
     }
 
+    // loadAll
+    // Reads the config and everything the rows list, then draws the page.
     function loadAll() {
-        Dashboard.showLoadingMsg();
         Promise.all([
             ApiClient.getPluginConfiguration(pluginId),
             ApiClient.getUsers(),
@@ -259,27 +303,57 @@ export default function (view) {
             renderSections();
             ensureMemberSelector();
             populateDropdown();
-            snapshot();
+            if (tracker) tracker.markClean();
             renderUserCards();
-            Dashboard.hideLoadingMsg();
-        }).catch(function (err) {
-            console.error('Failed to load groups', err);
-            Dashboard.hideLoadingMsg();
+        }).catch(function () {
+            Shared.setStatus('groupStatus', 'Could not load the groups. Reload the page.', true);
         });
     }
 
+    // ratingScore
+    // Reads a rating's score from either API shape.
+    //
+    // Inputs
+    // r [object]: The rating.
+    //
+    // Output
+    // [number]: The score.
     function ratingScore(r) {
         var rs = r.RatingScore || r.ratingScore;
         if (rs) return rs.Score != null ? rs.Score : rs.score;
         return r.Value != null ? r.Value : r.value;
     }
+    // ratingSubScore
+    // Reads a rating's sub score, when it has one.
+    //
+    // Inputs
+    // r [object]: The rating.
+    //
+    // Output
+    // [number]: The sub score, or null.
     function ratingSubScore(r) {
         var rs = r.RatingScore || r.ratingScore;
         if (rs) return rs.SubScore != null ? rs.SubScore : rs.subScore;
         return null;
     }
+    // ratingName
+    // Reads a rating's name from either API shape.
+    //
+    // Inputs
+    // r [object]: The rating.
+    //
+    // Output
+    // [string]: The name.
     function ratingName(r) { return r.Name || r.name || ''; }
 
+    // renderSectionGroup
+    // Draws one collapsible section per entry, each holding its setting rows.
+    //
+    // Inputs
+    // sections [Array]: The PERMISSIONS or CONFIG list.
+    // container [HTMLElement]: Where the sections go.
+    // prefix [string]: The id prefix of each section body.
+    // store [string]: perm or config, the part of the group the rows save to.
     function renderSectionGroup(sections, container, prefix, store) {
         var esc = Shared.escapeHtml;
         var html = '';
@@ -302,16 +376,65 @@ export default function (view) {
         container.innerHTML = html;
     }
 
+    // renderSections
+    // Draws every setting row, then mounts the Base components the rows hold.
     function renderSections() {
+        destroyRowHandles();
         renderSectionGroup(PERMISSIONS, view.querySelector('#permissionSections'), 'permSection', 'perm');
         renderSectionGroup(CONFIG, view.querySelector('#configSections'), 'configSection', 'config');
         Shared.initCollapsibles();
+        mountRowComponents();
         bindPermRows();
     }
 
+    // destroyRowHandles
+    // Tears down the Base components of the last draw.
+    function destroyRowHandles() {
+        Object.keys(rowHandles).forEach(function (key) { rowHandles[key].destroy(); });
+        rowHandles = {};
+    }
+
+    // mountRowComponents
+    // Mounts a Tag Input in each tags row, an Access Schedule in the schedule row, and an Ordered List in the library order row.
+    function mountRowComponents() {
+        view.querySelectorAll('.um-perm-row').forEach(function (row) {
+            var key = row.getAttribute('data-perm');
+            var type = row.getAttribute('data-type');
+            var mount = row.querySelector('.um-mount');
+            var handle = null;
+            if (type === 'tags') {
+                handle = createTagInput({ placeholder: 'Kids', onChange: checkDirty });
+            } else if (type === 'schedule') {
+                handle = createAccessSchedule({ addText: 'Add Schedule', onChange: checkDirty });
+            } else if (type === 'order') {
+                handle = createOrderedList({
+                    render: function (v) { return Shared.escapeHtml(v.name); },
+                    label: function (v) { return v.name; },
+                    onMove: function (from, to, items) { mergeOrder(items); checkDirty(); }
+                });
+            }
+            if (handle && mount) {
+                mount.appendChild(handle.element);
+                rowHandles[key] = handle;
+            }
+        });
+    }
+
+    // checkGrid
+    // Builds a Check Grid of checkboxes.
+    //
+    // Inputs
+    // gridClass [string]: The class that names the grid.
+    // itemClass [string]: The class that names each checkbox.
+    // items [Array]: The items to list.
+    // valueOf [function]: Reads an item's value.
+    // nameOf [function]: Reads an item's label.
+    //
+    // Output
+    // [string]: The grid's HTML.
     function checkGrid(gridClass, itemClass, items, valueOf, nameOf) {
         var esc = Shared.escapeHtml;
-        return '<div class="um-folder-grid ' + gridClass + '">'
+        return '<div class="base-check-grid ' + gridClass + '">'
             + items.map(function (it) {
                 return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="' + itemClass + '" value="'
                     + esc(valueOf(it)) + '" /><span class="checkboxLabel">' + esc(nameOf(it)) + '</span></label>';
@@ -319,11 +442,24 @@ export default function (view) {
             + '</div>';
     }
 
+    // libraryGrid
+    // Builds a Check Grid of every library.
+    //
+    // Inputs
+    // itemClass [string]: The class that names each checkbox.
+    //
+    // Output
+    // [string]: The grid's HTML.
     function libraryGrid(itemClass) {
         return checkGrid('perm-folders', itemClass, allLibraries,
             function (l) { return l.ItemId; }, function (l) { return l.Name; });
     }
 
+    // cultureOptions
+    // Builds the options of a language select.
+    //
+    // Output
+    // [string]: The options' HTML.
     function cultureOptions() {
         var esc = Shared.escapeHtml;
         var opts = '<option value="">Any Language</option>';
@@ -335,8 +471,11 @@ export default function (view) {
         return opts;
     }
 
-    // The home-screen views in default order, normalized to { id, name }. Falls back to the configured
-    // libraries if the user-views call returned nothing.
+    // orderSource
+    // Lists the home screen views in their default order, falling back to the libraries when there are no views.
+    //
+    // Output
+    // [Array]: One { id, name } per view.
     function orderSource() {
         if (allViews && allViews.length) {
             return allViews.map(function (v) { return { id: v.Id || v.id, name: v.Name || v.name || '' }; });
@@ -344,20 +483,27 @@ export default function (view) {
         return allLibraries.map(function (l) { return { id: l.ItemId, name: l.Name }; });
     }
 
-    function orderList(itemClass) {
-        var esc = Shared.escapeHtml;
-        return '<div class="um-order-list ' + itemClass + '">'
-            + orderSource().map(function (v) {
-                return '<div class="um-order-row" data-id="' + esc(v.id) + '">'
-                    + '<span class="um-order-name">' + esc(v.name) + '</span>'
-                    + '<span class="um-order-actions">'
-                    + '<button type="button" class="um-order-btn um-order-up" title="Move up"><span class="material-icons" aria-hidden="true">keyboard_arrow_up</span></button>'
-                    + '<button type="button" class="um-order-btn um-order-down" title="Move down"><span class="material-icons" aria-hidden="true">keyboard_arrow_down</span></button>'
-                    + '</span></div>';
-            }).join('')
-            + '</div>';
+    // mergeOrder
+    // Writes a new order of the shown views back into the full order, keeping hidden views in their places.
+    //
+    // Inputs
+    // shown [Array]: The shown views in their new order.
+    function mergeOrder(shown) {
+        var shownIds = {};
+        shown.forEach(function (v) { shownIds[v.id] = true; });
+        var next = shown.slice();
+        orderState = orderState.map(function (v) { return shownIds[v.id] ? next.shift() : v; });
     }
 
+    // renderPermRow
+    // Builds one setting row, with its Override checkbox, label, control, and description.
+    //
+    // Inputs
+    // p [object]: The setting from PERMISSIONS or CONFIG.
+    // store [string]: perm or config.
+    //
+    // Output
+    // [string]: The row's HTML.
     function renderPermRow(p, store) {
         var esc = Shared.escapeHtml;
         var control = '';
@@ -366,9 +512,9 @@ export default function (view) {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
                 + '<span class="checkboxLabel">Enabled</span></label>';
         } else if (p.type === 'int') {
-            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value base-edit-input" />';
+            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value base-edit-input" aria-label="' + esc(p.label) + '" />';
         } else if (p.type === 'bitrate') {
-            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value base-edit-input" />';
+            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value base-edit-input" aria-label="' + esc(p.label) + '" />';
         } else if (p.type === 'enum') {
             var opts = (p.options || []).map(function (o) {
                 return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
@@ -398,20 +544,12 @@ export default function (view) {
             });
             control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + ropts + '</select>';
         } else if (p.type === 'unrated') {
-            control = '<div class="um-folder-grid perm-unrated-grid">' + UNRATED_ITEMS.map(function (u) {
+            control = '<div class="base-check-grid perm-unrated-grid">' + UNRATED_ITEMS.map(function (u) {
                 return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-unrated" value="'
                     + esc(u[0]) + '" /><span class="checkboxLabel">' + esc(u[1]) + '</span></label>';
             }).join('') + '</div>';
-        } else if (p.type === 'tags') {
-            control = '<div class="um-tags"><div class="perm-tag-list um-tag-list"></div>'
-                + '<div class="um-tag-add-row">'
-                + '<input is="emby-input" type="text" class="perm-tag-input base-edit-input" placeholder="Tag" />'
-                + '<button is="emby-button" type="button" class="raised base-button secondary small perm-tag-add"><span>Add</span></button>'
-                + '</div></div>';
-        } else if (p.type === 'schedule') {
-            control = '<div class="um-schedules"><div class="perm-sched-list"></div>'
-                + '<button is="emby-button" type="button" class="raised base-button secondary small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
-                + '</div>';
+        } else if (p.type === 'tags' || p.type === 'schedule' || p.type === 'order') {
+            control = '<div class="um-mount"></div>';
         } else if (p.type === 'submode') {
             var mopts = SUBTITLE_MODES.map(function (m) {
                 return '<option value="' + esc(m[0]) + '">' + esc(m[1]) + '</option>';
@@ -425,8 +563,6 @@ export default function (view) {
                 return '<option value="' + esc(r.Id || r.id) + '">' + esc(r.Name || r.name || r.Id) + '</option>';
             }).join('');
             control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + copts + '</select>';
-        } else if (p.type === 'order') {
-            control = orderList('perm-order');
         } else if (p.type === 'homesections') {
             var secOpts = HOME_SECTIONS.map(function (o) {
                 return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
@@ -440,8 +576,7 @@ export default function (view) {
             }
             control = '<div class="um-homesections">' + secRows + '</div>';
         } else if (p.type === 'libgrid') {
-            // GroupedFolders only lists folders Jellyfin can group (movies/shows), from GroupingOptions;
-            // the exclude grids list every configured library.
+            // GroupedFolders lists only the folders Jellyfin can group. The exclude grids list every library.
             var gridItems = (p.source === 'groupable') ? allGroupable : allLibraries;
             var idOf = (p.source === 'groupable')
                 ? function (v) { return v.Id || v.id; }
@@ -466,66 +601,8 @@ export default function (view) {
             + '</div></div>';
     }
 
-    function renderTagChips(row, tags) {
-        var esc = Shared.escapeHtml;
-        var list = row.querySelector('.perm-tag-list');
-        list.innerHTML = (tags || []).map(function (t) {
-            return '<span class="um-tag-chip" data-tag="' + esc(t) + '">' + esc(t)
-                + ' <button type="button" class="perm-tag-remove" aria-label="Remove">&times;</button></span>';
-        }).join('');
-    }
-
-    function rowTags(row) {
-        var tags = [];
-        row.querySelectorAll('.um-tag-chip').forEach(function (c) { tags.push(c.getAttribute('data-tag')); });
-        return tags;
-    }
-
-    function formatHour(h) {
-        h = Number(h) || 0;
-        var ampm = h % 24 < 12 ? 'AM' : 'PM';
-        var hr = h % 12; if (hr === 0) hr = 12;
-        return hr + ':00 ' + ampm;
-    }
-
-    function schedRowHtml(s) {
-        var esc = Shared.escapeHtml;
-        var days = DAY_OPTIONS.map(function (d) {
-            return '<option value="' + d + '"' + (s.DayOfWeek === d ? ' selected' : '') + '>' + esc(d) + '</option>';
-        }).join('');
-        var hrs = function (sel) {
-            var o = '';
-            for (var h = 0; h <= 24; h++) {
-                o += '<option value="' + h + '"' + (Number(sel) === h ? ' selected' : '') + '>' + formatHour(h) + '</option>';
-            }
-            return o;
-        };
-        return '<div class="perm-sched-row">'
-            + '<select is="emby-select" class="perm-sched-day emby-select-withcolor">' + days + '</select>'
-            + '<select is="emby-select" class="perm-sched-start emby-select-withcolor">' + hrs(s.StartHour) + '</select>'
-            + '<span class="perm-sched-sep">&ndash;</span>'
-            + '<select is="emby-select" class="perm-sched-end emby-select-withcolor">' + hrs(s.EndHour) + '</select>'
-            + '<button is="emby-button" type="button" class="raised base-button destructive small perm-sched-remove"><span>Remove</span></button>'
-            + '</div>';
-    }
-
-    function renderSchedules(row, schedules) {
-        var list = row.querySelector('.perm-sched-list');
-        list.innerHTML = (schedules || []).map(schedRowHtml).join('');
-    }
-
-    function rowSchedules(row) {
-        var out = [];
-        row.querySelectorAll('.perm-sched-row').forEach(function (r) {
-            out.push({
-                DayOfWeek: r.querySelector('.perm-sched-day').value,
-                StartHour: parseFloat(r.querySelector('.perm-sched-start').value) || 0,
-                EndHour: parseFloat(r.querySelector('.perm-sched-end').value) || 0
-            });
-        });
-        return out;
-    }
-
+    // bindPermRows
+    // Wires each row's Override checkbox and its own controls.
     function bindPermRows() {
         view.querySelectorAll('.um-perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
@@ -535,63 +612,23 @@ export default function (view) {
                 toggle.addEventListener('change', function () { updateFolderVisibility(row); });
             });
 
-            // Re-filter the home-screen library lists whenever Library Access changes.
+            // The home screen library lists follow Library Access, so they are filtered again on each change.
             if (row.getAttribute('data-perm') === 'LibraryAccess') {
                 row.addEventListener('change', applyAccessFilter);
             }
 
-            if (type === 'tags') {
-                var add = function () {
-                    var input = row.querySelector('.perm-tag-input');
-                    var v = (input.value || '').trim();
-                    if (!v) return;
-                    var tags = rowTags(row);
-                    if (tags.indexOf(v) === -1) { tags.push(v); renderTagChips(row, tags); }
-                    input.value = '';
-                    checkDirty();
-                };
-                row.querySelector('.perm-tag-add').addEventListener('click', add);
-                row.querySelector('.perm-tag-input').addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') { e.preventDefault(); add(); }
-                });
-                row.querySelector('.perm-tag-list').addEventListener('click', function (e) {
-                    var btn = e.target.closest('.perm-tag-remove');
-                    if (!btn) return;
-                    btn.closest('.um-tag-chip').remove();
-                    checkDirty();
-                });
-            } else if (type === 'schedule') {
-                row.querySelector('.perm-sched-add').addEventListener('click', function () {
-                    var list = row.querySelector('.perm-sched-list');
-                    list.insertAdjacentHTML('beforeend', schedRowHtml({ DayOfWeek: 'Everyday', StartHour: 0, EndHour: 24 }));
-                    updateRowInherited(row);
-                    checkDirty();
-                });
-                row.querySelector('.perm-sched-list').addEventListener('click', function (e) {
-                    var btn = e.target.closest('.perm-sched-remove');
-                    if (!btn) return;
-                    btn.closest('.perm-sched-row').remove();
-                    checkDirty();
-                });
-            } else if (type === 'submode') {
+            if (type === 'submode') {
                 var sel = row.querySelector('.perm-value');
                 sel.addEventListener('change', function () { updateSubmodeHelp(row); });
-            } else if (type === 'order') {
-                row.querySelector('.perm-order').addEventListener('click', function (e) {
-                    var btn = e.target.closest('.um-order-up, .um-order-down');
-                    if (!btn || btn.disabled) return;
-                    var item = btn.closest('.um-order-row');
-                    if (btn.classList.contains('um-order-up')) {
-                        if (item.previousElementSibling) item.parentNode.insertBefore(item, item.previousElementSibling);
-                    } else if (item.nextElementSibling) {
-                        item.parentNode.insertBefore(item.nextElementSibling, item);
-                    }
-                    checkDirty();
-                });
             }
         });
     }
 
+    // updateSubmodeHelp
+    // Shows the sentence for the picked subtitle mode.
+    //
+    // Inputs
+    // row [HTMLElement]: The subtitle mode row.
     function updateSubmodeHelp(row) {
         var help = row.querySelector('.perm-submode-help');
         if (!help) return;
@@ -600,14 +637,28 @@ export default function (view) {
         help.textContent = mode ? mode[2] : '';
     }
 
+    // updateRowInherited
+    // Dims and disables a row's controls while it is not overridden.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
     function updateRowInherited(row) {
         var managed = row.querySelector('.perm-manage').checked;
         row.classList.toggle('inherited', !managed);
         row.querySelectorAll('.um-perm-control input, .um-perm-control select, .um-perm-control button')
             .forEach(function (el) { el.disabled = !managed; });
-        if (managed) updateFolderVisibility(row);
+        if (!managed) return;
+        updateFolderVisibility(row);
+        // A redraw puts back the move buttons the ends of the list keep disabled.
+        var order = row.getAttribute('data-type') === 'order' ? rowHandles[row.getAttribute('data-perm')] : null;
+        if (order) order.setItems(order.getItems());
     }
 
+    // updateFolderVisibility
+    // Hides a check grid while its All checkbox is on.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
     function updateFolderVisibility(row) {
         var pairs = [
             ['.perm-allfolders', '.perm-folders'],
@@ -618,15 +669,25 @@ export default function (view) {
             var all = row.querySelector(pair[0]);
             var grid = row.querySelector(pair[1]);
             if (all && grid) {
-                grid.style.display = all.checked ? 'none' : 'grid';
+                grid.classList.toggle('hidden', all.checked);
             }
         });
     }
 
+    // groupLabel
+    // Names a group in the select, marking the default.
+    //
+    // Inputs
+    // g [object]: The group.
+    //
+    // Output
+    // [string]: The label.
     function groupLabel(g) {
         return (g.Name || 'Unnamed group') + (g.Id === fullConfig.DefaultGroupId ? ' (Default)' : '');
     }
 
+    // refreshGroupLabels
+    // Writes every group's label in the select again.
     function refreshGroupLabels() {
         var select = view.querySelector('#selectGroup');
         if (!select) return;
@@ -636,16 +697,21 @@ export default function (view) {
         });
     }
 
+    // updateDefaultButton
+    // Shows whether the picked group is the default on the Default button.
     function updateDefaultButton() {
         var btn = view.querySelector('#btnDefaultGroup');
         if (!btn) return;
         var isDefault = !!currentGroupId && currentGroupId === fullConfig.DefaultGroupId;
         btn.classList.toggle('primary', isDefault);
+        btn.classList.toggle('secondary', !isDefault);
         var icon = btn.querySelector('.material-icons');
         if (icon) icon.textContent = isDefault ? 'star' : 'star_border';
-        btn.setAttribute('title', isDefault ? 'This is the default group — click to unset' : 'Set as default group');
+        btn.setAttribute('title', isDefault ? 'Unset Default' : 'Set as Default');
     }
 
+    // toggleDefaultGroup
+    // Makes the picked group the default, or unsets it when it already is.
     function toggleDefaultGroup() {
         if (!currentGroupId) return;
         fullConfig.DefaultGroupId = (fullConfig.DefaultGroupId === currentGroupId) ? null : currentGroupId;
@@ -654,6 +720,8 @@ export default function (view) {
         checkDirty();
     }
 
+    // populateDropdown
+    // Fills the group select, keeping the picked group when it still exists.
     function populateDropdown() {
         var select = view.querySelector('#selectGroup');
         var previous = currentGroupId;
@@ -688,28 +756,38 @@ export default function (view) {
         loadCurrentGroup();
     }
 
+    // getCurrentGroup
+    // Finds the picked group.
+    //
+    // Output
+    // [object]: The group, or undefined.
     function getCurrentGroup() {
         return fullConfig.Groups.find(function (g) { return g.Id === currentGroupId; });
     }
 
-    function snapshot() {
+    // serializeGroups
+    // Reads the form into the config and writes it as text, for the Change Tracker.
+    //
+    // Output
+    // [string]: The config as JSON, or empty before it loads.
+    function serializeGroups() {
+        if (!fullConfig) return '';
         if (currentGroupId) collectCurrentGroup();
-        _snapshot = JSON.stringify(fullConfig);
-        _dirty = false;
-        updateDirtyIndicator();
+        return JSON.stringify(fullConfig);
     }
 
+    // checkDirty
+    // Shows or hides the unsaved indicator.
     function checkDirty() {
-        if (_snapshot === null) return;
-        if (currentGroupId) collectCurrentGroup();
-        _dirty = JSON.stringify(fullConfig) !== _snapshot;
-        updateDirtyIndicator();
+        // A component that reports its own setValue must not read a half loaded group back.
+        if (tracker && !loading) tracker.check();
     }
 
-    function updateDirtyIndicator() {
-        Shared.setVisible('unsavedIndicator', _dirty);
-    }
-
+    // persistGroups
+    // Saves the groups and the default group onto the latest config.
+    //
+    // Output
+    // [Promise]: The save result.
     function persistGroups() {
         return ApiClient.getPluginConfiguration(pluginId).then(function (latest) {
             latest.Groups = fullConfig.Groups;
@@ -725,20 +803,25 @@ export default function (view) {
         });
     }
 
+    // loadConfigRow
+    // Fills one preference row from the group's configuration.
+    //
+    // Inputs
+    // row [HTMLElement]: The row.
+    // cfg [object]: The group's configuration.
+    // key [string]: The setting.
+    // type [string]: The row's control type.
+    // manage [HTMLInputElement]: The Override checkbox.
     function loadConfigRow(row, cfg, key, type, manage) {
         manage.checked = cfg['Manage' + key] === true;
 
         if (type === 'order') {
-            var list = row.querySelector('.perm-order');
-            // Reset to the default view order first so switching groups never leaves stale ordering.
-            orderSource().forEach(function (v) {
-                var el = list.querySelector('.um-order-row[data-id="' + v.id + '"]');
-                if (el) list.appendChild(el);
-            });
-            (cfg.OrderedViews || []).slice().reverse().forEach(function (id) {
-                var el = list.querySelector('.um-order-row[data-id="' + id + '"]');
-                if (el) list.insertBefore(el, list.firstChild);
-            });
+            // Saved views go first in their saved order, and the rest follow in the default order.
+            var views = orderSource();
+            var byId = {};
+            views.forEach(function (v) { byId[v.id] = v; });
+            var front = (cfg.OrderedViews || []).filter(function (id) { return byId[id]; }).map(function (id) { return byId[id]; });
+            orderState = front.concat(views.filter(function (v) { return front.indexOf(v) === -1; }));
         } else if (type === 'libgrid') {
             var invert = row.getAttribute('data-invert') === '1';
             var stored = cfg[key] || [];
@@ -767,14 +850,22 @@ export default function (view) {
         }
     }
 
+    // collectConfigRow
+    // Reads one preference row into the group's configuration.
+    //
+    // Inputs
+    // row [HTMLElement]: The row.
+    // cfg [object]: The group's configuration.
+    // key [string]: The setting.
+    // type [string]: The row's control type.
+    // managed [boolean]: Whether the row is overridden.
     function collectConfigRow(row, cfg, key, type, managed) {
         cfg['Manage' + key] = managed;
 
         if (type === 'order') {
-            // Only accessible libraries are shown, so only those are persisted in the order.
-            var ids = [];
-            row.querySelectorAll('.um-order-row:not(.hidden)').forEach(function (el) { ids.push(el.getAttribute('data-id')); });
-            cfg.OrderedViews = ids;
+            // Only the libraries members can see are shown, so only those are saved in the order.
+            var order = rowHandles[key];
+            cfg.OrderedViews = order ? order.getItems().map(function (v) { return v.id; }) : [];
         } else if (type === 'libgrid') {
             var invert = row.getAttribute('data-invert') === '1';
             var out = [];
@@ -795,8 +886,11 @@ export default function (view) {
         }
     }
 
-    // The set of library ids the group's members can see, read live from the Library Access row.
-    // Returns null when every library is accessible (access unmanaged or "all libraries" enabled).
+    // accessibleLibraryIds
+    // Reads the libraries members can see from the Library Access row.
+    //
+    // Output
+    // [object]: A set of library ids, or null when every library is visible.
     function accessibleLibraryIds() {
         var row = view.querySelector('.um-perm-row[data-perm="LibraryAccess"]');
         if (!row) return null;
@@ -808,24 +902,23 @@ export default function (view) {
         return set;
     }
 
-    // Hides home-screen library rows (order and grids) the group's members cannot access, so an admin
-    // cannot order or toggle a library the group hides from them.
+    // applyAccessFilter
+    // Hides the home screen libraries members cannot see, so an admin cannot order or toggle a hidden library.
     function applyAccessFilter() {
         var access = accessibleLibraryIds();
         var accessible = function (id) { return access === null || access[id] === true; };
-        // Only configured libraries are access-gated. The order list also contains derived views such
-        // as Live TV and Collections (from the user views call), which are not libraries and stay visible.
+        // Derived views such as Live TV and Collections are not libraries, so they always stay.
         var libIds = {};
         allLibraries.forEach(function (l) { libIds[l.ItemId] = true; });
 
         view.querySelectorAll('#configSections .um-perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
             if (type === 'order') {
-                row.querySelectorAll('.um-order-row').forEach(function (el) {
-                    var id = el.getAttribute('data-id');
-                    var hide = libIds[id] === true && !accessible(id);
-                    el.classList.toggle('hidden', hide);
-                });
+                var order = rowHandles[row.getAttribute('data-perm')];
+                if (order) {
+                    order.setItems(orderState.filter(function (v) { return libIds[v.id] !== true || accessible(v.id); }));
+                    updateRowInherited(row);
+                }
             } else if (type === 'libgrid') {
                 row.querySelectorAll('.perm-lib').forEach(function (cb) {
                     var label = cb.closest('.emby-checkbox-label');
@@ -835,10 +928,13 @@ export default function (view) {
         });
     }
 
+    // loadCurrentGroup
+    // Fills every row from the picked group.
     function loadCurrentGroup() {
         updateDefaultButton();
         var group = getCurrentGroup();
         if (!group) return;
+        loading = true;
         var perms = group.Permissions || {};
         var cfg = group.Configuration || {};
 
@@ -890,10 +986,10 @@ export default function (view) {
                 row.querySelectorAll('.perm-unrated').forEach(function (cb) { cb.checked = blocked.indexOf(cb.value) !== -1; });
             } else if (type === 'tags') {
                 manage.checked = perms['Manage' + key] === true;
-                renderTagChips(row, perms[key] || []);
+                if (rowHandles[key]) rowHandles[key].setValue(perms[key] || []);
             } else if (type === 'schedule') {
                 manage.checked = perms.ManageAccessSchedules === true;
-                renderSchedules(row, perms.AccessSchedules || []);
+                if (rowHandles[key]) rowHandles[key].setValue(perms.AccessSchedules || []);
             } else if (type === 'bitrate') {
                 manage.checked = perms.ManageRemoteClientBitrateLimit === true;
                 row.querySelector('.perm-value').value = (perms.RemoteClientBitrateLimit || 0) / 1000000 || '';
@@ -918,13 +1014,18 @@ export default function (view) {
             refreshMemberAvailability(group);
         }
         updateMemberSummary();
+        loading = false;
     }
 
+    // refreshMemberAvailability
+    // Marks users who belong to another group as disabled, with that group's name.
+    // A user belongs to one group at a time, so they move by leaving the other group first.
+    //
+    // Inputs
+    // group [object]: The picked group.
     function refreshMemberAvailability(group) {
         var notes = {};
         var others = [];
-        // A user belongs to one group at a time, so users already in another group are shown
-        // disabled here with that group's name; remove them there first to move them.
         fullConfig.Groups.forEach(function (g) {
             if (g.Id === currentGroupId) return;
             (g.MemberIds || []).forEach(function (id) {
@@ -937,12 +1038,17 @@ export default function (view) {
         memberSel.setDisabled(others);
     }
 
+    // loadGroupExtras
+    // Fills the Other sections from the group.
+    //
+    // Inputs
+    // group [object]: The picked group.
     function loadGroupExtras(group) {
         var pw = group.Password || {};
         var el = view.querySelector.bind(view);
         if (el('#grpPwEnabled')) el('#grpPwEnabled').checked = pw.Enabled === true;
         if (el('#grpPwLength')) el('#grpPwLength').value = pw.MinLength || 8;
-        // Defaults to checked for a group with no saved policy, matching the server-side default.
+        // A group with no saved policy starts checked, as the server does.
         if (el('#grpPwNoEmpty')) el('#grpPwNoEmpty').checked = pw.DisallowEmpty !== false;
         if (el('#grpPwChangeMode')) el('#grpPwChangeMode').value = normalizeChangeMode(pw.ChangeMode);
         if (el('#grpPwUpper')) el('#grpPwUpper').checked = pw.RequireUppercase === true;
@@ -964,6 +1070,11 @@ export default function (view) {
         updateSessionEnabledState();
     }
 
+    // collectGroupExtras
+    // Reads the Other sections into the group.
+    //
+    // Inputs
+    // group [object]: The picked group.
     function collectGroupExtras(group) {
         var el = view.querySelector.bind(view);
         var len = parseInt((el('#grpPwLength') || {}).value, 10);
@@ -992,20 +1103,33 @@ export default function (view) {
 
     var CHANGE_MODES = ['Allowed', 'InitialOnly', 'Disallowed'];
 
-    // The generic configuration endpoint may serialize the enum as a number or a string.
+    // normalizeChangeMode
+    // Reads a password change mode, which the config endpoint may send as a number or a name.
+    //
+    // Inputs
+    // value [number|string]: The stored mode.
+    //
+    // Output
+    // [string]: Allowed, InitialOnly, or Disallowed.
     function normalizeChangeMode(value) {
         if (typeof value === 'number') return CHANGE_MODES[value] || 'Allowed';
         return CHANGE_MODES.indexOf(value) >= 0 ? value : 'Allowed';
     }
 
+    // updatePwEnabledState
+    // Shows the password fields while password requirements are on.
     function updatePwEnabledState() {
         Shared.setVisible('pwFields', !!(view.querySelector('#grpPwEnabled') || {}).checked);
     }
 
+    // updateExpiryEnabledState
+    // Shows the expiry fields while expiry is on.
     function updateExpiryEnabledState() {
         Shared.setVisible('grpExpiryFields', !!(view.querySelector('#grpExpiryEnabled') || {}).checked);
     }
 
+    // updateInactiveEnabledState
+    // Shows the inactivity fields while inactivity is on.
     function updateInactiveEnabledState() {
         Shared.setVisible('inactiveFields', !!(view.querySelector('#grpInactiveEnabled') || {}).checked);
     }
@@ -1016,14 +1140,27 @@ export default function (view) {
         AllExcept: 'All sessions are cleaned up except sessions on these clients.'
     };
 
-    // The generic configuration endpoint may serialize the enum as a number or a string.
+    // normalizeSessionMode
+    // Reads a session client mode, which the config endpoint may send as a number or a name.
+    //
+    // Inputs
+    // value [number|string]: The stored mode.
+    //
+    // Output
+    // [string]: All, Only, or AllExcept.
     function normalizeSessionMode(value) {
         if (typeof value === 'number') return SESSION_MODES[value] || 'All';
         return SESSION_MODES.indexOf(value) >= 0 ? value : 'All';
     }
 
-    // Every client name worth offering: clients that have a device on the server, plus clients already
-    // referenced by the given rules, so a selected client whose devices are gone is never orphaned.
+    // knownClients
+    // Lists the clients with a device on the server, plus the clients the rules name, so a client whose devices are gone stays listed.
+    //
+    // Inputs
+    // rules [Array]: The session rules.
+    //
+    // Output
+    // [Array]: The client names, sorted.
     function knownClients(rules) {
         var seen = {};
         var out = [];
@@ -1035,6 +1172,15 @@ export default function (view) {
         return out.sort(function (a, b) { return a.localeCompare(b); });
     }
 
+    // sessionRuleHtml
+    // Builds one session cleanup rule card.
+    //
+    // Inputs
+    // rule [object]: The rule.
+    // clients [Array]: The client names to offer.
+    //
+    // Output
+    // [string]: The card's HTML.
     function sessionRuleHtml(rule, clients) {
         var esc = Shared.escapeHtml;
         var selected = {};
@@ -1043,7 +1189,7 @@ export default function (view) {
         var days = rule.Days > 0 ? rule.Days : 30;
 
         var grid = clients.length
-            ? '<div class="um-folder-grid sess-client-grid">' + clients.map(function (c) {
+            ? '<div class="base-check-grid sess-client-grid">' + clients.map(function (c) {
                 return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="sess-client" value="'
                     + esc(c) + '"' + (selected[c.toLowerCase()] ? ' checked' : '')
                     + ' /><span class="checkboxLabel">' + esc(c) + '</span></label>';
@@ -1053,7 +1199,7 @@ export default function (view) {
         return '<div class="um-session-rule">'
             + '<div class="um-session-rule-head">'
             + '<span class="um-session-rule-title"></span>'
-            + '<button is="emby-button" type="button" class="raised base-button destructive small sess-remove"><span>Remove</span></button>'
+            + '<button type="button" class="base-row-btn destructive sess-remove" title="Remove" aria-label="Remove"><span class="material-icons" aria-hidden="true">delete</span></button>'
             + '</div>'
             + '<div class="selectContainer">'
             + '<label class="selectLabel">Clients</label>'
@@ -1068,13 +1214,18 @@ export default function (view) {
             + '<div class="fieldDescription sess-clients-help"></div>'
             + '</div>'
             + '<div class="inputContainer">'
-            + '<label>Days before a device is logged out:</label>'
+            + '<label>Days before a device is logged out</label>'
             + '<input is="emby-input" type="number" class="sess-days" min="1" value="' + days + '" />'
             + '<div class="fieldDescription">Devices will be logged out after this many days without checking back into the server.</div>'
             + '</div>'
             + '</div>';
     }
 
+    // renderSessionRules
+    // Draws the session cleanup rule cards.
+    //
+    // Inputs
+    // rules [Array]: The rules.
     function renderSessionRules(rules) {
         var list = view.querySelector('#sessionRuleList');
         if (!list) return;
@@ -1085,6 +1236,11 @@ export default function (view) {
         updateSessionOverlaps();
     }
 
+    // domSessionRules
+    // Reads the rule cards back into rules.
+    //
+    // Output
+    // [Array]: The rules.
     function domSessionRules() {
         var rules = [];
         view.querySelectorAll('#sessionRuleList .um-session-rule').forEach(function (row) {
@@ -1101,20 +1257,27 @@ export default function (view) {
         return rules;
     }
 
+    // updateSessionRuleUi
+    // Shows a rule's client list unless it covers all clients.
+    //
+    // Inputs
+    // row [HTMLElement]: The rule card.
     function updateSessionRuleUi(row) {
         var mode = row.querySelector('.sess-mode').value;
         row.querySelector('.sess-clients').classList.toggle('hidden', mode === 'All');
         row.querySelector('.sess-clients-help').textContent = SESSION_MODE_HELP[mode] || '';
     }
 
+    // updateSessionRuleTitles
+    // Numbers the rule cards.
     function updateSessionRuleTitles() {
         view.querySelectorAll('#sessionRuleList .um-session-rule-title').forEach(function (el, i) {
             el.textContent = 'Rule ' + (i + 1);
         });
     }
 
-    // Where several rules cover the same client, the shortest window wins. This surfaces which clients
-    // that affects so overlapping rules are never a silent surprise.
+    // updateSessionOverlaps
+    // Names the clients more than one rule covers, since the shortest window wins there.
     function updateSessionOverlaps() {
         var warn = view.querySelector('#sessionOverlapWarning');
         if (!warn) return;
@@ -1134,22 +1297,17 @@ export default function (view) {
         warn.classList.toggle('hidden', overlapped.length === 0);
     }
 
+    // updateSessionEnabledState
+    // Shows the rules while session cleanup is on.
     function updateSessionEnabledState() {
         Shared.setVisible('sessionFields', !!(view.querySelector('#grpSessionEnabled') || {}).checked);
     }
 
-    function card(cls, count, label) {
-        return '<div class="base-card ' + cls + '"><span class="base-card-count">' + count
-            + '</span><span class="base-card-label">' + label + '</span></div>';
-    }
-
+    // renderUserCards
+    // Draws the count cards. Inactive counts the members the expiry task would disable, by each group's own window.
+    // Members who have never signed in are left alone, as the task does.
     function renderUserCards() {
-        var container = view.querySelector('#userCards');
-        if (!container) return;
-        // Inactivity is per group, so the card counts the members the expiry task will actually
-        // disable: a member of a group with inactivity disabling on, whose last activity is older
-        // than that group's own window. Members who have never signed in are left alone, matching
-        // the task. Everyone else is simply active.
+        if (!view.querySelector('#userCards')) return;
         var cutoffFor = {};
         (fullConfig.Groups || []).forEach(function (g) {
             if (g.DisableInactiveUsers !== true || !(g.InactiveDays > 0)) return;
@@ -1184,14 +1342,17 @@ export default function (view) {
             }
         });
 
-        container.innerHTML =
-            card('blue', admins, 'Admins') +
-            card('green', active, 'Active') +
-            card('yellow', inactive, 'Inactive') +
-            card('red', disabled, 'Disabled') +
-            card('purple', Object.keys(expiringIds).length, 'Expiring');
+        Shared.renderCards('userCards', [
+            { count: admins, label: 'Admins', color: 'blue' },
+            { count: active, label: 'Active', color: 'green' },
+            { count: inactive, label: 'Inactive', color: 'yellow' },
+            { count: disabled, label: 'Disabled', color: 'red' },
+            { count: Object.keys(expiringIds).length, label: 'Expiring', color: 'purple' }
+        ]);
     }
 
+    // collectCurrentGroup
+    // Reads every row into the picked group.
     function collectCurrentGroup() {
         var group = getCurrentGroup();
         if (!group) return;
@@ -1250,10 +1411,10 @@ export default function (view) {
                 perms.BlockUnratedItems = items;
             } else if (type === 'tags') {
                 perms['Manage' + key] = managed;
-                perms[key] = rowTags(row);
+                perms[key] = rowHandles[key] ? rowHandles[key].getValue() : [];
             } else if (type === 'schedule') {
                 perms.ManageAccessSchedules = managed;
-                perms.AccessSchedules = rowSchedules(row);
+                perms.AccessSchedules = rowHandles[key] ? rowHandles[key].getValue() : [];
             } else if (type === 'bitrate') {
                 perms.ManageRemoteClientBitrateLimit = managed;
                 var mbps = parseFloat(row.querySelector('.perm-value').value);
@@ -1274,6 +1435,8 @@ export default function (view) {
         collectGroupExtras(group);
     }
 
+    // ensureMemberSelector
+    // Draws the member picker once, and refreshes it on later loads.
     function ensureMemberSelector() {
         var mount = view.querySelector('#memberMount');
         if (!mount) return;
@@ -1281,6 +1444,7 @@ export default function (view) {
         memberSel = createUserMultiSelector({
             adminFilter: 'exclude',
             showAvatars: true,
+            maxHeight: 280,
             fetchUsers: function () { return allUsers; },
             emptyMessage: 'No users available.',
             disabledIds: [],
@@ -1290,11 +1454,15 @@ export default function (view) {
         mount.appendChild(memberSel.element);
     }
 
+    // onMembersChanged
+    // Saves the picked members on the group and takes them out of every other group.
+    //
+    // Inputs
+    // ids [Array]: The picked user ids.
     function onMembersChanged(ids) {
         var group = getCurrentGroup();
         if (!group) return;
         group.MemberIds = (ids || []).slice();
-        // A user belongs to one group at a time; selecting them here removes them from any other group.
         fullConfig.Groups.forEach(function (g) {
             if (g.Id === currentGroupId) return;
             g.MemberIds = (g.MemberIds || []).filter(function (x) { return group.MemberIds.indexOf(x) === -1; });
@@ -1303,54 +1471,60 @@ export default function (view) {
         checkDirty();
     }
 
+    // updateMemberSummary
+    // Writes the member count.
     function updateMemberSummary() {
         var group = getCurrentGroup();
         var n = group ? (group.MemberIds || []).length : 0;
         var el = view.querySelector('#memberSummary');
-        if (el) el.textContent = n + ' member' + (n !== 1 ? 's' : '') + ' in this group';
+        if (el) el.textContent = Shared.plural(n, 'member') + ' in this group';
     }
 
-    // The name modal is markup in the page; bindDialog gives it Escape, backdrop and close button
-    // dismissal plus focus trapping. OK closes with the field's text, every other way closes with null.
-    function bindInputModal() {
-        var field = view.querySelector('#inputModalField');
-        inputDialog = bindDialog('inputModal', {
-            root: view,
-            onClose: function (value) {
-                var callback = inputCallback;
-                inputCallback = null;
-                if (callback) callback(typeof value === 'string' ? value : null);
+    // askName
+    // Asks for a group name in a Prompt Dialog, refusing an empty or taken name.
+    //
+    // Inputs
+    // title [string]: The dialog title.
+    // value [string]: The name to start with.
+    // exceptId [string]: The group being renamed, or null.
+    //
+    // Output
+    // [Promise]: The trimmed name, or null when cancelled.
+    function askName(title, value, exceptId) {
+        return promptDialog([{
+            name: 'name',
+            label: 'Name',
+            value: value || '',
+            required: true,
+            validate: function (v) {
+                return nameExists((v || '').trim(), exceptId) ? 'A group with this name already exists.' : '';
             }
-        });
-        view.querySelector('#btnConfirmInputModal').addEventListener('click', function () { inputDialog.close(field.value); });
-        view.querySelector('#btnCancelInputModal').addEventListener('click', function () { inputDialog.close(null); });
-        field.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); inputDialog.close(field.value); }
+        }], { title: title }).then(function (result) {
+            var name = result ? (result.name || '').trim() : '';
+            return name || null;
         });
     }
 
-    function showInputModal(title, value, callback) {
-        var field = view.querySelector('#inputModalField');
-        view.querySelector('#inputModalTitle').textContent = title;
-        field.value = value || '';
-        inputCallback = callback;
-        inputDialog.open();
-        setTimeout(function () { field.focus(); field.select(); }, 50);
-    }
-
+    // nameExists
+    // Says whether another group already has a name, ignoring case.
+    //
+    // Inputs
+    // name [string]: The name.
+    // exceptId [string]: The group to leave out, or null.
+    //
+    // Output
+    // [boolean]: Whether the name is taken.
     function nameExists(name, exceptId) {
         return fullConfig.Groups.some(function (g) {
             return g.Id !== exceptId && (g.Name || '').toLowerCase() === name.toLowerCase();
         });
     }
 
+    // newGroup
+    // Asks for a name and adds an empty group.
     function newGroup() {
-        showInputModal('New Group', '', function (name) {
-            if (name === null) return;
-            name = name.trim();
-            if (!name) { Dashboard.alert('Group name is required.'); return; }
-            if (nameExists(name, null)) { Dashboard.alert('A group with this name already exists.'); return; }
-
+        askName('New Group', '', null).then(function (name) {
+            if (!name) return;
             if (currentGroupId) collectCurrentGroup();
             var group = { Id: generateGuid(), Name: name, MemberIds: [], Permissions: {}, Configuration: {} };
             fullConfig.Groups.push(group);
@@ -1360,24 +1534,29 @@ export default function (view) {
         });
     }
 
+    // renameGroup
+    // Asks for a new name for the picked group.
     function renameGroup() {
         var group = getCurrentGroup();
         if (!group) return;
-        showInputModal('Rename Group', group.Name, function (name) {
-            if (name === null) return;
-            name = name.trim();
+        askName('Rename Group', group.Name, group.Id).then(function (name) {
             if (!name) return;
-            if (nameExists(name, group.Id)) { Dashboard.alert('A group with this name already exists.'); return; }
             group.Name = name;
             populateDropdown();
             checkDirty();
         });
     }
 
+    // deleteGroup
+    // Asks first, then deletes the picked group. Nothing is saved until Save.
     function deleteGroup() {
         var group = getCurrentGroup();
         if (!group) return;
-        confirmDialog('Delete group "' + group.Name + '"? Members will be unassigned.', { title: 'Delete Group', confirmText: 'OK' }).then(function (ok) {
+        confirmDialog('Delete the group ' + group.Name + '? Its members are unassigned.', {
+            title: 'Delete Group',
+            confirmText: 'Delete',
+            destructive: true
+        }).then(function (ok) {
             if (!ok) return;
             if (fullConfig.DefaultGroupId === group.Id) fullConfig.DefaultGroupId = null;
             fullConfig.Groups = fullConfig.Groups.filter(function (g) { return g.Id !== group.Id; });
@@ -1387,33 +1566,49 @@ export default function (view) {
         });
     }
 
-    function save() {
-        if (currentGroupId) collectCurrentGroup();
-
+    // confirmDeleteExpiry
+    // Asks first when the picked group deletes its members on expiry, since that cannot be undone.
+    //
+    // Output
+    // [Promise]: Whether to go on with the save.
+    function confirmDeleteExpiry() {
         var cur = getCurrentGroup();
-        if (cur && cur.ExpiresOn && cur.ExpiryAction === 'Delete'
-            && !confirm('Group "' + (cur.Name || '') + '" is set to DELETE its members on ' + String(cur.ExpiresOn).slice(0, 10)
-                + '. This permanently removes those accounts and cannot be undone. Save anyway?')) {
-            return;
-        }
-
-        Dashboard.showLoadingMsg();
-        persistGroups().then(function () {
-            return Shared.apiRequest('Apply', 'POST');
-        }).then(function () {
-            Dashboard.hideLoadingMsg();
-            snapshot();
-            renderUserCards();
-            Shared.setStatus('groupStatus', 'Saved and applied to members.', false);
-        }).catch(function (err) {
-            console.error('Save failed', err);
-            Dashboard.hideLoadingMsg();
-            Shared.setStatus('groupStatus', 'Save failed.', true);
+        if (!(cur && cur.ExpiresOn && cur.ExpiryAction === 'Delete')) return Promise.resolve(true);
+        return confirmDialog('Save ' + (cur.Name || 'this group') + '? It deletes its members on '
+            + String(cur.ExpiresOn).slice(0, 10) + ', and this cannot be undone.', {
+            title: 'Delete Members on Expiry',
+            confirmText: 'Save',
+            destructive: true
         });
     }
 
-    function bind() {
-        bindInputModal();
+    // save
+    // Saves the groups and applies them to their members.
+    function save() {
+        if (currentGroupId) collectCurrentGroup();
+
+        confirmDeleteExpiry().then(function (ok) {
+            if (!ok) return;
+            Shared.setStatus('groupStatus', 'Saving…', false);
+            persistGroups().then(function () {
+                return Shared.apiRequest('Apply', 'POST');
+            }).then(function () {
+                if (tracker) tracker.markClean();
+                renderUserCards();
+                Shared.setStatus('groupStatus', 'Saved and applied to members.', false);
+            }).catch(function () {
+                Shared.setStatus('groupStatus', 'Could not save the groups.', true);
+            });
+        });
+    }
+
+    // bind
+    // Wires the page once and starts the Change Tracker.
+    //
+    // Inputs
+    // shared [object]: The helper bag from createPage.
+    function bind(shared) {
+        tracker = shared.createChangeTracker({ serialize: serializeGroups, indicatorId: 'unsavedIndicator' });
         view.querySelector('#selectGroup').addEventListener('change', function () {
             collectCurrentGroup();
             currentGroupId = this.value;
@@ -1471,6 +1666,10 @@ export default function (view) {
         }
     }
 
-    // Leaving with unsaved changes asks first, and closing the browser tab warns.
-    Shared = createPage(view, 0, { bind: bind, load: loadAll, isDirty: function () { return _dirty; } }).shared;
+    Shared = createPage(view, 0, {
+        bind: bind,
+        load: loadAll,
+        onHide: destroyRowHandles,
+        isDirty: function () { return !!tracker && tracker.isDirty(); }
+    }).shared;
 }
