@@ -20,7 +20,7 @@ Each invite can also carry:
 
 * **Name**: An admin name for the invite. It is only shown on the dashboard, so this field is for admin reference only.
 * **Welcome message**: Shown to the invitee under the signup heading.
-* **Resources**: Title and URL pairs presented as link buttons after the account is created, for example a request site or a getting started guide. Only absolute http(s) URLs are accepted.
+* **Resources**: Title and URL pairs presented as link buttons after the account is created, for example a request site or a getting started guide. Each **Add Resource** adds a row. Only absolute http(s) URLs are accepted.
 
 ## Managing Invites
 

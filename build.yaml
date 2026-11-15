@@ -16,7 +16,14 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
+  changed:
+  - The Groups, Invites and Resets tabs use the Base buttons, count cards, badges and sections
+  - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List
+  - Invite resources are rows of a title and a URL, edited in place, and each invite link sits in a copy field
+  - Group names are entered in a prompt, and deleting a group or an invite asks first in a dialog
   fixed:
   - The arrows on collapsible sections are back to their usual size
   developer:
   - Uses JPKribs.Jellyfin.Base 2026.11.13.3
+  - Uses JPKribs.Jellyfin.Base 2026.11.17, with the dashboard pages on its base- classes
+  - The repository guides live in starthere.md, agent.md and skills/
