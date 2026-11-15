@@ -97,10 +97,10 @@ export default function (view) {
         Shared.setVisible('resListWrap', _newResources.length > 0);
         var esc = Shared.escapeHtml;
         box.innerHTML = _newResources.map(function (res, i) {
-            return '<div class="jpk-table-row" style="align-items:center; gap:8px;">'
-                + '<div class="jpk-table-item-info" style="flex:1;">'
-                + '<div class="jpk-table-item-title" style="font-weight:bold;">' + esc(res.Title) + '</div>'
-                + '<div class="jpk-table-item-sub">' + esc(res.Url) + '</div>'
+            return '<div class="base-table-row" style="align-items:center; gap:8px;">'
+                + '<div class="base-table-item-info" style="flex:1;">'
+                + '<div class="base-table-item-title" style="font-weight:bold;">' + esc(res.Title) + '</div>'
+                + '<div class="base-table-item-sub">' + esc(res.Url) + '</div>'
                 + '</div>'
                 + '<button type="button" class="um-btn um-res-del" data-index="' + i + '" title="Remove"><span class="material-icons">delete</span></button>'
                 + '</div>';
@@ -179,8 +179,8 @@ export default function (view) {
     }
 
     function card(cls, count, label) {
-        return '<div class="jpk-card ' + cls + '"><span class="jpk-card-count">' + count
-            + '</span><span class="jpk-card-label">' + label + '</span></div>';
+        return '<div class="base-card ' + cls + '"><span class="base-card-count">' + count
+            + '</span><span class="base-card-label">' + label + '</span></div>';
     }
 
     function renderInviteCards() {
@@ -224,29 +224,29 @@ export default function (view) {
             if (inv.UseDefaultGroup) meta.push('Group: Default' + (_defaultGroupId ? ' (' + esc(groupName(_defaultGroupId)) + ')' : ''));
             else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
             if (inv.HasPin) meta.push('PIN set');
-            if (groupExpired(inviteGroup(inv))) meta.push('<span style="color: var(--jpk-error, #d9534f);">Group has expired: signups are refused until its expiration is moved</span>');
+            if (groupExpired(inviteGroup(inv))) meta.push('<span style="color: var(--base-error, #d9534f);">Group has expired: signups are refused until its expiration is moved</span>');
 
             var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
             var toggleTitle = inv.Enabled ? 'Disable invite' : 'Enable invite';
 
-            html += '<div class="jpk-table-row" data-id="' + esc(inv.Id) + '" style="flex-direction:column; align-items:stretch; gap:8px;">'
+            html += '<div class="base-table-row" data-id="' + esc(inv.Id) + '" style="flex-direction:column; align-items:stretch; gap:8px;">'
                 + '<div style="display:flex; align-items:center; gap:8px;">'
-                + '<div class="jpk-table-item-info" style="flex:1;">'
-                + '<div class="jpk-table-item-title" style="font-weight: bold;">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
-                + '<div class="jpk-table-item-sub">' + meta.join(' • ') + '</div>'
+                + '<div class="base-table-item-info" style="flex:1;">'
+                + '<div class="base-table-item-title" style="font-weight: bold;">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
+                + '<div class="base-table-item-sub">' + meta.join(' • ') + '</div>'
                 + '</div>'
-                + '<span class="jpk-table-status-badge ' + st.cls + '">' + esc(st.text) + '</span>'
+                + '<span class="base-table-status-badge ' + st.cls + '">' + esc(st.text) + '</span>'
                 + '<button type="button" class="um-btn um-dup" title="Duplicate invite"><span class="material-icons">content_copy</span></button>'
                 + '<button type="button" class="um-btn um-toggle" title="' + toggleTitle + '"><span class="material-icons">' + toggleIcon + '</span></button>'
                 + '<button type="button" class="um-btn um-del" title="Delete"><span class="material-icons">delete</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
-                + '<input class="jpk-edit-input um-url" readonly value="' + esc(url) + '" />'
-                + '<button is="emby-button" type="button" class="raised jpk-button-small um-copy"><span>Copy</span></button>'
+                + '<input class="base-edit-input um-url" readonly value="' + esc(url) + '" />'
+                + '<button is="emby-button" type="button" class="raised base-button secondary small um-copy"><span>Copy</span></button>'
                 + '</div>'
                 + '<div style="display:flex; gap:8px; align-items:center;">'
                 + '<label style="font-size:0.85em; opacity:0.7; min-width:54px;">Expires</label>'
-                + '<input type="date" class="jpk-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:240px;" />'
+                + '<input type="date" class="base-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" style="max-width:240px;" />'
                 + '</div>'
                 + '</div>';
         });
@@ -254,7 +254,7 @@ export default function (view) {
         body.innerHTML = html;
         if (footer) footer.textContent = _invites.length + ' invite' + (_invites.length !== 1 ? 's' : '');
 
-        body.querySelectorAll('.jpk-table-row').forEach(function (row) {
+        body.querySelectorAll('.base-table-row').forEach(function (row) {
             var id = row.getAttribute('data-id');
             var del = row.querySelector('.um-del');
             var copy = row.querySelector('.um-copy');
@@ -290,7 +290,7 @@ export default function (view) {
     }
 
     function openCreateSection() {
-        var header = view.querySelector('.jpk-collapsible-header[data-target="newInviteContent"]');
+        var header = view.querySelector('.base-collapsible-header[data-target="newInviteContent"]');
         var content = Shared.getEl('newInviteContent');
         if (header && content && content.classList.contains('collapsed')) {
             header.click();

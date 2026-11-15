@@ -17,71 +17,71 @@
                         whatever value each user already has. A user can belong to one group at a time.
                     </div>
 
-                    <div class="jpk-cards" id="userCards"></div>
+                    <div class="base-cards" id="userCards"></div>
 
                     <!-- Group selector -->
-                    <div class="jpk-selector">
-                        <select is="emby-select" id="selectGroup" class="jpk-selector-dropdown"></select>
-                        <div class="jpk-selector-actions">
-                            <button is="emby-button" type="button" id="btnNewGroup" class="raised jpk-icon-btn jpk-button-submit" title="New">
+                    <div class="base-selector">
+                        <select is="emby-select" id="selectGroup" class="base-selector-dropdown"></select>
+                        <div class="base-selector-actions">
+                            <button is="emby-button" type="button" id="btnNewGroup" class="raised base-button primary" title="New">
                                 <span class="material-icons" aria-hidden="true">add</span>
                                 <span class="icon-btn-label">New</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised jpk-icon-btn" title="Rename">
+                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised base-button secondary" title="Rename">
                                 <span class="material-icons" aria-hidden="true">edit</span>
                                 <span class="icon-btn-label">Rename</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised jpk-icon-btn jpk-button-destructive" title="Delete">
+                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised base-button destructive" title="Delete">
                                 <span class="material-icons" aria-hidden="true">delete</span>
                                 <span class="icon-btn-label">Delete</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised jpk-icon-btn" title="Set as default group">
+                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised base-button secondary" title="Set as default group">
                                 <span class="material-icons" aria-hidden="true">star_border</span>
                                 <span class="icon-btn-label">Default</span>
                             </button>
                         </div>
                     </div>
 
-                    <div id="emptyState" class="jpk-empty-section hidden">No groups yet. Click <strong>New</strong> to create one.</div>
+                    <div id="emptyState" class="base-empty-section hidden">No groups yet. Click <strong>New</strong> to create one.</div>
 
                     <div id="groupEditor">
                         <!-- Membership (parent, no children) -->
-                        <div class="jpk-section um-parent-section">
-                            <div class="jpk-section-title">Membership</div>
-                            <div class="jpk-section-content">
+                        <div class="base-section um-parent-section">
+                            <div class="base-section-title">Membership</div>
+                            <div class="base-section-content">
                                 <div id="memberSummary" class="um-member-summary"></div>
                                 <div id="memberMount" class="um-member-panel"></div>
                             </div>
                         </div>
 
                         <!-- Settings (UserPolicy sub-sections, rendered by JS) -->
-                        <div class="jpk-section um-parent-section">
-                            <div class="jpk-section-title">Settings</div>
-                            <div class="jpk-section-content">
+                        <div class="base-section um-parent-section">
+                            <div class="base-section-title">Settings</div>
+                            <div class="base-section-content">
                                 <div id="permissionSections"></div>
                             </div>
                         </div>
 
                         <!-- Configuration (UserConfiguration sub-sections, rendered by JS) -->
-                        <div class="jpk-section um-parent-section">
-                            <div class="jpk-section-title">Configuration</div>
-                            <div class="jpk-section-content">
+                        <div class="base-section um-parent-section">
+                            <div class="base-section-title">Configuration</div>
+                            <div class="base-section-content">
                                 <div id="configSections"></div>
                             </div>
                         </div>
 
                         <!-- Other (plugin lifecycle sub-sections) -->
-                        <div class="jpk-section um-parent-section">
-                            <div class="jpk-section-title">Other</div>
-                            <div class="jpk-section-content">
+                        <div class="base-section um-parent-section">
+                            <div class="base-section-title">Other</div>
+                            <div class="base-section-content">
 
                                 <!-- Session Management (per group) -->
-                                <div class="jpk-collapsible-section">
-                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
-                                        <span class="jpk-collapsible-title">Session Management</span>
-                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                <div class="base-collapsible-section">
+                                    <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
+                                        <span class="base-collapsible-title">Session Management</span>
+                                        <span class="base-collapsible-icon">&#9660;</span>
                                     </button>
-                                    <div id="grpSessionContent" class="jpk-collapsible-content collapsed">
+                                    <div id="grpSessionContent" class="base-collapsible-content collapsed">
                                         <div class="checkboxContainer checkboxContainer-withDescription">
                                             <label class="emby-checkbox-label">
                                                 <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
@@ -96,19 +96,19 @@
                                         </div>
                                         <div class="hidden" id="sessionFields">
                                             <div id="sessionRuleList"></div>
-                                            <button is="emby-button" type="button" id="btnAddSessionRule" class="raised jpk-button-small jpk-button-submit" style="margin-top:6px;"><span>Add rule</span></button>
+                                            <button is="emby-button" type="button" id="btnAddSessionRule" class="raised base-button primary small" style="margin-top:6px;"><span>Add rule</span></button>
                                             <div id="sessionOverlapWarning" class="fieldDescription hidden"></div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Password Requirements (per group) -->
-                                <div class="jpk-collapsible-section">
-                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
-                                        <span class="jpk-collapsible-title">Password Requirements</span>
-                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                <div class="base-collapsible-section">
+                                    <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
+                                        <span class="base-collapsible-title">Password Requirements</span>
+                                        <span class="base-collapsible-icon">&#9660;</span>
                                     </button>
-                                    <div id="grpPwContent" class="jpk-collapsible-content collapsed">
+                                    <div id="grpPwContent" class="base-collapsible-content collapsed">
                                         <div class="checkboxContainer checkboxContainer-withDescription">
                                             <label class="emby-checkbox-label">
                                                 <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
@@ -118,7 +118,7 @@
                                                 Enforce password rules to the members of this group.
                                             </div>
                                         </div>
-                                        <div class="jpk-indent hidden" id="pwFields">
+                                        <div class="base-indent hidden" id="pwFields">
                                             <div class="checkboxContainer checkboxContainer-withDescription">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
@@ -170,19 +170,19 @@
                                 </div>
 
                                 <!-- Expiry (per group) -->
-                                <div class="jpk-collapsible-section">
-                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
-                                        <span class="jpk-collapsible-title">Expiry</span>
-                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                <div class="base-collapsible-section">
+                                    <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
+                                        <span class="base-collapsible-title">Expiry</span>
+                                        <span class="base-collapsible-icon">&#9660;</span>
                                     </button>
-                                    <div id="grpExpiryContent" class="jpk-collapsible-content collapsed">
+                                    <div id="grpExpiryContent" class="base-collapsible-content collapsed">
                                         <div class="checkboxContainer">
                                             <label class="emby-checkbox-label">
                                                 <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
                                                 <span class="checkboxLabel">Set an expiration for the members of this group</span>
                                             </label>
                                         </div>
-                                        <div class="jpk-indent hidden" id="grpExpiryFields">
+                                        <div class="base-indent hidden" id="grpExpiryFields">
                                             <div class="inputContainer">
                                                 <label for="grpExpiryDate">Expiry date:</label>
                                                 <input type="date" id="grpExpiryDate" />
@@ -201,19 +201,19 @@
                                 </div>
 
                                 <!-- Inactivity (per group) -->
-                                <div class="jpk-collapsible-section">
-                                    <button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
-                                        <span class="jpk-collapsible-title">Inactivity</span>
-                                        <span class="jpk-collapsible-icon">&#9660;</span>
+                                <div class="base-collapsible-section">
+                                    <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
+                                        <span class="base-collapsible-title">Inactivity</span>
+                                        <span class="base-collapsible-icon">&#9660;</span>
                                     </button>
-                                    <div id="grpInactiveContent" class="jpk-collapsible-content collapsed">
+                                    <div id="grpInactiveContent" class="base-collapsible-content collapsed">
                                         <div class="checkboxContainer">
                                             <label class="emby-checkbox-label">
                                                 <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
                                                 <span class="checkboxLabel">Disable inactive users</span>
                                             </label>
                                         </div>
-                                        <div class="jpk-indent hidden" id="inactiveFields">
+                                        <div class="base-indent hidden" id="inactiveFields">
                                             <div class="inputContainer">
                                                 <label for="grpInactiveDays">Days of inactivity before disabling:</label>
                                                 <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
@@ -229,13 +229,13 @@
 
                         <!-- Save -->
                         <div class="inputContainer" style="margin-top: 16px;">
-                            <button is="emby-button" type="button" id="btnSaveGroups" data-theme="b" class="raised jpk-button-submit block">
+                            <button is="emby-button" type="button" id="btnSaveGroups" data-theme="b" class="raised base-button primary fill">
                                 <span>Save</span>
                             </button>
                             <span id="unsavedIndicator" class="um-unsaved hidden">
                                 <span class="um-unsaved-dot"></span> Unsaved changes
                             </span>
-                            <span id="groupStatus" class="jpk-status-text"></span>
+                            <span id="groupStatus" class="base-status-text"></span>
                         </div>
                     </div>
 
@@ -245,21 +245,21 @@
     </div>
 
     <!-- Input Modal (name) -->
-    <div id="inputModal" class="jpk-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
-        <div class="jpk-dialog-content jpk-dialog-content-narrow">
-            <button type="button" id="btnCloseInputModal" class="jpk-dialog-close" aria-label="Close">&times;</button>
-            <h2 class="jpk-modal-title" id="inputModalTitle"></h2>
-            <div class="jpk-modal-body">
+    <div id="inputModal" class="base-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="inputModalTitle">
+        <div class="base-dialog-content">
+            <button type="button" id="btnCloseInputModal" class="base-dialog-close" aria-label="Close">&times;</button>
+            <h2 class="base-modal-title" id="inputModalTitle"></h2>
+            <div class="base-modal-body">
                 <div class="inputContainer">
                     <label for="inputModalField">Name:</label>
                     <input is="emby-input" type="text" id="inputModalField" />
                 </div>
             </div>
-            <div class="jpk-modal-button-row">
-                <button is="emby-button" type="button" id="btnCancelInputModal" class="raised jpk-modal-button">
+            <div class="base-modal-button-row">
+                <button is="emby-button" type="button" id="btnCancelInputModal" class="raised base-modal-button">
                     <span>Cancel</span>
                 </button>
-                <button is="emby-button" type="button" id="btnConfirmInputModal" class="raised jpk-modal-button jpk-button-submit">
+                <button is="emby-button" type="button" id="btnConfirmInputModal" class="raised base-modal-button base-button primary">
                     <span>OK</span>
                 </button>
             </div>

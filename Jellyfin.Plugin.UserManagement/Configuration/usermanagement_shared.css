@@ -1,26 +1,26 @@
 /* ============================================ */
 /* USER MANAGEMENT PLUGIN - LOCAL STYLES        */
 /* Generic components come from the shared       */
-/* JPKribs.Jellyfin.Base stylesheet (jpk-*).     */
+/* JPKribs.Jellyfin.Base stylesheet (base-*).     */
 /* Only plugin specific pieces live here.        */
 /* ============================================ */
 
 /* ===== Parent sections (Membership / Settings / Configuration / Other) ===== */
 /* Non-collapsible wrappers that hold the collapsible sub-sections. Scoped to the Groups page so
-   the base .jpk-section-title styling elsewhere (e.g. the Invites list) is left untouched. */
+   the base .base-section-title styling elsewhere (e.g. the Invites list) is left untouched. */
 #UserManagementGroupsPage .um-parent-section {
     margin-bottom: 2em;
 }
-#UserManagementGroupsPage .um-parent-section > .jpk-section-title {
+#UserManagementGroupsPage .um-parent-section > .base-section-title {
     font-size: 1.35em;
     font-weight: 600;
     text-transform: none;
     border-bottom-width: 2px;
 }
-#UserManagementGroupsPage .um-parent-section > .jpk-section-content {
+#UserManagementGroupsPage .um-parent-section > .base-section-content {
     padding-left: 8px;
 }
-#UserManagementGroupsPage .um-parent-section .jpk-collapsible-header {
+#UserManagementGroupsPage .um-parent-section .base-collapsible-header {
     font-size: 1em;
 }
 
@@ -32,9 +32,9 @@
 .pluginConfigurationPage input[type="date"] {
     width: 100%;
     box-sizing: border-box;
-    background-color: var(--jpk-surface) !important;
+    background-color: var(--base-surface) !important;
     color: inherit !important;
-    border: 1px solid var(--jpk-border) !important;
+    border: 1px solid var(--base-border) !important;
     border-radius: 4px !important;
     padding: 0.55em 0.7em;
     font-family: inherit;
@@ -43,18 +43,18 @@
 
 .pluginConfigurationPage input[type="date"]:focus {
     outline: none !important;
-    border-color: var(--jpk-accent) !important;
+    border-color: var(--base-accent) !important;
 }
 
-/* Inside table rows, date editors keep the compact jpk-edit-input metrics so they sit flush with
+/* Inside table rows, date editors keep the compact base-edit-input metrics so they sit flush with
    the read only link field beside them instead of the full form field size. */
-.pluginConfigurationPage .jpk-table-row input[type="date"] {
+.pluginConfigurationPage .base-table-row input[type="date"] {
     width: auto;
     font-size: 0.9em;
     padding: 0.3em 0.4em;
 }
 
-/* ===== Invite row action buttons (inside the base jpk-table rows) ===== */
+/* ===== Invite row action buttons (inside the base base-table rows) ===== */
 .um-btn {
     background: transparent;
     border: none;
@@ -121,7 +121,7 @@
     height: 32px;
     padding: 0;
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--jpk-border);
+    border: 1px solid var(--base-border);
     border-radius: 4px;
     color: inherit;
     cursor: pointer;
@@ -141,7 +141,7 @@
     background: transparent;
 }
 
-/* ===== Membership panel (wraps the base jpk-user-multi selector) ===== */
+/* ===== Membership panel (wraps the base base-user-multi selector) ===== */
 .um-member-summary {
     margin: 8px 0 4px;
     opacity: 0.7;
@@ -178,9 +178,9 @@
     font-weight: 500;
     margin-bottom: 4px;
 }
-.um-perm-control .jpk-edit-input {
+.um-perm-control .base-edit-input {
     max-width: 220px;
-    border: 1px solid var(--jpk-border);
+    border: 1px solid var(--base-border);
 }
 /* Inherited rows are dimmed; the value is whatever the user already has. */
 .um-perm-row.inherited .um-perm-main {
@@ -194,14 +194,14 @@
     gap: 6px;
     margin-left: 12px;
     font-size: 0.9em;
-    color: var(--jpk-orange-fg);
+    color: var(--base-orange-fg);
     vertical-align: middle;
 }
 .um-unsaved-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--jpk-orange-fg);
+    background: var(--base-orange-fg);
     display: inline-block;
 }
 
@@ -221,7 +221,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--jpk-blue-bg);
+    background: var(--base-blue-bg);
     color: #fff;
     border: 1px solid rgba(52, 152, 219, 0.5);
     border-radius: 14px;
@@ -245,7 +245,7 @@
     cursor: pointer;
 }
 .perm-tag-remove:hover {
-    background: var(--jpk-red-fg);
+    background: var(--base-red-fg);
 }
 .um-tag-add-row {
     display: flex;
@@ -317,19 +317,19 @@
 /* Match the summary card color scheme (Active = green, Locked = yellow, Used up = purple,
    Expired = red). The base badge palette maps these statuses differently, so override per status.
    Scoped to the invites page id to win over the base rule regardless of stylesheet order. */
-#UserManagementInvitesPage .jpk-table-status-badge.Active {
-    background: var(--jpk-green-bg);
-    color: var(--jpk-green-fg);
+#UserManagementInvitesPage .base-table-status-badge.Active {
+    background: var(--base-green-bg);
+    color: var(--base-green-fg);
 }
-#UserManagementInvitesPage .jpk-table-status-badge.Locked {
+#UserManagementInvitesPage .base-table-status-badge.Locked {
     background: #e0c84e2e;
     color: #e0c84e;
 }
-#UserManagementInvitesPage .jpk-table-status-badge.Disabled {
-    background: var(--jpk-purple-bg);
-    color: var(--jpk-purple-fg);
+#UserManagementInvitesPage .base-table-status-badge.Disabled {
+    background: var(--base-purple-bg);
+    color: var(--base-purple-fg);
 }
-#UserManagementInvitesPage .jpk-table-status-badge.Expired {
-    background: var(--jpk-red-bg);
-    color: var(--jpk-red-fg);
+#UserManagementInvitesPage .base-table-status-badge.Expired {
+    background: var(--base-red-bg);
+    color: var(--base-red-fg);
 }

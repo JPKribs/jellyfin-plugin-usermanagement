@@ -18,12 +18,12 @@ export default function (view) {
         var now = new Date();
         var expired = !!r.Expired || (due && due <= now);
         var soon = !expired && due && (due - now) <= 5 * 60 * 1000;
-        var color = expired ? 'var(--jpk-red-fg)' : (soon ? 'var(--jpk-orange-fg)' : '');
+        var color = expired ? 'var(--base-red-fg)' : (soon ? 'var(--base-orange-fg)' : '');
         var sub = (expired ? 'Expired ' : 'Expires ') + (due ? due.toLocaleString() : '');
-        return '<div class="jpk-table-row" style="align-items:center; gap:8px;">'
-            + '<div class="jpk-table-item-info" style="flex:1;">'
-            + '<div class="jpk-table-item-title" style="font-weight:bold;">' + (esc(r.UserName) || 'Unknown user') + '</div>'
-            + '<div class="jpk-table-item-sub"' + (color ? ' style="color:' + color + ';"' : '') + '>' + esc(sub) + '</div>'
+        return '<div class="base-table-row" style="align-items:center; gap:8px;">'
+            + '<div class="base-table-item-info" style="flex:1;">'
+            + '<div class="base-table-item-title" style="font-weight:bold;">' + (esc(r.UserName) || 'Unknown user') + '</div>'
+            + '<div class="base-table-item-sub"' + (color ? ' style="color:' + color + ';"' : '') + '>' + esc(sub) + '</div>'
             + '</div>'
             + '<code class="um-reset-code" data-index="' + i + '" style="letter-spacing:2px; min-width:90px; text-align:center;">' + mask() + '</code>'
             + '<button type="button" class="um-btn um-reveal" data-index="' + i + '" title="Reveal"><span class="material-icons">visibility</span></button>'
@@ -32,8 +32,8 @@ export default function (view) {
     }
 
     function card(cls, count, label) {
-        return '<div class="jpk-card ' + cls + '"><span class="jpk-card-count">' + count
-            + '</span><span class="jpk-card-label">' + label + '</span></div>';
+        return '<div class="base-card ' + cls + '"><span class="base-card-count">' + count
+            + '</span><span class="base-card-label">' + label + '</span></div>';
     }
 
     function renderResets(enabled) {

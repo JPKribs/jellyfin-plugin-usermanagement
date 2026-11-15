@@ -17,9 +17,9 @@
                         user without needing file access to the server.
                     </div>
 
-                    <div class="jpk-cards hidden" id="resetCards"></div>
+                    <div class="base-cards hidden" id="resetCards"></div>
 
-                    <div class="jpk-warn" style="margin-bottom: 12px;">
+                    <div class="base-warn" style="margin-bottom: 12px;">
                         It is not recommended to use reset code extraction over a non-HTTPS connection. Reset
                         codes are sent over this connection so any non-encrypted traffic can be surveilled.
                     </div>
@@ -31,25 +31,25 @@
                         </label>
                     </div>
 
-                    <div class="jpk-section">
-                        <div class="jpk-section-title">Pending resets</div>
-                        <div class="jpk-section-content">
-                            <span id="resetStatus" class="jpk-status-text"></span>
-                            <div id="resetDisabled" class="jpk-empty-section hidden">
+                    <div class="base-section">
+                        <div class="base-section-title">Pending resets</div>
+                        <div class="base-section-content">
+                            <span id="resetStatus" class="base-status-text"></span>
+                            <div id="resetDisabled" class="base-empty-section hidden">
                                 Reset code extraction is disabled. Enable it above to list pending codes.
                             </div>
-                            <div id="resetEmpty" class="jpk-empty-section hidden">No pending password resets.</div>
+                            <div id="resetEmpty" class="base-empty-section hidden">No pending password resets.</div>
                             <div id="resetGroups">
                                 <div id="activeGroup" class="hidden">
                                     <div style="font-weight:600; opacity:0.85; margin: 4px 0 6px;">Active</div>
-                                    <div class="jpk-table-wrapper">
-                                        <div class="jpk-table-body" id="activeList"></div>
+                                    <div class="base-table-wrapper">
+                                        <div class="base-table-body" id="activeList"></div>
                                     </div>
                                 </div>
                                 <div id="expiredGroup" class="hidden" style="margin-top: 14px;">
                                     <div style="font-weight:600; opacity:0.85; margin: 4px 0 6px;">Expired</div>
-                                    <div class="jpk-table-wrapper">
-                                        <div class="jpk-table-body" id="expiredList"></div>
+                                    <div class="base-table-wrapper">
+                                        <div class="base-table-body" id="expiredList"></div>
                                     </div>
                                 </div>
                             </div>

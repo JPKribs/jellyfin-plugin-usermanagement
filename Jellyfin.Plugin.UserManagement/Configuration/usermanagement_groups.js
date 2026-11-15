@@ -286,11 +286,11 @@ export default function (view) {
 
         sections.forEach(function (section, si) {
             var id = prefix + si;
-            html += '<div class="jpk-collapsible-section">'
-                + '<button type="button" class="jpk-collapsible-header collapsed" aria-expanded="false" data-target="' + id + '">'
-                + '<span class="jpk-collapsible-title">' + esc(section.title) + '</span>'
-                + '<span class="jpk-collapsible-icon">&#9660;</span></button>'
-                + '<div id="' + id + '" class="jpk-collapsible-content collapsed">';
+            html += '<div class="base-collapsible-section">'
+                + '<button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="' + id + '">'
+                + '<span class="base-collapsible-title">' + esc(section.title) + '</span>'
+                + '<span class="base-collapsible-icon">&#9660;</span></button>'
+                + '<div id="' + id + '" class="base-collapsible-content collapsed">';
 
             section.perms.forEach(function (p) {
                 html += renderPermRow(p, store);
@@ -366,9 +366,9 @@ export default function (view) {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
                 + '<span class="checkboxLabel">Enabled</span></label>';
         } else if (p.type === 'int') {
-            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value jpk-edit-input" />';
+            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value base-edit-input" />';
         } else if (p.type === 'bitrate') {
-            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value jpk-edit-input" />';
+            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value base-edit-input" />';
         } else if (p.type === 'enum') {
             var opts = (p.options || []).map(function (o) {
                 return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
@@ -405,12 +405,12 @@ export default function (view) {
         } else if (p.type === 'tags') {
             control = '<div class="um-tags"><div class="perm-tag-list um-tag-list"></div>'
                 + '<div class="um-tag-add-row">'
-                + '<input is="emby-input" type="text" class="perm-tag-input jpk-edit-input" placeholder="Tag" />'
-                + '<button is="emby-button" type="button" class="raised jpk-button-small perm-tag-add"><span>Add</span></button>'
+                + '<input is="emby-input" type="text" class="perm-tag-input base-edit-input" placeholder="Tag" />'
+                + '<button is="emby-button" type="button" class="raised base-button secondary small perm-tag-add"><span>Add</span></button>'
                 + '</div></div>';
         } else if (p.type === 'schedule') {
             control = '<div class="um-schedules"><div class="perm-sched-list"></div>'
-                + '<button is="emby-button" type="button" class="raised jpk-button-small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
+                + '<button is="emby-button" type="button" class="raised base-button secondary small perm-sched-add" style="margin-top:6px;"><span>Add schedule</span></button>'
                 + '</div>';
         } else if (p.type === 'submode') {
             var mopts = SUBTITLE_MODES.map(function (m) {
@@ -505,7 +505,7 @@ export default function (view) {
             + '<select is="emby-select" class="perm-sched-start emby-select-withcolor">' + hrs(s.StartHour) + '</select>'
             + '<span class="perm-sched-sep">&ndash;</span>'
             + '<select is="emby-select" class="perm-sched-end emby-select-withcolor">' + hrs(s.EndHour) + '</select>'
-            + '<button is="emby-button" type="button" class="raised jpk-button-small jpk-button-destructive perm-sched-remove"><span>Remove</span></button>'
+            + '<button is="emby-button" type="button" class="raised base-button destructive small perm-sched-remove"><span>Remove</span></button>'
             + '</div>';
     }
 
@@ -640,7 +640,7 @@ export default function (view) {
         var btn = view.querySelector('#btnDefaultGroup');
         if (!btn) return;
         var isDefault = !!currentGroupId && currentGroupId === fullConfig.DefaultGroupId;
-        btn.classList.toggle('jpk-button-submit', isDefault);
+        btn.classList.toggle('primary', isDefault);
         var icon = btn.querySelector('.material-icons');
         if (icon) icon.textContent = isDefault ? 'star' : 'star_border';
         btn.setAttribute('title', isDefault ? 'This is the default group — click to unset' : 'Set as default group');
@@ -1053,7 +1053,7 @@ export default function (view) {
         return '<div class="um-session-rule">'
             + '<div class="um-session-rule-head">'
             + '<span class="um-session-rule-title"></span>'
-            + '<button is="emby-button" type="button" class="raised jpk-button-small jpk-button-destructive sess-remove"><span>Remove</span></button>'
+            + '<button is="emby-button" type="button" class="raised base-button destructive small sess-remove"><span>Remove</span></button>'
             + '</div>'
             + '<div class="selectContainer">'
             + '<label class="selectLabel">Clients</label>'
@@ -1139,8 +1139,8 @@ export default function (view) {
     }
 
     function card(cls, count, label) {
-        return '<div class="jpk-card ' + cls + '"><span class="jpk-card-count">' + count
-            + '</span><span class="jpk-card-label">' + label + '</span></div>';
+        return '<div class="base-card ' + cls + '"><span class="base-card-count">' + count
+            + '</span><span class="base-card-label">' + label + '</span></div>';
     }
 
     function renderUserCards() {
