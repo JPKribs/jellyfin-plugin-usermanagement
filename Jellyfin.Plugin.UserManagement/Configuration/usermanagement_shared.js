@@ -13,6 +13,12 @@ import {
     createOrderedList,
     createKeyValueEditor,
     createCopyField,
+    createRecordList,
+    createDefinitionList,
+    createInheritField,
+    createRepeater,
+    createChipSelect,
+    openEditorDialog,
     confirmDialog,
     promptDialog
 } from './configurationpage?name=usermanagement_jpkribs_shared.js';
@@ -27,6 +33,12 @@ export {
     createOrderedList,
     createKeyValueEditor,
     createCopyField,
+    createRecordList,
+    createDefinitionList,
+    createInheritField,
+    createRepeater,
+    createChipSelect,
+    openEditorDialog,
     confirmDialog,
     promptDialog
 };

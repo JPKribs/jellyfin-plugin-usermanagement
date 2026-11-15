@@ -1,6 +1,6 @@
 <div id="UserManagementResetsPage" data-role="page"
      class="page type-interior pluginConfigurationPage withTabs"
-     data-require="emby-input,emby-button,emby-checkbox"
+     data-require="emby-checkbox"
      data-controller="__plugin/usermanagement_resets.js">
     <div data-role="content">
         <div class="content-primary">
@@ -19,11 +19,10 @@
                         user without file access to the server.
                     </div>
 
-                    <div class="hidden" id="resetCards"></div>
+                    <div class="base-cards compact hidden" id="resetCards"></div>
 
                     <div class="base-warn">
-                        It is not recommended to use reset code extraction over a non-HTTPS connection. Reset
-                        codes are sent over this connection so any non-encrypted traffic can be surveilled.
+                        Reset codes are sent over this connection. Use HTTPS so they cannot be read in transit.
                     </div>
 
                     <div class="checkboxContainer">
@@ -35,28 +34,16 @@
 
                     <!-- Pending Resets -->
                     <!-- Lists each pending code by user, active first, then expired. -->
-                    <div class="base-section">
-                        <div class="base-section-title">Pending resets</div>
-                        <div class="base-section-content">
+                    <div class="base-collapsible-section fixed">
+                        <div class="base-collapsible-header">
+                            <span class="base-collapsible-title">Pending Resets</span>
+                        </div>
+                        <div class="base-collapsible-content">
                             <span id="resetStatus" class="base-status-text"></span>
                             <div id="resetDisabled" class="base-empty-section hidden">
                                 Reset code extraction is disabled. Enable it above to list pending codes.
                             </div>
-                            <div id="resetEmpty" class="base-empty-section hidden">No pending password resets.</div>
-                            <div id="resetGroups">
-                                <div id="activeGroup" class="hidden">
-                                    <div class="base-subsection-title">Active</div>
-                                    <div class="um-table">
-                                        <div class="base-table-body" id="activeList"></div>
-                                    </div>
-                                </div>
-                                <div id="expiredGroup" class="hidden">
-                                    <div class="base-subsection-title">Expired</div>
-                                    <div class="um-table">
-                                        <div class="base-table-body" id="expiredList"></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div id="resetList"></div>
                         </div>
                     </div>
 

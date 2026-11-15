@@ -1,7 +1,15 @@
 // usermanagement_invites.js
 // The Invites tab, which creates invite links, sets the invite Server URL and rate limit, and lists every invite.
 
-import { createPage, createKeyValueEditor, createCopyField, confirmDialog } from './configurationpage?name=usermanagement_shared.js';
+import {
+    createPage,
+    createKeyValueEditor,
+    createCopyField,
+    createRecordList,
+    createDefinitionList,
+    openEditorDialog,
+    confirmDialog
+} from './configurationpage?name=usermanagement_shared.js';
 
 // Invites page
 // Builds the Invites tab.
@@ -12,8 +20,9 @@ export default function (view) {
     'use strict';
 
     var Shared = null;
+    var Page = null;
     var _resourceEditor = null;
-    var _copyFields = [];
+    var _inviteList = null;
     var _invites = [];
     var _groups = [];
     var _base = '';
@@ -110,8 +119,15 @@ export default function (view) {
         return _groups.filter(function (g) { return g.Id === gid; })[0] || null;
     }
 
+    var STATUS_LOOK = {
+        Active: { color: 'green', icon: 'check_circle' },
+        Locked: { color: 'purple', icon: 'lock' },
+        UsedUp: { color: 'gray', icon: 'block' },
+        Expired: { color: 'orange', icon: 'event_busy' }
+    };
+
     // statusOf
-    // Picks an invite's status for its badge and the count cards.
+    // Picks an invite's status for its tag, its badge, and the count cards.
     //
     // Inputs
     // inv [object]: The invite.
@@ -121,24 +137,48 @@ export default function (view) {
     function statusOf(inv) {
         if (inviteExpired(inv)) return { cls: 'Expired', text: 'Expired' };
         if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
-        if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'UsedUp', text: 'Used up' };
+        if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'UsedUp', text: 'Used Up' };
         // The server refuses signups into an expired group, so the link is dead until the group's
         // expiration moves even though the invite itself is still enabled.
-        if (groupExpired(inviteGroup(inv))) return { cls: 'Expired', text: 'Group expired' };
+        if (groupExpired(inviteGroup(inv))) return { cls: 'Expired', text: 'Group Expired' };
         return { cls: 'Active', text: 'Active' };
     }
 
-    // statusBadge
-    // Draws an invite's status badge. Used up has no Base state, so it takes the gray badge for off.
+    // usesText
+    // Says how many times an invite was used, out of its limit when it has one.
     //
     // Inputs
-    // st [object]: The status from statusOf.
+    // inv [object]: The invite.
     //
     // Output
-    // [string]: The badge HTML.
-    function statusBadge(st) {
-        if (st.cls === 'UsedUp') return Shared.badge('gray', st.text);
-        return Shared.statusBadge(st.text, st.cls);
+    // [string]: Such as "1 use of 5" or "3 uses".
+    function usesText(inv) {
+        return Shared.plural(inv.UsedCount || 0, 'use') + (inv.MaxUses > 0 ? ' of ' + inv.MaxUses : '');
+    }
+
+    // groupText
+    // Names the group an invite signs users into.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [string]: The group's name, or Default group with the name it follows.
+    function groupText(inv) {
+        if (inv.UseDefaultGroup) return 'Default group' + (_defaultGroupId ? ' (' + groupName(_defaultGroupId) + ')' : '');
+        return inv.GroupId ? groupName(inv.GroupId) : '';
+    }
+
+    // expiryDate
+    // Reads an invite's expiration as a date input value.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [string]: The date as YYYY-MM-DD, or empty for none.
+    function expiryDate(inv) {
+        return inv.ExpiresAt ? String(inv.ExpiresAt).slice(0, 10) : '';
     }
 
     // loadAll
@@ -302,85 +342,206 @@ export default function (view) {
         ]);
     }
 
-    // clearCopyFields
-    // Tears down the link Copy Fields of the last draw.
-    function clearCopyFields() {
-        _copyFields.forEach(function (f) { f.destroy(); });
-        _copyFields = [];
+    // copyLinkButton
+    // Builds the row button that copies an invite's link and shows a check after the copy.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [HTMLElement]: The button.
+    function copyLinkButton(inv) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'base-row-btn';
+        btn.title = 'Copy Link';
+        btn.setAttribute('aria-label', 'Copy link of ' + (inv.Label || 'Untitled invite'));
+        btn.innerHTML = '<span class="material-icons" aria-hidden="true">content_copy</span>';
+        btn.addEventListener('click', function () {
+            Shared.copyToClipboard(inviteUrl(inv.Token)).then(function (ok) {
+                Shared.setStatus('inviteStatus', ok === false ? 'Could not copy the link.' : 'Link copied.', ok === false);
+                if (ok === false) return;
+                btn.classList.add('success');
+                setTimeout(function () { btn.classList.remove('success'); }, 1500);
+            });
+        });
+        return btn;
+    }
+
+    // toItem
+    // Builds one Record List row, with the invite's uses, group, status, and expiration, and a Copy Link button.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [object]: The Record List item.
+    function toItem(inv) {
+        var st = statusOf(inv);
+        var parts = [usesText(inv), groupText(inv)];
+        if (inv.HasPin) parts.push('PIN set');
+        var tags = [{ label: st.text, icon: STATUS_LOOK[st.cls].icon }];
+        if (inv.ExpiresAt) tags.push({ label: 'Expires ' + expiryDate(inv), icon: 'event' });
+        return {
+            id: String(inv.Id),
+            inviteId: inv.Id,
+            title: inv.Label || 'Untitled invite',
+            secondary: parts.filter(Boolean).join(' · '),
+            tags: tags,
+            aside: copyLinkButton(inv)
+        };
+    }
+
+    // ensureInviteList
+    // Draws the Record List once.
+    function ensureInviteList() {
+        if (_inviteList) return;
+        _inviteList = createRecordList({
+            label: 'Invites',
+            emptyText: 'No invites yet. Create one above.',
+            openLabel: 'Open {value}',
+            onOpen: function (item) { openInvite(item.inviteId); }
+        });
+        Shared.getEl('inviteList').appendChild(_inviteList.element);
+    }
+
+    // destroyInviteList
+    // Tears down the Record List when the page hides.
+    function destroyInviteList() {
+        if (!_inviteList) return;
+        _inviteList.destroy();
+        if (_inviteList.element.parentNode) _inviteList.element.parentNode.removeChild(_inviteList.element);
+        _inviteList = null;
     }
 
     // renderInvites
-    // Draws the count cards and one row per invite, with its link, status, actions, and expiration.
+    // Draws the count cards and one row per invite.
     function renderInvites() {
         renderInviteCards();
-        clearCopyFields();
-        var body = view.querySelector('#inviteList');
-        var footer = view.querySelector('#inviteFooter');
-        if (!body) return;
+        ensureInviteList();
+        _inviteList.setItems(_invites.map(toItem));
+    }
 
-        if (_invites.length === 0) {
-            body.innerHTML = Shared.emptySection('No invites yet. Create one above.');
-            if (footer) footer.textContent = '';
-            return;
-        }
+    // findInvite
+    // Looks up a loaded invite.
+    //
+    // Inputs
+    // id [string]: The invite.
+    //
+    // Output
+    // [object]: The invite, or undefined.
+    function findInvite(id) {
+        return _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
+    }
 
-        var esc = Shared.escapeHtml;
-        var html = '';
-        _invites.forEach(function (inv) {
-            var st = statusOf(inv);
-            var url = inviteUrl(inv.Token);
-            var uses = (inv.UsedCount || 0) + (inv.MaxUses > 0 ? ' / ' + inv.MaxUses : ' / ∞');
-            var meta = [];
-            meta.push('Uses: ' + uses);
-            if (inv.UseDefaultGroup) meta.push('Group: Default' + (_defaultGroupId ? ' (' + esc(groupName(_defaultGroupId)) + ')' : ''));
-            else if (inv.GroupId) meta.push('Group: ' + esc(groupName(inv.GroupId)));
-            if (inv.HasPin) meta.push('PIN set');
-            if (groupExpired(inviteGroup(inv))) meta.push('<span class="um-text-red">Group has expired. Signups are refused until its expiration is moved.</span>');
+    // openInvite
+    // Opens an invite in an editor dialog with its link, its details, its expiration, and whether it accepts signups.
+    // Save writes what changed, Delete asks first, and Duplicate copies it into the Create Invite form.
+    //
+    // Inputs
+    // id [string]: The invite.
+    function openInvite(id) {
+        var inv = findInvite(id);
+        if (!inv) return;
+        var st = statusOf(inv);
+        var body = document.createElement('div');
+        body.innerHTML = '<div class="inputContainer"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
+            + '<div data-mount="details"></div>'
+            + '<div class="inputContainer"><label class="inputLabel" for="inviteExpiryField">Invite expiration</label>'
+            + '<input is="emby-input" type="date" id="inviteExpiryField" />'
+            + '<div class="fieldDescription">Leave blank for no expiration.</div></div>'
+            + '<div class="checkboxContainer checkboxContainer-withDescription"><label class="emby-checkbox-label">'
+            + '<input type="checkbox" is="emby-checkbox" id="inviteEnabledField" /><span class="checkboxLabel">Accept signups</span></label>'
+            + '<div class="fieldDescription checkboxFieldDescription">Turn off to lock the link. Turn on to unlock it after too many wrong PIN tries.</div></div>'
+            + '<button is="emby-button" type="button" class="raised base-button secondary small" id="inviteDuplicate">'
+            + '<span class="material-icons" aria-hidden="true">content_copy</span><span>Duplicate</span></button>'
+            + '<div><span class="base-status-text" id="inviteDialogStatus" role="status"></span></div>';
 
-            var toggleIcon = inv.Enabled ? 'lock' : 'lock_open';
-            var toggleTitle = inv.Enabled ? 'Disable Invite' : 'Enable Invite';
+        var link = createCopyField({ value: inviteUrl(inv.Token), label: 'Invite link', copiedText: 'Link copied.' });
+        link.input.id = 'inviteLinkField';
+        body.querySelector('[data-mount="link"]').appendChild(link.element);
+        var details = createDefinitionList({
+            items: [
+                { label: 'Status', value: { badge: { label: st.text, color: STATUS_LOOK[st.cls].color } } },
+                { label: 'Uses', value: usesText(inv) },
+                { label: 'Group', value: groupText(inv) },
+                { label: 'PIN', value: inv.HasPin ? 'Set' : 'None' }
+            ]
+        });
+        body.querySelector('[data-mount="details"]').appendChild(details.element);
 
-            html += '<div class="base-table-row um-invite-row" data-id="' + esc(inv.Id) + '">'
-                + '<div class="um-row">'
-                + '<div class="base-table-item-info um-row-info">'
-                + '<div class="base-table-item-title">' + (esc(inv.Label) || 'Untitled invite') + '</div>'
-                + '<div class="base-table-item-sub">' + meta.join(' • ') + '</div>'
-                + '</div>'
-                + statusBadge(st)
-                + '<button type="button" class="base-row-btn um-dup" title="Duplicate" aria-label="Duplicate"><span class="material-icons" aria-hidden="true">content_copy</span></button>'
-                + '<button type="button" class="base-row-btn um-toggle" title="' + toggleTitle + '" aria-label="' + toggleTitle + '"><span class="material-icons" aria-hidden="true">' + toggleIcon + '</span></button>'
-                + '<button type="button" class="base-row-btn destructive um-del" title="Delete" aria-label="Delete"><span class="material-icons" aria-hidden="true">delete</span></button>'
-                + '</div>'
-                + '<div class="um-url-mount" data-url="' + esc(url) + '"></div>'
-                + '<div class="um-row">'
-                + '<label class="um-row-label" for="expiry-' + esc(inv.Id) + '">Expires</label>'
-                + '<input type="date" id="expiry-' + esc(inv.Id) + '" class="base-edit-input um-expiry" value="' + (inv.ExpiresAt ? esc(String(inv.ExpiresAt).slice(0, 10)) : '') + '" />'
-                + '</div>'
-                + '</div>';
+        var expiryInput = body.querySelector('#inviteExpiryField');
+        var enabledInput = body.querySelector('#inviteEnabledField');
+        expiryInput.value = expiryDate(inv);
+        enabledInput.checked = !!inv.Enabled;
+
+        var dialog = openEditorDialog({
+            title: inv.Label || 'Untitled invite',
+            body: body,
+            className: 'pluginConfigurationPage',
+            size: 'medium',
+            page: Page,
+            doneText: 'Save',
+            removeText: 'Delete',
+            serialize: function () { return expiryInput.value + '|' + enabledInput.checked; },
+            onDone: function () { return saveInvite(inv, expiryInput.value, enabledInput.checked); },
+            onRemove: function (close) { deleteInvite(inv.Id).then(function (ok) { if (ok) close(); }); },
+            onClose: function () { link.destroy(); details.destroy(); }
         });
 
-        body.innerHTML = '<div class="um-table">' + html + '</div>';
-        if (footer) footer.textContent = Shared.plural(_invites.length, 'invite');
+        body.querySelector('#inviteDuplicate').addEventListener('click', function () {
+            dialog.markClean();
+            dialog.close();
+            duplicateInvite(inv.Id);
+        });
+    }
 
-        body.querySelectorAll('.um-invite-row').forEach(function (row) {
-            var id = row.getAttribute('data-id');
-            var del = row.querySelector('.um-del');
-            var mount = row.querySelector('.um-url-mount');
-            if (mount) {
-                var field = createCopyField({ value: mount.getAttribute('data-url'), label: 'Invite link', copiedText: 'Link copied.' });
-                mount.appendChild(field.element);
-                _copyFields.push(field);
+    // saveInvite
+    // Writes an invite's new expiration and state, with the server's enable guards repeated here for clearer messages.
+    //
+    // Inputs
+    // inv [object]: The invite as loaded.
+    // dateStr [string]: The new expiration date, or empty for none.
+    // enabled [boolean]: Whether it accepts signups.
+    //
+    // Output
+    // [Promise]: false to keep the dialog open.
+    function saveInvite(inv, dateStr, enabled) {
+        var expiryChanged = dateStr !== expiryDate(inv);
+        var enabledChanged = enabled !== !!inv.Enabled;
+        if (enabled && enabledChanged) {
+            if (dateReached(dateStr)) {
+                Shared.setStatus('inviteDialogStatus', 'This invite has expired. Move its expiration forward to enable it.', true);
+                return Promise.resolve(false);
             }
-            var toggle = row.querySelector('.um-toggle');
-            if (toggle) toggle.addEventListener('click', function () {
-                var inv = _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
-                setInviteEnabled(id, !(inv && inv.Enabled));
+            var group = inviteGroup(inv);
+            if (group && blocksInvites(group)) {
+                Shared.setStatus('inviteDialogStatus', 'This invite\'s group disallows all password changes, so it cannot be enabled.', true);
+                return Promise.resolve(false);
+            }
+        }
+
+        var chain = Promise.resolve();
+        if (expiryChanged) {
+            chain = chain.then(function () {
+                return Shared.apiRequest('Invites/' + inv.Id + '/Expiry', 'POST', { ExpiresAt: dateStr ? dateStr + 'T00:00:00' : null });
             });
-            var expiryInput = row.querySelector('.um-expiry');
-            if (expiryInput) expiryInput.addEventListener('change', function () { setInviteExpiry(id, this.value); });
-            if (del) del.addEventListener('click', function () { deleteInvite(id); });
-            var dup = row.querySelector('.um-dup');
-            if (dup) dup.addEventListener('click', function () { duplicateInvite(id); });
+        }
+        if (enabledChanged) {
+            chain = chain.then(function () {
+                return Shared.apiRequest('Invites/' + inv.Id + '/Enabled', 'POST', { Enabled: enabled });
+            });
+        }
+        return chain.then(function () {
+            if (expiryChanged || enabledChanged) Shared.setStatus('inviteStatus', 'Invite saved.', false);
+            loadAll();
+            return true;
+        }).catch(function (err) {
+            Shared.errorText(err, 'Could not save the invite.').then(function (text) {
+                Shared.setStatus('inviteDialogStatus', text, true);
+            });
+            loadAll();
+            return false;
         });
     }
 
@@ -415,7 +576,7 @@ export default function (view) {
     // Inputs
     // id [string]: The invite to copy.
     function duplicateInvite(id) {
-        var inv = _invites.filter(function (x) { return String(x.Id) === String(id); })[0];
+        var inv = findInvite(id);
         if (!inv) return;
 
         Shared.getEl('txtLabel').value = inv.Label ? inv.Label + ' copy' : '';
@@ -546,75 +707,30 @@ export default function (view) {
         });
     }
 
-    // setInviteExpiry
-    // Saves an invite's expiration from its row.
-    //
-    // Inputs
-    // id [string]: The invite.
-    // dateStr [string]: The new date, or empty for none.
-    function setInviteExpiry(id, dateStr) {
-        var expiresAt = dateStr ? dateStr + 'T00:00:00' : null;
-        Shared.apiRequest('Invites/' + id + '/Expiry', 'POST', { ExpiresAt: expiresAt })
-            .then(function () {
-                Shared.setStatus('inviteStatus', 'Invite expiry updated.', false);
-                loadAll();
-            })
-            .catch(function (err) {
-                showError('inviteStatus', err, 'Could not update the expiry.');
-            });
-    }
-
-    // setInviteEnabled
-    // Enables or disables an invite, with the server's enable guards repeated here for clearer messages.
-    //
-    // Inputs
-    // id [string]: The invite.
-    // enabled [boolean]: The new state.
-    function setInviteEnabled(id, enabled) {
-        if (enabled) {
-            var inv = _invites.filter(function (i) { return i.Id === id; })[0];
-            if (inv) {
-                if (inviteExpired(inv)) {
-                    Shared.setStatus('inviteStatus', 'This invite has expired. Move its expiration forward to re-enable it.', true);
-                    return;
-                }
-                var group = inviteGroup(inv);
-                if (group && blocksInvites(group)) {
-                    Shared.setStatus('inviteStatus', "This invite's group disallows all password changes, so it cannot be enabled.", true);
-                    return;
-                }
-            }
-        }
-
-        Shared.apiRequest('Invites/' + id + '/Enabled', 'POST', { Enabled: enabled })
-            .then(function () {
-                Shared.setStatus('inviteStatus', enabled ? 'Invite enabled.' : 'Invite disabled.', false);
-                loadAll();
-            })
-            .catch(function (err) {
-                showError('inviteStatus', err, 'Could not update the invite.');
-            });
-    }
-
     // deleteInvite
     // Asks first, then deletes an invite.
     //
     // Inputs
     // id [string]: The invite.
+    //
+    // Output
+    // [Promise]: Whether the invite was deleted.
     function deleteInvite(id) {
-        confirmDialog('Delete this invite? The link stops working.', {
+        return confirmDialog('Delete this invite? The link stops working.', {
             title: 'Delete Invite',
             confirmText: 'Delete',
             destructive: true
         }).then(function (ok) {
-            if (!ok) return;
-            Shared.apiRequest('Invites/' + id, 'DELETE')
+            if (!ok) return false;
+            return Shared.apiRequest('Invites/' + id, 'DELETE')
                 .then(function () {
                     Shared.setStatus('inviteStatus', 'Invite deleted.', false);
                     loadAll();
+                    return true;
                 })
                 .catch(function (err) {
                     showError('inviteStatus', err, 'Could not delete the invite.');
+                    return false;
                 });
         });
     }
@@ -640,5 +756,6 @@ export default function (view) {
         updateMaxUsesState();
     }
 
-    Shared = createPage(view, 1, { bind: bind, load: loadAll, onHide: clearCopyFields }).shared;
+    Page = createPage(view, 1, { bind: bind, load: loadAll, onHide: destroyInviteList });
+    Shared = Page.shared;
 }

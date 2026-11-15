@@ -17,7 +17,7 @@
                         until the invite expires or runs out of uses.
                     </div>
 
-                    <div id="inviteCards"></div>
+                    <div class="base-cards compact" id="inviteCards"></div>
 
                     <!-- Create Invite -->
                     <!-- Builds a new invite link from a name, message, resources, PIN, group, and limits. -->
@@ -132,13 +132,14 @@
                     </div>
 
                     <!-- Invites -->
-                    <!-- Lists every invite with its link, status, and actions. -->
-                    <div class="base-section">
-                        <div class="base-section-title">Invites</div>
-                        <div class="base-section-content">
+                    <!-- Lists every invite. Each row copies its link, and opens to change its expiration and state. -->
+                    <div class="base-collapsible-section fixed">
+                        <div class="base-collapsible-header">
+                            <span class="base-collapsible-title">Invites</span>
+                        </div>
+                        <div class="base-collapsible-content">
                             <span id="inviteStatus" class="base-status-text"></span>
                             <div id="inviteList"></div>
-                            <div class="base-table-footer" id="inviteFooter"></div>
                         </div>
                     </div>
 

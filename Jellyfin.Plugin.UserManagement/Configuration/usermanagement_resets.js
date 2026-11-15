@@ -1,10 +1,10 @@
 // usermanagement_resets.js
 // The Resets tab, which turns reset code extraction on and off and lists pending reset codes by user.
 
-import { createPage } from './configurationpage?name=usermanagement_shared.js';
+import { createPage, createRecordList, createCopyField } from './configurationpage?name=usermanagement_shared.js';
 
 // Resets page
-// Builds the Resets tab. Each code stays masked until revealed.
+// Builds the Resets tab. Each code sits masked in a Copy Field until revealed.
 //
 // Inputs
 // view [HTMLElement]: The page the dashboard passes to the module.
@@ -12,110 +12,106 @@ export default function (view) {
     'use strict';
 
     var Shared = null;
-    var _resets = [];
+    var _list = null;
+    var SOON_MS = 5 * 60 * 1000;
 
-    // mask
-    // The text shown in place of a hidden code.
+    // stateOf
+    // Says whether a reset is active, expiring in the next five minutes, or expired. A restart can leave an
+    // expired file behind, so expired codes are still listed.
+    //
+    // Inputs
+    // r [object]: One reset from the API.
+    // now [Date]: The time to compare against.
     //
     // Output
-    // [string]: Six dots.
-    function mask() { return '••••••'; }
+    // [string]: active, expiring, or expired.
+    function stateOf(r, now) {
+        var due = r.ExpirationDate ? new Date(r.ExpirationDate) : null;
+        if (r.Expired || (due && due <= now)) return 'expired';
+        if (due && (due - now) <= SOON_MS) return 'expiring';
+        return 'active';
+    }
 
-    // rowHtml
-    // Builds one reset row. The date turns orange in the last five minutes and red once expired.
-    // Expired entries are listed apart, since a restart can leave an expired file behind.
+    var TAGS = {
+        active: { label: 'Active', icon: 'schedule' },
+        expiring: { label: 'Expiring', icon: 'timer' },
+        expired: { label: 'Expired', icon: 'timer_off' }
+    };
+
+    // toItem
+    // Builds one Record List row, with the user, the expiration, a state tag, and the code in a Copy Field.
     //
     // Inputs
     // r [object]: One reset from the API.
     // i [number]: Its index in the loaded list.
+    // now [Date]: The time to compare against.
     //
     // Output
-    // [string]: The row's HTML.
-    function rowHtml(r, i) {
-        var esc = Shared.escapeHtml;
+    // [object]: The Record List item.
+    function toItem(r, i, now) {
+        var state = stateOf(r, now);
         var due = r.ExpirationDate ? new Date(r.ExpirationDate) : null;
-        var now = new Date();
-        var expired = !!r.Expired || (due && due <= now);
-        var soon = !expired && due && (due - now) <= 5 * 60 * 1000;
-        var tone = expired ? ' um-text-red' : (soon ? ' um-text-orange' : '');
-        var sub = (expired ? 'Expired ' : 'Expires ') + (due ? due.toLocaleString() : '');
-        return '<div class="base-table-row um-row">'
-            + '<div class="base-table-item-info um-row-info">'
-            + '<div class="base-table-item-title">' + (esc(r.UserName) || 'Unknown user') + '</div>'
-            + '<div class="base-table-item-sub' + tone + '">' + esc(sub) + '</div>'
-            + '</div>'
-            + '<code class="um-reset-code" data-index="' + i + '">' + mask() + '</code>'
-            + '<button type="button" class="base-row-btn um-reveal" data-index="' + i + '" title="Show" aria-label="Show"><span class="material-icons" aria-hidden="true">visibility</span></button>'
-            + '<button type="button" class="base-row-btn um-copy-code" data-index="' + i + '" title="Copy" aria-label="Copy"><span class="material-icons" aria-hidden="true">content_copy</span></button>'
-            + '</div>';
+        var name = r.UserName || 'Unknown user';
+        return {
+            id: name + '|' + (r.ExpirationDate || i),
+            title: name,
+            secondary: due ? (state === 'expired' ? 'Expired ' : 'Expires ') + due.toLocaleString() : null,
+            tags: [TAGS[state]],
+            state: state,
+            aside: createCopyField({
+                value: r.Pin,
+                secret: true,
+                allowExpose: true,
+                size: 'small',
+                label: 'Reset code for ' + name,
+                copyLabel: 'Copy Code',
+                copiedText: 'Code copied.'
+            })
+        };
+    }
+
+    // ensureList
+    // Draws the Record List once.
+    function ensureList() {
+        if (_list) return;
+        _list = createRecordList({ label: 'Pending resets', emptyText: 'No pending password resets.' });
+        Shared.getEl('resetList').appendChild(_list.element);
+    }
+
+    // destroyList
+    // Tears down the Record List and its Copy Fields when the page hides.
+    function destroyList() {
+        if (!_list) return;
+        _list.destroy();
+        if (_list.element.parentNode) _list.element.parentNode.removeChild(_list.element);
+        _list = null;
     }
 
     // renderResets
-    // Draws the count cards and the active and expired lists.
+    // Draws the count cards and one row per reset, active first, then expired.
     //
     // Inputs
+    // resets [Array]: The resets from the API.
     // enabled [boolean]: Whether reset code extraction is on.
-    function renderResets(enabled) {
+    function renderResets(resets, enabled) {
+        ensureList();
         Shared.setVisible('resetDisabled', !enabled);
-        Shared.setVisible('resetEmpty', enabled && _resets.length === 0);
+        Shared.setVisible('resetList', enabled);
         Shared.setVisible('resetCards', enabled);
 
         var now = new Date();
-        var activeHtml = '';
-        var expiredHtml = '';
+        var items = enabled ? resets.map(function (r, i) { return toItem(r, i, now); }) : [];
+        var rank = { active: 0, expiring: 0, expired: 1 };
+        items.sort(function (a, b) { return rank[a.state] - rank[b.state]; });
         var counts = { active: 0, expiring: 0, expired: 0 };
-        if (enabled) {
-            _resets.forEach(function (r, i) {
-                var due = r.ExpirationDate ? new Date(r.ExpirationDate) : null;
-                var expired = !!r.Expired || (due && due <= now);
-                if (expired) {
-                    counts.expired++;
-                    expiredHtml += rowHtml(r, i);
-                } else {
-                    if (due && (due - now) <= 5 * 60 * 1000) counts.expiring++;
-                    else counts.active++;
-                    activeHtml += rowHtml(r, i);
-                }
-            });
-        }
+        items.forEach(function (it) { counts[it.state]++; });
 
         Shared.renderCards('resetCards', [
             { count: counts.active, label: 'Active', color: 'green' },
             { count: counts.expiring, label: 'Expiring', color: 'orange' },
             { count: counts.expired, label: 'Expired', color: 'red' }
         ]);
-        Shared.getEl('activeList').innerHTML = activeHtml;
-        Shared.getEl('expiredList').innerHTML = expiredHtml;
-        Shared.setVisible('activeGroup', activeHtml.length > 0);
-        Shared.setVisible('expiredGroup', expiredHtml.length > 0);
-    }
-
-    // toggleReveal
-    // Shows or hides one code.
-    //
-    // Inputs
-    // index [number]: The reset's index in the loaded list.
-    function toggleReveal(index) {
-        var code = view.querySelector('.um-reset-code[data-index="' + index + '"]');
-        var btn = view.querySelector('.um-reveal[data-index="' + index + '"] .material-icons');
-        if (!code || !_resets[index]) return;
-        var hidden = code.textContent === mask();
-        code.textContent = hidden ? _resets[index].Pin : mask();
-        if (btn) btn.textContent = hidden ? 'visibility_off' : 'visibility';
-        var holder = btn && btn.parentNode;
-        if (holder) { holder.title = hidden ? 'Hide' : 'Show'; holder.setAttribute('aria-label', holder.title); }
-    }
-
-    // copyCode
-    // Copies one code and reports it.
-    //
-    // Inputs
-    // index [number]: The reset's index in the loaded list.
-    function copyCode(index) {
-        if (!_resets[index]) return;
-        Shared.copyToClipboard(_resets[index].Pin).then(function () {
-            Shared.setStatus('resetStatus', 'Code copied.', false);
-        });
+        _list.setItems(items);
     }
 
     // load
@@ -127,8 +123,7 @@ export default function (view) {
         ]).then(function (results) {
             var enabled = !!(results[0] && results[0].EnableResetCodeExtraction);
             Shared.getEl('chkEnableResets').checked = enabled;
-            _resets = (results[1] && results[1].Resets) || [];
-            renderResets(enabled);
+            renderResets((results[1] && results[1].Resets) || [], enabled);
         }).catch(function () {
             Shared.setStatus('resetStatus', 'Could not load the resets.', true);
         });
@@ -153,18 +148,12 @@ export default function (view) {
     }
 
     // bind
-    // Wires the extraction checkbox and the row buttons once.
+    // Wires the extraction checkbox once.
     function bind() {
         Shared.getEl('chkEnableResets').addEventListener('change', function () {
             setExtractionEnabled(!!this.checked);
         });
-        Shared.getEl('resetGroups').addEventListener('click', function (e) {
-            var reveal = e.target.closest('.um-reveal');
-            if (reveal) { toggleReveal(parseInt(reveal.getAttribute('data-index'), 10)); return; }
-            var copy = e.target.closest('.um-copy-code');
-            if (copy) { copyCode(parseInt(copy.getAttribute('data-index'), 10)); }
-        });
     }
 
-    Shared = createPage(view, 2, { bind: bind, load: load }).shared;
+    Shared = createPage(view, 2, { bind: bind, load: load, onHide: destroyList }).shared;
 }

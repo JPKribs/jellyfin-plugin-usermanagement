@@ -3,14 +3,10 @@
 <style>
     .base-status-card > h1:empty, .base-status-card > p:empty { display: none; margin: 0; }
 
-    /* Resource links shown on the success view, secondary to the sign in button. */
-    #resources { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-    .um-res-btn {
-        display: block; padding: 0.7em 1.2em; border-radius: 8px; text-decoration: none;
-        background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #f2f2f2; font-size: 0.92rem; font-weight: 600;
-    }
-    .um-res-btn:hover { border-color: #00a4dc; background: rgba(255, 255, 255, 0.1); }
+    /* Resource links, the status card's buttons stacked full width. */
+    #resources { display: flex; flex-direction: column; }
+    /* The status card's base-note has no error look, so a refused signup takes the card's red here. */
+    .base-note.um-error { color: #d9534f; }
 </style>
 
 <div id="loading"><div class="base-spinner" role="status" aria-label="Loading"></div></div>
@@ -23,7 +19,7 @@
 
 <form id="form" class="hidden base-fields" autocomplete="off">
     <h1>Create Your Account</h1>
-    <p id="message" class="base-note" style="margin-top:0;"></p>
+    <p id="message"></p>
 
     <div id="pinRow" class="hidden">
         <label for="pin">Invite PIN</label>
@@ -45,8 +41,7 @@
 
 <div id="done" class="hidden">
     <h1 id="doneHeading">Your account has been created!</h1>
-    <p id="doneMsg" style="text-align:center;"></p>
-    <p id="resIntro" class="hidden" style="text-align:left; margin-top:14px;">External Resources:</p>
+    <p id="doneMsg"></p>
     <div id="resources" class="hidden"></div>
     <a class="base-btn" id="signinLink" href="../web/">Go to Sign In</a>
 </div>
@@ -105,25 +100,25 @@
             (list || []).forEach(function (res) {
                 if (!res || !res.Url || !/^https?:\/\//i.test(res.Url)) { return; }
                 var a = document.createElement('a');
-                a.className = 'um-res-btn';
+                a.className = 'base-btn';
                 a.href = res.Url;
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
                 a.textContent = res.Title || res.Url;
                 box.appendChild(a);
             });
-            if (box.children.length > 0) { show('resIntro'); show('resources'); }
+            if (box.children.length > 0) { show('resources'); }
         }
 
         el('form').addEventListener('submit', function (e) {
             e.preventDefault();
             var msg = el('msg');
             msg.textContent = '';
-            msg.style.color = '';
+            msg.classList.remove('um-error');
 
             var password = el('password').value;
             if (password !== el('confirm').value) {
-                msg.style.color = 'var(--base-error, #d9534f)';
+                msg.classList.add('um-error');
                 msg.textContent = 'Passwords do not match.';
                 return;
             }
@@ -148,13 +143,13 @@
                         renderResources(res.Resources);
                         show('done');
                     } else {
-                        msg.style.color = 'var(--base-error, #d9534f)';
+                        msg.classList.add('um-error');
                         msg.textContent = (res && res.Message) || 'Something went wrong.';
                         el('submit').disabled = false;
                     }
                 })
                 .catch(function () {
-                    msg.style.color = 'var(--base-error, #d9534f)';
+                    msg.classList.add('um-error');
                     msg.textContent = 'Network error. Please try again.';
                     el('submit').disabled = false;
                 });

@@ -8,12 +8,15 @@ import {
     createAccessSchedule,
     createTagInput,
     createOrderedList,
+    createInheritField,
+    createRepeater,
+    createChipSelect,
     confirmDialog,
     promptDialog
 } from './configurationpage?name=usermanagement_shared.js';
 
 // Groups page
-// Builds the Groups tab. Each setting row has an Override checkbox, and only overridden settings reach members.
+// Builds the Groups tab. Each setting is an Inherit Field with an Override checkbox, and only overridden settings reach members.
 //
 // Inputs
 // view [HTMLElement]: The page the dashboard passes to the module.
@@ -25,6 +28,9 @@ export default function (view) {
     var memberNotes = {};
     var tracker = null;
     var rowHandles = {};
+    var inheritHandles = {};
+    var sessionRules = null;
+    var sessionClients = [];
     var orderState = [];
     var loading = false;
 
@@ -384,23 +390,88 @@ export default function (view) {
         renderSectionGroup(CONFIG, view.querySelector('#configSections'), 'configSection', 'config');
         Shared.initCollapsibles();
         mountRowComponents();
+        mountInheritFields();
         bindPermRows();
+    }
+
+    // mountInheritFields
+    // Wraps each setting's control in an Inherit Field with an Override checkbox. The control keeps its own
+    // value in the page, so the field handle reads and writes nothing, and the Inherit Field only dims and
+    // disables the control while the setting is not overridden.
+    function mountInheritFields() {
+        view.querySelectorAll('.perm-row').forEach(function (row) {
+            var key = row.getAttribute('data-perm');
+            var control = row.querySelector('.perm-control');
+            inheritHandles[key] = createInheritField({
+                field: { element: control, getValue: function () { return null; }, setValue: function () {} },
+                toggle: 'checkbox',
+                overrideText: 'Override',
+                onChange: function (value) { if (!value.inherit) refreshManagedRow(row); }
+            });
+        });
+    }
+
+    // isManaged
+    // Says whether a setting is overridden.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
+    //
+    // Output
+    // [boolean]: Whether the group's value applies.
+    function isManaged(row) {
+        var handle = inheritHandles[row.getAttribute('data-perm')];
+        return !!handle && !handle.getValue().inherit;
+    }
+
+    // setManaged
+    // Sets whether a setting is overridden. It passes through Override first, so a control that a component drew
+    // again while inheriting, such as an Ordered List's move buttons, is disabled with the rest.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
+    // managed [boolean]: Whether the group's value applies.
+    function setManaged(row, managed) {
+        var handle = inheritHandles[row.getAttribute('data-perm')];
+        if (!handle) return;
+        handle.setValue({ inherit: false });
+        if (managed) refreshManagedRow(row);
+        else handle.setValue({ inherit: true });
+    }
+
+    // refreshManagedRow
+    // Redraws what an overridden row hides or disables by itself.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
+    function refreshManagedRow(row) {
+        updateFolderVisibility(row);
+        // A redraw puts back the move buttons the ends of the list keep disabled.
+        var order = row.getAttribute('data-type') === 'order' ? rowHandles[row.getAttribute('data-perm')] : null;
+        if (order) order.setItems(order.getItems());
     }
 
     // destroyRowHandles
     // Tears down the Base components of the last draw.
     function destroyRowHandles() {
+        Object.keys(inheritHandles).forEach(function (key) { inheritHandles[key].destroy(); });
+        inheritHandles = {};
         Object.keys(rowHandles).forEach(function (key) { rowHandles[key].destroy(); });
         rowHandles = {};
+        if (sessionRules) {
+            sessionRules.destroy();
+            if (sessionRules.element.parentNode) sessionRules.element.parentNode.removeChild(sessionRules.element);
+            sessionRules = null;
+        }
     }
 
     // mountRowComponents
     // Mounts a Tag Input in each tags row, an Access Schedule in the schedule row, and an Ordered List in the library order row.
     function mountRowComponents() {
-        view.querySelectorAll('.um-perm-row').forEach(function (row) {
+        view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
-            var mount = row.querySelector('.um-mount');
+            var mount = row.querySelector('.perm-mount');
             var handle = null;
             if (type === 'tags') {
                 handle = createTagInput({ placeholder: 'Kids', onChange: checkDirty });
@@ -512,9 +583,9 @@ export default function (view) {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
                 + '<span class="checkboxLabel">Enabled</span></label>';
         } else if (p.type === 'int') {
-            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value base-edit-input" aria-label="' + esc(p.label) + '" />';
+            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value" aria-label="' + esc(p.label) + '" />';
         } else if (p.type === 'bitrate') {
-            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value base-edit-input" aria-label="' + esc(p.label) + '" />';
+            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value" aria-label="' + esc(p.label) + '" />';
         } else if (p.type === 'enum') {
             var opts = (p.options || []).map(function (o) {
                 return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
@@ -549,7 +620,7 @@ export default function (view) {
                     + esc(u[0]) + '" /><span class="checkboxLabel">' + esc(u[1]) + '</span></label>';
             }).join('') + '</div>';
         } else if (p.type === 'tags' || p.type === 'schedule' || p.type === 'order') {
-            control = '<div class="um-mount"></div>';
+            control = '<div class="perm-mount"></div>';
         } else if (p.type === 'submode') {
             var mopts = SUBTITLE_MODES.map(function (m) {
                 return '<option value="' + esc(m[0]) + '">' + esc(m[1]) + '</option>';
@@ -569,12 +640,12 @@ export default function (view) {
             }).join('');
             var secRows = '';
             for (var hi = 0; hi < HOME_SECTION_COUNT; hi++) {
-                secRows += '<div class="selectContainer um-homesection-row">'
-                    + '<label class="selectLabel">Home screen section ' + (hi + 1) + '</label>'
-                    + '<select is="emby-select" class="perm-homesection emby-select-withcolor" data-index="' + hi + '">' + secOpts + '</select>'
+                secRows += '<div class="selectContainer">'
+                    + '<label class="selectLabel" for="permHomeSection' + hi + '">Home screen section ' + (hi + 1) + '</label>'
+                    + '<select is="emby-select" id="permHomeSection' + hi + '" class="perm-homesection emby-select-withcolor" data-index="' + hi + '">' + secOpts + '</select>'
                     + '</div>';
             }
-            control = '<div class="um-homesections">' + secRows + '</div>';
+            control = secRows;
         } else if (p.type === 'libgrid') {
             // GroupedFolders lists only the folders Jellyfin can group. The exclude grids list every library.
             var gridItems = (p.source === 'groupable') ? allGroupable : allLibraries;
@@ -585,28 +656,39 @@ export default function (view) {
                 idOf, function (v) { return v.Name || v.name || ''; });
         }
 
-        var desc = p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '';
-        var labelHtml = p.label ? '<div class="um-perm-label">' + esc(p.label) + '</div>' : '';
         var invertAttr = (p.type === 'libgrid') ? ' data-invert="' + (p.invert ? '1' : '0') + '"' : '';
         var defAttr = p.def ? ' data-default="1"' : '';
+        var attrs = ' data-store="' + esc(store) + '" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '"' + invertAttr + defAttr;
 
-        return '<div class="um-perm-row inherited" data-store="' + esc(store) + '" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '"' + invertAttr + defAttr + '>'
-            + '<label class="emby-checkbox-label um-perm-toggle" title="Override this setting for the group">'
-            + '<input type="checkbox" is="emby-checkbox" class="perm-manage" />'
-            + '<span class="checkboxLabel">Override</span></label>'
-            + '<div class="um-perm-main">'
+        // A checkbox setting reads as Jellyfin's own checkbox, with the setting as its label.
+        if (p.type === 'bool') {
+            return '<div class="checkboxContainer checkboxContainer-withDescription perm-row"' + attrs + '>'
+                + '<div class="perm-control"><label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
+                + '<span class="checkboxLabel">' + esc(p.label) + '</span></label></div>'
+                + (p.desc ? '<div class="fieldDescription checkboxFieldDescription">' + esc(p.desc) + '</div>' : '')
+                + '</div>';
+        }
+
+        // A single input or select takes the label's for, so the label names it.
+        var single = /^<(input|select)\b/.test(control) && control.indexOf('<select', 1) === -1;
+        var controlId = 'perm' + store + p.key;
+        if (single) control = control.replace(/^<(input|select)\b/, '<$1 id="' + controlId + '"');
+        var labelHtml = p.label
+            ? '<label class="inputLabel"' + (single ? ' for="' + controlId + '"' : '') + '>' + esc(p.label) + '</label>'
+            : '';
+        // Not an inputContainer, whose rule sizes every input in it full width, the Override checkbox included.
+        return '<div class="um-setting perm-row"' + attrs + '>'
             + labelHtml
-            + '<div class="um-perm-control">' + control + '</div>'
-            + desc
-            + '</div></div>';
+            + '<div class="perm-control">' + control + '</div>'
+            + (p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '')
+            + '</div>';
     }
 
     // bindPermRows
     // Wires each row's Override checkbox and its own controls.
     function bindPermRows() {
-        view.querySelectorAll('.um-perm-row').forEach(function (row) {
+        view.querySelectorAll('.perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
-            row.querySelector('.perm-manage').addEventListener('change', function () { updateRowInherited(row); });
 
             row.querySelectorAll('.perm-allfolders, .perm-alldelete, .perm-alldevices').forEach(function (toggle) {
                 toggle.addEventListener('change', function () { updateFolderVisibility(row); });
@@ -635,23 +717,6 @@ export default function (view) {
         var val = row.querySelector('.perm-value').value;
         var mode = SUBTITLE_MODES.find(function (m) { return m[0] === val; });
         help.textContent = mode ? mode[2] : '';
-    }
-
-    // updateRowInherited
-    // Dims and disables a row's controls while it is not overridden.
-    //
-    // Inputs
-    // row [HTMLElement]: The setting row.
-    function updateRowInherited(row) {
-        var managed = row.querySelector('.perm-manage').checked;
-        row.classList.toggle('inherited', !managed);
-        row.querySelectorAll('.um-perm-control input, .um-perm-control select, .um-perm-control button')
-            .forEach(function (el) { el.disabled = !managed; });
-        if (!managed) return;
-        updateFolderVisibility(row);
-        // A redraw puts back the move buttons the ends of the list keep disabled.
-        var order = row.getAttribute('data-type') === 'order' ? rowHandles[row.getAttribute('data-perm')] : null;
-        if (order) order.setItems(order.getItems());
     }
 
     // updateFolderVisibility
@@ -811,7 +876,7 @@ export default function (view) {
     // cfg [object]: The group's configuration.
     // key [string]: The setting.
     // type [string]: The row's control type.
-    // manage [HTMLInputElement]: The Override checkbox.
+    // manage [object]: Takes the Override state in checked.
     function loadConfigRow(row, cfg, key, type, manage) {
         manage.checked = cfg['Manage' + key] === true;
 
@@ -892,9 +957,9 @@ export default function (view) {
     // Output
     // [object]: A set of library ids, or null when every library is visible.
     function accessibleLibraryIds() {
-        var row = view.querySelector('.um-perm-row[data-perm="LibraryAccess"]');
+        var row = view.querySelector('.perm-row[data-perm="LibraryAccess"]');
         if (!row) return null;
-        var managed = row.querySelector('.perm-manage').checked;
+        var managed = isManaged(row);
         var allFolders = row.querySelector('.perm-allfolders').checked;
         if (!managed || allFolders) return null;
         var set = {};
@@ -911,13 +976,13 @@ export default function (view) {
         var libIds = {};
         allLibraries.forEach(function (l) { libIds[l.ItemId] = true; });
 
-        view.querySelectorAll('#configSections .um-perm-row').forEach(function (row) {
+        view.querySelectorAll('#configSections .perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
             if (type === 'order') {
                 var order = rowHandles[row.getAttribute('data-perm')];
                 if (order) {
                     order.setItems(orderState.filter(function (v) { return libIds[v.id] !== true || accessible(v.id); }));
-                    updateRowInherited(row);
+                    setManaged(row, isManaged(row));
                 }
             } else if (type === 'libgrid') {
                 row.querySelectorAll('.perm-lib').forEach(function (cb) {
@@ -938,14 +1003,14 @@ export default function (view) {
         var perms = group.Permissions || {};
         var cfg = group.Configuration || {};
 
-        view.querySelectorAll('.um-perm-row').forEach(function (row) {
+        view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
-            var manage = row.querySelector('.perm-manage');
+            var manage = { checked: false };
 
             if (row.getAttribute('data-store') === 'config') {
                 loadConfigRow(row, cfg, key, type, manage);
-                updateRowInherited(row);
+                setManaged(row, manage.checked);
                 return;
             }
 
@@ -1005,7 +1070,7 @@ export default function (view) {
                 }
             }
 
-            updateRowInherited(row);
+            setManaged(row, manage.checked);
         });
 
         applyAccessFilter();
@@ -1098,7 +1163,7 @@ export default function (view) {
         group.InactiveDays = isNaN(inactiveDays) || inactiveDays < 1 ? 30 : inactiveDays;
 
         group.CleanupSessions = !!(el('#grpSessionEnabled') || {}).checked;
-        group.SessionCleanupRules = domSessionRules();
+        if (sessionRules) group.SessionCleanupRules = domSessionRules();
     }
 
     var CHANGE_MODES = ['Allowed', 'InitialOnly', 'Disallowed'];
@@ -1135,10 +1200,6 @@ export default function (view) {
     }
 
     var SESSION_MODES = ['All', 'Only', 'AllExcept'];
-    var SESSION_MODE_HELP = {
-        Only: 'Only sessions on these clients are removed during cleanup.',
-        AllExcept: 'All sessions are cleaned up except sessions on these clients.'
-    };
 
     // normalizeSessionMode
     // Reads a session client mode, which the config endpoint may send as a number or a name.
@@ -1172,107 +1233,89 @@ export default function (view) {
         return out.sort(function (a, b) { return a.localeCompare(b); });
     }
 
-    // sessionRuleHtml
-    // Builds one session cleanup rule card.
+    var SESSION_MODE_OPTIONS = [
+        { value: 'All', label: 'All Clients' },
+        { value: 'Only', label: 'Only These Clients' },
+        { value: 'AllExcept', label: 'All Except These Clients' }
+    ];
+
+    // clientField
+    // Draws a rule's clients as a Chip Select of the known clients, for the Repeater's custom field.
     //
     // Inputs
-    // rule [object]: The rule.
-    // clients [Array]: The client names to offer.
+    // value [Array]: The rule's client names.
+    // change [function]: Tells the Repeater the value changed.
     //
     // Output
-    // [string]: The card's HTML.
-    function sessionRuleHtml(rule, clients) {
-        var esc = Shared.escapeHtml;
-        var selected = {};
-        (rule.Clients || []).forEach(function (c) { selected[c.toLowerCase()] = true; });
-        var mode = normalizeSessionMode(rule.Mode);
-        var days = rule.Days > 0 ? rule.Days : 30;
+    // [object]: The Repeater control, { element, input, getValue, setValue, destroy }.
+    function clientField(value, change) {
+        var chips = createChipSelect({
+            options: sessionClients,
+            value: value || [],
+            placeholder: 'Search clients',
+            noResultsText: 'No clients match.',
+            onChange: change
+        });
+        return {
+            element: chips.element,
+            input: chips.element.querySelector('input'),
+            getValue: function () { return chips.getValue().map(String); },
+            setValue: function (next) { chips.setValue(next || []); },
+            destroy: chips.destroy
+        };
+    }
 
-        var grid = clients.length
-            ? '<div class="base-check-grid sess-client-grid">' + clients.map(function (c) {
-                return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="sess-client" value="'
-                    + esc(c) + '"' + (selected[c.toLowerCase()] ? ' checked' : '')
-                    + ' /><span class="checkboxLabel">' + esc(c) + '</span></label>';
-            }).join('') + '</div>'
-            : '<div class="fieldDescription">No clients have connected to this server yet.</div>';
-
-        return '<div class="um-session-rule">'
-            + '<div class="um-session-rule-head">'
-            + '<span class="um-session-rule-title"></span>'
-            + '<button type="button" class="base-row-btn destructive sess-remove" title="Remove" aria-label="Remove"><span class="material-icons" aria-hidden="true">delete</span></button>'
-            + '</div>'
-            + '<div class="selectContainer">'
-            + '<label class="selectLabel">Clients</label>'
-            + '<select is="emby-select" class="sess-mode emby-select-withcolor">'
-            + '<option value="All"' + (mode === 'All' ? ' selected' : '') + '>All Clients</option>'
-            + '<option value="Only"' + (mode === 'Only' ? ' selected' : '') + '>Only These Clients</option>'
-            + '<option value="AllExcept"' + (mode === 'AllExcept' ? ' selected' : '') + '>All Except These Clients</option>'
-            + '</select>'
-            + '</div>'
-            + '<div class="sess-clients hidden">'
-            + grid
-            + '<div class="fieldDescription sess-clients-help"></div>'
-            + '</div>'
-            + '<div class="inputContainer">'
-            + '<label>Days before a device is logged out</label>'
-            + '<input is="emby-input" type="number" class="sess-days" min="1" value="' + days + '" />'
-            + '<div class="fieldDescription">Devices will be logged out after this many days without checking back into the server.</div>'
-            + '</div>'
-            + '</div>';
+    // ensureSessionRules
+    // Draws the session cleanup rules once, as a Repeater of cards.
+    function ensureSessionRules() {
+        if (sessionRules) return;
+        sessionRules = createRepeater({
+            layout: 'card',
+            titleText: 'Rule {index}',
+            addText: 'Add Rule',
+            removeText: 'Remove {value}',
+            emptyText: 'No rules yet. Select Add Rule to add one.',
+            fields: [
+                { key: 'mode', label: 'Applies to', type: 'select', options: SESSION_MODE_OPTIONS },
+                { key: 'clients', label: 'Clients', type: 'custom', render: clientField },
+                { key: 'days', label: 'Days before logout', type: 'number', min: 1, placeholder: '30' }
+            ],
+            onChange: function () {
+                updateSessionOverlaps();
+                checkDirty();
+            }
+        });
+        view.querySelector('#sessionRuleList').appendChild(sessionRules.element);
     }
 
     // renderSessionRules
-    // Draws the session cleanup rule cards.
+    // Fills the session cleanup rules from the group.
     //
     // Inputs
     // rules [Array]: The rules.
     function renderSessionRules(rules) {
-        var list = view.querySelector('#sessionRuleList');
-        if (!list) return;
-        var clients = knownClients(rules);
-        list.innerHTML = (rules || []).map(function (r) { return sessionRuleHtml(r, clients); }).join('');
-        list.querySelectorAll('.um-session-rule').forEach(updateSessionRuleUi);
-        updateSessionRuleTitles();
+        sessionClients = knownClients(rules);
+        ensureSessionRules();
+        sessionRules.setValue((rules || []).map(function (r) {
+            return { mode: normalizeSessionMode(r.Mode), clients: (r.Clients || []).slice(), days: r.Days > 0 ? r.Days : 30 };
+        }));
         updateSessionOverlaps();
     }
 
     // domSessionRules
-    // Reads the rule cards back into rules.
+    // Reads the Repeater back into rules. A rule for all clients keeps no client list.
     //
     // Output
     // [Array]: The rules.
     function domSessionRules() {
-        var rules = [];
-        view.querySelectorAll('#sessionRuleList .um-session-rule').forEach(function (row) {
-            var mode = normalizeSessionMode(row.querySelector('.sess-mode').value);
-            var clients = [];
-            row.querySelectorAll('.sess-client:checked').forEach(function (cb) { clients.push(cb.value); });
-            var days = parseInt(row.querySelector('.sess-days').value, 10);
-            rules.push({
+        return (sessionRules ? sessionRules.getValue() : []).map(function (item) {
+            var mode = normalizeSessionMode(item.mode);
+            var days = parseInt(item.days, 10);
+            return {
                 Mode: mode,
-                Clients: mode === 'All' ? [] : clients,
+                Clients: mode === 'All' ? [] : (item.clients || []).map(String),
                 Days: isNaN(days) || days < 1 ? 30 : days
-            });
-        });
-        return rules;
-    }
-
-    // updateSessionRuleUi
-    // Shows a rule's client list unless it covers all clients.
-    //
-    // Inputs
-    // row [HTMLElement]: The rule card.
-    function updateSessionRuleUi(row) {
-        var mode = row.querySelector('.sess-mode').value;
-        row.querySelector('.sess-clients').classList.toggle('hidden', mode === 'All');
-        row.querySelector('.sess-clients-help').textContent = SESSION_MODE_HELP[mode] || '';
-    }
-
-    // updateSessionRuleTitles
-    // Numbers the rule cards.
-    function updateSessionRuleTitles() {
-        view.querySelectorAll('#sessionRuleList .um-session-rule-title').forEach(function (el, i) {
-            el.textContent = 'Rule ' + (i + 1);
+            };
         });
     }
 
@@ -1355,16 +1398,17 @@ export default function (view) {
     // Reads every row into the picked group.
     function collectCurrentGroup() {
         var group = getCurrentGroup();
-        if (!group) return;
+        // Once the page hides, its rows are gone, so there is nothing to read back.
+        if (!group || !Object.keys(inheritHandles).length) return;
         if (!group.Permissions) group.Permissions = {};
         if (!group.Configuration) group.Configuration = {};
         var perms = group.Permissions;
         var cfg = group.Configuration;
 
-        view.querySelectorAll('.um-perm-row').forEach(function (row) {
+        view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
-            var managed = row.querySelector('.perm-manage').checked;
+            var managed = isManaged(row);
 
             if (row.getAttribute('data-store') === 'config') {
                 collectConfigRow(row, cfg, key, type, managed);
@@ -1631,33 +1675,6 @@ export default function (view) {
 
         var sessionEnabled = view.querySelector('#grpSessionEnabled');
         if (sessionEnabled) sessionEnabled.addEventListener('change', updateSessionEnabledState);
-
-        var addSessionRule = view.querySelector('#btnAddSessionRule');
-        if (addSessionRule) addSessionRule.addEventListener('click', function () {
-            var list = view.querySelector('#sessionRuleList');
-            list.insertAdjacentHTML('beforeend', sessionRuleHtml({ Mode: 'All', Clients: [], Days: 30 }, knownClients(domSessionRules())));
-            updateSessionRuleUi(list.lastElementChild);
-            updateSessionRuleTitles();
-            updateSessionOverlaps();
-            checkDirty();
-        });
-
-        var sessionRuleList = view.querySelector('#sessionRuleList');
-        if (sessionRuleList) {
-            sessionRuleList.addEventListener('change', function (e) {
-                var row = e.target.closest('.um-session-rule');
-                if (row && e.target.classList.contains('sess-mode')) updateSessionRuleUi(row);
-                updateSessionOverlaps();
-            });
-            sessionRuleList.addEventListener('click', function (e) {
-                var btn = e.target.closest('.sess-remove');
-                if (!btn) return;
-                btn.closest('.um-session-rule').remove();
-                updateSessionRuleTitles();
-                updateSessionOverlaps();
-                checkDirty();
-            });
-        }
 
         var form = view.querySelector('#UserManagementGroupsForm');
         if (form) {

@@ -100,10 +100,13 @@
                                                 devices are logged out.
                                             </div>
                                         </div>
-                                        <div class="hidden" id="sessionFields">
+                                        <div class="base-indent hidden" id="sessionFields">
+                                            <div class="fieldDescription">
+                                                Each rule logs out devices on its clients after that many days without
+                                                checking in. A rule for all clients ignores its client list.
+                                            </div>
                                             <div id="sessionRuleList"></div>
-                                            <button is="emby-button" type="button" id="btnAddSessionRule" class="raised base-button secondary small"><span class="material-icons" aria-hidden="true">add</span><span>Add Rule</span></button>
-                                            <div id="sessionOverlapWarning" class="fieldDescription hidden"></div>
+                                            <div id="sessionOverlapWarning" class="base-warn hidden"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -234,7 +237,7 @@
                         <!-- /Other -->
 
                         <!-- Save -->
-                        <div class="um-save-row">
+                        <div class="base-collapsible-actions flush">
                             <button is="emby-button" type="button" id="btnSaveGroups" class="raised base-button primary fill">
                                 <span>Save</span>
                             </button>
