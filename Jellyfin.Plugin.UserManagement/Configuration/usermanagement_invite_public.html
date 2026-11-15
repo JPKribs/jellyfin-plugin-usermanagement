@@ -1,7 +1,7 @@
 <!-- Rendered inside the shared JPKribs.Jellyfin.Base "status" card (logo + themed card). -->
 <!-- This file is only the card CONTENT; the controller wraps it via StatusPage.Render. -->
 <style>
-    .jpk-status-card > h1:empty, .jpk-status-card > p:empty { display: none; margin: 0; }
+    .base-status-card > h1:empty, .base-status-card > p:empty { display: none; margin: 0; }
 
     /* Resource links shown on the success view, secondary to the sign in button. */
     #resources { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
@@ -13,17 +13,17 @@
     .um-res-btn:hover { border-color: #00a4dc; background: rgba(255, 255, 255, 0.1); }
 </style>
 
-<div id="loading"><div class="jpk-spinner" role="status" aria-label="Loading"></div></div>
+<div id="loading"><div class="base-spinner" role="status" aria-label="Loading"></div></div>
 
 <div id="invalid" class="hidden">
     <h1>Invite unavailable</h1>
     <p id="invalidMsg">This invite link is invalid, expired, or has been fully used.</p>
-    <a class="jpk-btn" id="backLink" href="../web/">Back to Jellyfin</a>
+    <a class="base-btn" id="backLink" href="../web/">Back to Jellyfin</a>
 </div>
 
-<form id="form" class="hidden jpk-fields" autocomplete="off">
+<form id="form" class="hidden base-fields" autocomplete="off">
     <h1>Create Your Account</h1>
-    <p id="message" class="jpk-note" style="margin-top:0;"></p>
+    <p id="message" class="base-note" style="margin-top:0;"></p>
 
     <div id="pinRow" class="hidden">
         <label for="pin">Invite PIN</label>
@@ -39,8 +39,8 @@
     <label for="confirm">Confirm password</label>
     <input type="password" id="confirm" autocomplete="new-password" />
 
-    <button type="submit" id="submit" class="jpk-submit">Create account</button>
-    <div id="msg" class="jpk-note"></div>
+    <button type="submit" id="submit" class="base-submit">Create account</button>
+    <div id="msg" class="base-note"></div>
 </form>
 
 <div id="done" class="hidden">
@@ -48,7 +48,7 @@
     <p id="doneMsg" style="text-align:center;"></p>
     <p id="resIntro" class="hidden" style="text-align:left; margin-top:14px;">External Resources:</p>
     <div id="resources" class="hidden"></div>
-    <a class="jpk-btn" id="signinLink" href="../web/">Go to Sign In</a>
+    <a class="base-btn" id="signinLink" href="../web/">Go to Sign In</a>
 </div>
 
 <script>
@@ -63,7 +63,7 @@
         var prefix = location.pathname.split(/\/invite\//i)[0];
         var webBase = prefix + '/web/';
 
-        var logo = document.querySelector('.jpk-logo');
+        var logo = document.querySelector('.base-logo');
         if (logo) {
             logo.src = webBase + 'favicons/touchicon.png';
             logo.onerror = function () { logo.onerror = null; logo.src = prefix + '/favicon.ico'; };
@@ -123,7 +123,7 @@
 
             var password = el('password').value;
             if (password !== el('confirm').value) {
-                msg.style.color = 'var(--jpk-error, #d9534f)';
+                msg.style.color = 'var(--base-error, #d9534f)';
                 msg.textContent = 'Passwords do not match.';
                 return;
             }
@@ -148,13 +148,13 @@
                         renderResources(res.Resources);
                         show('done');
                     } else {
-                        msg.style.color = 'var(--jpk-error, #d9534f)';
+                        msg.style.color = 'var(--base-error, #d9534f)';
                         msg.textContent = (res && res.Message) || 'Something went wrong.';
                         el('submit').disabled = false;
                     }
                 })
                 .catch(function () {
-                    msg.style.color = 'var(--jpk-error, #d9534f)';
+                    msg.style.color = 'var(--base-error, #d9534f)';
                     msg.textContent = 'Network error. Please try again.';
                     el('submit').disabled = false;
                 });

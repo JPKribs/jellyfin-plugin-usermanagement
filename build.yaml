@@ -24,6 +24,5 @@ changelog:
   fixed:
   - The arrows on collapsible sections are back to their usual size
   developer:
-  - Uses JPKribs.Jellyfin.Base 2026.11.13.3
-  - Uses JPKribs.Jellyfin.Base 2026.11.17, with the dashboard pages on its base- classes
+  - Uses JPKribs.Jellyfin.Base 2026.11.17, with the dashboard pages and the signup page on its base- classes
   - The repository guides live in starthere.md, agent.md and skills/
