@@ -111,7 +111,7 @@ Check each name in the import list of `usermanagement_shared.js` against the typ
 Look at every changed page before calling it done.
 
 * **On a test server.** Build with `./build.sh`, unzip the zip from `dist/` into a test Jellyfin's `plugins` folder, restart it, and open each tab. Never use a server real users depend on, since saving a group applies it to its members.
-* **In a browser harness.** When no test server is available, serve the `Configuration` folder from a throwaway folder outside the repository. Map `configurationpage?name=<file>` to the plugin's files and `usermanagement_jpkribs_shared.*` to Base's `assets/jpkribs_shared.*`. Stub `ApiClient`, `Dashboard`, and `LibraryMenu` with sample config, load the page's HTML into the document, call the module's default export with the page element, and dispatch `viewshow` on it.
+* **In a browser harness.** When no test server is available, open the Groups or Invites tab with the screenshot kit in `tools/screenshots/`, as its [README](../tools/screenshots/README.md) describes. For another page, serve it the same way. Map `configurationpage?name=<file>` to the plugin's files and `usermanagement_jpkribs_shared.*` to Base's `assets/jpkribs_shared.*`. Stub `ApiClient`, `Dashboard`, and `LibraryMenu` with sample config, load the page's HTML into the document, call the module's default export with the page element, and dispatch `viewshow` on it.
 
 In either, check that the page loads with no console error, that each changed control saves the config it should, and that the page works at 375 px wide. Say which of the two you used in the report.
 

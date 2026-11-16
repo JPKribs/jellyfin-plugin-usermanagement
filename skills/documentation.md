@@ -157,6 +157,18 @@ Use `##` for README headings. Keep the README under 40 lines.
 * Capture with groups, invites, and pending resets in place so lists, counts, and badges are filled.
 * Hide nothing with editing. When a value is private, change the test data instead.
 
+### The Screenshot Kit
+
+`tools/screenshots/` takes the Groups and Invites shots from the plugin's own pages with generic sample data. Its [README](../tools/screenshots/README.md) lists what it needs and how to run it.
+
+```bash
+cd tools/screenshots
+python3 -I server.py &
+PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core/index.mjs node shoot.mjs
+```
+
+`node shoot.mjs "Invite List"` retakes only the named files. A new Groups or Invites subject is one more entry in the `shots` list of `shoot.mjs`. Take the other screenshots from a test server.
+
 ### Sizes
 
 | Kind | Size | How |
@@ -182,7 +194,7 @@ Save every capture as PNG. Crop out the browser frame and the Jellyfin header un
 
 ### When to Retake
 
-Retake a screenshot in the same commit as any change that alters what it shows, including a label, a tab, a layout, or the Jellyfin version in the header. A new Base version changes how every component looks, so retake every screenshot when it is raised. A screenshot that shows a tab or label the plugin no longer has is a bug.
+Retake a screenshot in the same commit as any change that alters what it shows, including a label, a tab, a layout, or the Jellyfin version in the header. A new Base version changes how every component looks, so retake every screenshot when it is raised, with the kit for those it covers. A screenshot that shows a tab or label the plugin no longer has is a bug.
 
 ## Installing a Build by Hand
 

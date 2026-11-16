@@ -1,0 +1,56 @@
+<!doctype html>
+<html dir="ltr" class="layout-desktop"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>User Management Invites</title>
+<!--stylesheets-->
+<script src="upgrade.js"></script>
+</head><body>
+<div class="skinBody"><div class="mainAnimatedPages skinBody-withFullDrawer"><div id="host"></div></div></div>
+<script>
+window.__errs=[];window.addEventListener('error',function(e){__errs.push(e.message)});window.addEventListener('unhandledrejection',function(e){__errs.push(String(e.reason&&e.reason.stack||e.reason))});var _ce=console.error;console.error=function(){__errs.push([].join.call(arguments,' '));_ce.apply(console,arguments)};
+var G = { fam: '7d1c2b3a-0000-4000-8000-000000000001', guests: '7d1c2b3a-0000-4000-8000-000000000002', far: '7d1c2b3a-0000-4000-8000-000000000003', trial: '7d1c2b3a-0000-4000-8000-000000000004' };
+var config = {
+  Groups: [
+    { Id: G.fam, Name: 'Family', MemberIds: [], Permissions: {}, Configuration: {}, Password: { Enabled: false }, ExpiresOn: null },
+    { Id: G.guests, Name: 'Guests', MemberIds: [], Permissions: {}, Configuration: {}, Password: { Enabled: false }, ExpiresOn: null },
+    { Id: G.far, Name: 'Extended Family and Close Friends Living Overseas', MemberIds: [], Permissions: {}, Configuration: {}, Password: { Enabled: false }, ExpiresOn: null },
+    { Id: G.trial, Name: 'Autumn Trial', MemberIds: [], Permissions: {}, Configuration: {}, Password: { Enabled: false }, ExpiresOn: '2026-10-31T00:00:00' }
+  ],
+  DefaultGroupId: G.guests, InviteBaseUrl: 'https://jellyfin.example.com', InviteRateLimitCount: 10, InviteRateLimitWindowMinutes: 60, MaxPinAttempts: 5
+};
+function tok(seed) { var s = ''; var x = seed; for (var i = 0; i < 48; i++) { x = (x * 1103515245 + 12345) % 2147483648; s += (x >> 16 & 15).toString(16); } return s; }
+var INVITES = [
+  { Id: 'a0000000-0000-4000-8000-000000000001', Token: tok(1), Label: 'Family and Friends', Message: 'Welcome.', Resources: [], HasPin: false, UseDefaultGroup: false, GroupId: G.fam, ExpiresAt: '2027-01-31T00:00:00', MaxUses: 10, UsedCount: 4, Enabled: true, CreatedAt: '2026-10-01T00:00:00Z' },
+  { Id: 'a0000000-0000-4000-8000-000000000002', Token: tok(2), Label: 'Book Club', Message: '', Resources: [], HasPin: true, UseDefaultGroup: true, GroupId: null, ExpiresAt: null, MaxUses: 0, UsedCount: 2, Enabled: false, CreatedAt: '2026-09-01T00:00:00Z' },
+  { Id: 'a0000000-0000-4000-8000-000000000003', Token: tok(3), Label: 'Summer Trial', Message: '', Resources: [], HasPin: false, UseDefaultGroup: false, GroupId: G.guests, ExpiresAt: '2026-06-12T00:00:00', MaxUses: 10, UsedCount: 4, Enabled: true, CreatedAt: '2026-05-01T00:00:00Z' },
+  { Id: 'a0000000-0000-4000-8000-000000000004', Token: tok(4), Label: 'Holiday Guests', Message: '', Resources: [], HasPin: false, UseDefaultGroup: false, GroupId: G.guests, ExpiresAt: null, MaxUses: 5, UsedCount: 5, Enabled: true, CreatedAt: '2026-08-01T00:00:00Z' },
+  { Id: 'a0000000-0000-4000-8000-000000000005', Token: tok(5), Label: 'Overseas Relatives', Message: '', Resources: [], HasPin: true, UseDefaultGroup: false, GroupId: G.far, ExpiresAt: '2027-03-01T00:00:00', MaxUses: 0, UsedCount: 1, Enabled: true, CreatedAt: '2026-11-01T00:00:00Z' },
+  { Id: 'a0000000-0000-4000-8000-000000000006', Token: tok(6), Label: 'Former Roommates and Their Partners From the College Apartment', Message: '', Resources: [], HasPin: false, UseDefaultGroup: false, GroupId: G.trial, ExpiresAt: null, MaxUses: 3, UsedCount: 1, Enabled: true, CreatedAt: '2026-10-01T00:00:00Z' }
+];
+if (new URLSearchParams(location.search).get('empty')) INVITES = [];
+window.__saved = [];
+window.ApiClient = {
+  serverAddress: function () { return 'https://jellyfin.example.com'; },
+  getUrl: function (p, q) { return p + (q ? '?' + new URLSearchParams(q) : ''); },
+  getCurrentUserId: function () { return 'admin'; },
+  getPluginConfiguration: function () { return Promise.resolve(JSON.parse(JSON.stringify(config))); },
+  updatePluginConfiguration: function (id, c) { window.__saved.push(JSON.parse(JSON.stringify(c))); config = JSON.parse(JSON.stringify(c)); return Promise.resolve({}); },
+  ajax: function (o) { return ApiClient.fetch(o); },
+  fetch: function (o) {
+    window.__saved.push({ req: o.url || o, type: o.type, data: o.data });
+    if (o.url === 'UserManagement/Invites' && (o.type || 'GET') === 'GET') return Promise.resolve(JSON.parse(JSON.stringify(INVITES)));
+    return Promise.resolve({});
+  },
+  getJSON: function () { return Promise.resolve({ Items: [] }); },
+  getUserImageUrl: function () { return ''; }
+};
+window.Dashboard = { alert: function (m) { console.error('Dashboard.alert used: ' + m); }, processPluginConfigurationUpdateResult: function () {}, showLoadingMsg: function () {}, hideLoadingMsg: function () {} };
+window.LibraryMenu = { setTabs: function () {} };
+fetch('configurationpage?name=usermanagement_invites').then(function (r) { return r.text(); }).then(function (html) {
+  document.getElementById('host').innerHTML = html;
+  var view = document.querySelector('[data-role=page]');
+  return import('./configurationpage?name=usermanagement_invites.js').then(function (mod) {
+    mod.default(view);
+    view.dispatchEvent(new CustomEvent('viewshow')); window.__view = view;
+  });
+}).catch(function (e) { console.error('harness', e); });
+</script>
+</body></html>

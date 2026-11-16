@@ -1,0 +1,120 @@
+<!doctype html>
+<html dir="ltr" class="layout-desktop"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>User Management Groups</title>
+<!--stylesheets-->
+<script src="upgrade.js"></script>
+</head><body>
+<div class="skinBody"><div class="mainAnimatedPages skinBody-withFullDrawer"><div id="host"></div></div></div>
+<script>
+window.__errs=[];window.addEventListener('error',function(e){__errs.push(e.message)});window.addEventListener('unhandledrejection',function(e){__errs.push(String(e.reason&&e.reason.stack||e.reason))});var _ce=console.error;console.error=function(){__errs.push([].join.call(arguments,' '));_ce.apply(console,arguments)};
+var params = new URLSearchParams(location.search);
+var L = { movies: 'a1b2c3d4e5f60718293a4b5c6d7e8f90', tv: 'b1b2c3d4e5f60718293a4b5c6d7e8f90', uhd: 'c1b2c3d4e5f60718293a4b5c6d7e8f90', kids: 'd1b2c3d4e5f60718293a4b5c6d7e8f90', anime: 'e1b2c3d4e5f60718293a4b5c6d7e8f90', music: 'f1b2c3d4e5f60718293a4b5c6d7e8f90', books: '01b2c3d4e5f60718293a4b5c6d7e8f90', home: '11b2c3d4e5f60718293a4b5c6d7e8f90' };
+var LIBS = [
+  { ItemId: L.movies, Name: 'Movies', CollectionType: 'movies', Locations: ['/media/movies'] }, { ItemId: L.tv, Name: 'TV Shows', CollectionType: 'tvshows', Locations: ['/media/tv'] },
+  { ItemId: L.uhd, Name: '4K HDR Remux Movies (Dolby Vision and HDR10+ Collection)', CollectionType: 'movies', Locations: ['/mnt/storage-array-02/media/uhd-remux-collection/movies'] }, { ItemId: L.kids, Name: 'Kids Movies and Family Favorites', CollectionType: 'movies', Locations: ['/media/kids'] },
+  { ItemId: L.anime, Name: 'Anime', CollectionType: 'tvshows', Locations: ['/media/anime'] }, { ItemId: L.music, Name: 'Music', CollectionType: 'music', Locations: ['/media/music'] },
+  { ItemId: L.books, Name: 'Audiobooks and Podcasts', CollectionType: 'books', Locations: ['/media/audiobooks'] }, { ItemId: L.home, Name: 'Home Videos', CollectionType: 'homevideos', Locations: ['/media/home-videos'] }
+];
+var CH = [
+  { Id: '21b2c3d4e5f60718293a4b5c6d7e8f90', Name: 'Live Channels: Classic Movie Marathon Around the Clock' },
+  { Id: '31b2c3d4e5f60718293a4b5c6d7e8f90', Name: 'YouTube Audio' },
+  { Id: '41b2c3d4e5f60718293a4b5c6d7e8f90', Name: 'Trailers' },
+  { Id: '51b2c3d4e5f60718293a4b5c6d7e8f90', Name: 'Live Channels: Saturday Morning Cartoons and Animated Specials' }
+];
+var DEV = [
+  { Id: 'd1', Name: 'Apple TV 4K (3rd generation) Living Room', AppName: 'Swiftfin', AppVersion: '1.3', LastUserName: 'viewer' },
+  { Id: 'd2', Name: 'Apple TV', AppName: 'Swiftfin', AppVersion: '1.3', LastUserName: 'kid' },
+  { Id: 'd3', Name: 'Apple TV', AppName: 'Infuse', AppVersion: '8.0', LastUserName: 'viewer' },
+  { Id: 'd4', Name: 'Firefox', AppName: 'Jellyfin Web', AppVersion: '10.11.2' },
+  { Id: 'd5', Name: 'Firefox', AppName: 'Jellyfin Web', AppVersion: '10.11.2', LastUserName: 'grandma' },
+  { Id: 'd6', Name: 'iPhone', AppName: 'Jellyfin Mobile', AppVersion: '2.0', LastUserName: 'admin' },
+  { Id: 'd7', Name: 'iPhone', AppName: 'Jellyfin Mobile', AppVersion: '2.0', LastUserName: 'viewer' },
+  { Id: 'd8', Name: 'Living Room Samsung QN90B Neo QLED 65 inch Television', AppName: 'Jellyfin Tizen', AppVersion: '1.0', LastUserName: 'kid' },
+  { Id: 'd9', Name: 'Kids Room Fire TV Stick', AppName: 'Jellyfin Android TV', AppVersion: '0.17', LastUserName: 'kid' }
+];
+var RATINGS = [['G',0],['PG',10],['PG-13',13],['R',17],['NC-17',18]].map(function (r) { return { Name: r[0], RatingScore: { Score: r[1], SubScore: null } }; });
+var config = {
+  Groups: [
+    { Id: 'g1', Name: 'Kids', MemberIds: ['u3', 'u4'],
+      Permissions: {
+        ManageLibraryAccess: true, EnableAllFolders: false, EnabledFolders: [L.kids, L.anime],
+        ManageChannelAccess: true, EnableAllChannels: false, EnabledChannels: ['51b2c3d4e5f60718293a4b5c6d7e8f90'],
+        ManageDeviceAccess: true, EnableAllDevices: false, EnabledDevices: ['d2', 'd8', 'd9'],
+        ManageEnableContentDeletion: true, EnableContentDeletion: false, EnableContentDeletionFromFolders: [L.home],
+        ManageEnableMediaPlayback: true, EnableMediaPlayback: true,
+        ManageEnableVideoPlaybackTranscoding: true, EnableVideoPlaybackTranscoding: true,
+        EnableAudioPlaybackTranscoding: true, EnablePlaybackRemuxing: true,
+        ManageRemoteClientBitrateLimit: true, RemoteClientBitrateLimit: 8000000,
+        ManageSyncPlayAccess: true, SyncPlayAccess: 'JoinGroups',
+        ManageEnableLiveTvAccess: true, EnableLiveTvAccess: false, EnableLiveTvManagement: false,
+        ManageEnableRemoteControlOfOtherUsers: true, EnableRemoteControlOfOtherUsers: false,
+        ManageMaxParentalRating: true, MaxParentalRating: 10, MaxParentalSubRating: null,
+        ManageBlockUnratedItems: true, BlockUnratedItems: ['Movie', 'Series'],
+        ManageAllowedTags: false, AllowedTags: [], ManageBlockedTags: true, BlockedTags: ['Horror', 'Mature'],
+        ManageAccessSchedules: true, AccessSchedules: [{ DayOfWeek: 'Weekday', StartHour: 7, EndHour: 20 }, { DayOfWeek: 'Weekend', StartHour: 8, EndHour: 21.5 }],
+        ManageEnableRemoteAccess: false, EnableRemoteAccess: true,
+        ManageEnableUserPreferenceAccess: true, EnableUserPreferenceAccess: false,
+        ManageIsHidden: true, IsHidden: true,
+        ManageMaxActiveSessions: true, MaxActiveSessions: 2,
+        LoginAttemptsBeforeLockout: 0, SyncPlayAccessExtra: undefined
+      },
+      Configuration: {
+        ManageSubtitleMode: true, SubtitleMode: 'Smart', ManageSubtitleLanguagePreference: true, SubtitleLanguagePreference: 'eng',
+        ManageAudioLanguagePreference: false, AudioLanguagePreference: '',
+        ManagePlayDefaultAudioTrack: false, PlayDefaultAudioTrack: true,
+        ManageEnableNextEpisodeAutoPlay: true, EnableNextEpisodeAutoPlay: true,
+        ManageHidePlayedInLatest: true, HidePlayedInLatest: true,
+        ManageHomeSections: true, HomeSections: ['resume', 'nextup', 'latestmedia', 'smalllibrarytiles', 'none', 'none', 'none', 'none', 'none', 'none'],
+        ManageOrderedViews: true, OrderedViews: [L.kids, L.anime],
+        ManageMyMediaExcludes: true, MyMediaExcludes: [L.anime],
+        ManageLatestItemsExcludes: false, LatestItemsExcludes: [],
+        ManageGroupedFolders: false, GroupedFolders: []
+      },
+      Password: { Enabled: true, MinLength: 6, DisallowEmpty: true, ChangeMode: 'InitialOnly', RequireUppercase: false, RequireNumber: true, RequireSymbol: false },
+      ExpiresOn: null, ExpiryAction: 'Disable', DisableInactiveUsers: true, InactiveDays: 90,
+      CleanupSessions: true, SessionCleanupRules: [{ Mode: 'Only', Clients: ['Jellyfin Web'], Days: 14 }, { Mode: 'AllExcept', Clients: ['Jellyfin Web'], Days: 60 }] },
+    { Id: 'g2', Name: 'Guests', MemberIds: ['u5'], Permissions: {}, Configuration: {}, ExpiresOn: '2026-12-31T00:00:00', ExpiryAction: 'Disable' }
+  ],
+  DefaultGroupId: 'g2', InviteBaseUrl: 'https://jellyfin.example.com', InviteRateLimitCount: 10, InviteRateLimitWindowMinutes: 60, MaxPinAttempts: 5, EnableResetCodeExtraction: true
+};
+window.__saved = [];
+window.ApiClient = {
+  serverAddress: function () { return 'https://jellyfin.example.com'; },
+  getUrl: function (p, q) { return p + (q ? '?' + new URLSearchParams(q) : ''); },
+  getCurrentUserId: function () { return 'admin'; },
+  getPluginConfiguration: function () { return Promise.resolve(JSON.parse(JSON.stringify(config))); },
+  updatePluginConfiguration: function (id, c) { window.__saved.push(JSON.parse(JSON.stringify(c))); config = JSON.parse(JSON.stringify(c)); return Promise.resolve({}); },
+  getUsers: function () { return Promise.resolve([
+    { Id: 'admin', Name: 'admin', Policy: { IsAdministrator: true } }, { Id: 'u2', Name: 'viewer', Policy: {} },
+    { Id: 'u3', Name: 'kid', Policy: {} }, { Id: 'u4', Name: 'little-sister', Policy: {} }, { Id: 'u5', Name: 'grandma', Policy: {} }]); },
+  getVirtualFolders: function () { return Promise.resolve(JSON.parse(JSON.stringify(LIBS))); },
+  getCultures: function () { return Promise.resolve([['eng','English'],['spa','Spanish'],['fre','French'],['jpn','Japanese'],['ger','German']].map(function (c) { return { ThreeLetterISOLanguageName: c[0], DisplayName: c[1] }; })); },
+  getServerConfiguration: function () { return Promise.resolve({ CastReceiverApplications: [{ Id: 'F007D354', Name: 'Stable' }, { Id: '6F511C87', Name: 'Unstable' }] }); },
+  getParentalRatings: function () { return Promise.resolve(JSON.parse(JSON.stringify(RATINGS))); },
+  getJSON: function (url) {
+    if (url.indexOf('Devices') === 0) return Promise.resolve({ Items: JSON.parse(JSON.stringify(DEV)) });
+    if (url.indexOf('Channels') === 0) return Promise.resolve({ Items: JSON.parse(JSON.stringify(CH)) });
+    if (url.indexOf('/Views') > 0) return Promise.resolve({ Items: LIBS.map(function (l) { return { Id: l.ItemId, Name: l.Name }; }).concat([{ Id: 'livetv', Name: 'Live TV' }, { Id: 'coll', Name: 'Collections' }]) });
+    if (url.indexOf('/GroupingOptions') > 0) return Promise.resolve([{ Id: L.movies, Name: 'Movies' }, { Id: L.tv, Name: 'TV Shows' }, { Id: L.kids, Name: 'Kids Movies and Family Favorites' }, { Id: L.anime, Name: 'Anime' }]);
+    return Promise.resolve({ Items: [] });
+  },
+  ajax: function (o) { return ApiClient.fetch(o); },
+  fetch: function (o) {
+    window.__saved.push({ req: o.url || o, type: o.type });
+    var body = {};
+    if (o.dataType === 'json') return Promise.resolve(body);
+    return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve(body); }, text: function () { return Promise.resolve('{}'); } });
+  },
+  getUserImageUrl: function () { return ''; }
+};
+window.Dashboard = { alert: function (m) { console.error('Dashboard.alert used: ' + m); }, processPluginConfigurationUpdateResult: function () {}, showLoadingMsg: function () {}, hideLoadingMsg: function () {} };
+window.LibraryMenu = { setTabs: function () {} };
+fetch('configurationpage?name=usermanagement_groups').then(function (r) { return r.text(); }).then(function (html) {
+  document.getElementById('host').innerHTML = html;
+  var view = document.querySelector('[data-role=page]');
+  return import('./configurationpage?name=usermanagement_groups.js').then(function (mod) {
+    mod.default(view);
+    view.dispatchEvent(new CustomEvent('viewshow')); window.__view = view;
+  });
+}).catch(function (e) { console.error('harness', e); });
+</script>
+</body></html>
