@@ -33,9 +33,9 @@ export default function (view) {
     }
 
     var TAGS = {
-        active: { label: 'Active', icon: 'schedule' },
-        expiring: { label: 'Expiring', icon: 'timer' },
-        expired: { label: 'Expired', icon: 'timer_off' }
+        active: { label: 'Active', icon: 'schedule', color: 'green' },
+        expiring: { label: 'Expiring', icon: 'timer', color: 'orange' },
+        expired: { label: 'Expired', icon: 'timer_off', color: 'red' }
     };
 
     // toItem
@@ -62,6 +62,7 @@ export default function (view) {
                 value: r.Pin,
                 secret: true,
                 allowExpose: true,
+                inline: true,
                 size: 'small',
                 label: 'Reset code for ' + name,
                 copyLabel: 'Copy Code',

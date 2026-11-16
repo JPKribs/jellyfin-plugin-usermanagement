@@ -345,34 +345,27 @@ export default function (view) {
         ]);
     }
 
-    // copyLinkButton
-    // Builds the row button that copies an invite's link and shows a check after the copy.
+    // linkField
+    // Builds the row's inline Copy Field, which shows the invite's link and copies it.
     //
     // Inputs
     // inv [object]: The invite.
     //
     // Output
-    // [HTMLElement]: The button.
-    function copyLinkButton(inv) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'base-row-btn';
-        btn.title = 'Copy Link';
-        btn.setAttribute('aria-label', 'Copy link of ' + (inv.Label || 'Untitled invite'));
-        btn.innerHTML = '<span class="material-icons" aria-hidden="true">content_copy</span>';
-        btn.addEventListener('click', function () {
-            Shared.copyToClipboard(inviteUrl(inv.Token)).then(function (ok) {
-                Shared.setStatus('inviteStatus', ok === false ? 'Could not copy the link.' : 'Link copied.', ok === false);
-                if (ok === false) return;
-                btn.classList.add('success');
-                setTimeout(function () { btn.classList.remove('success'); }, 1500);
-            });
+    // [object]: The Copy Field handle.
+    function linkField(inv) {
+        return createCopyField({
+            value: inviteUrl(inv.Token),
+            inline: true,
+            size: 'small',
+            label: 'Link of ' + (inv.Label || 'Untitled invite'),
+            copyLabel: 'Copy Link',
+            copiedText: 'Link copied.'
         });
-        return btn;
     }
 
     // toItem
-    // Builds one Record List row, with the invite's uses, group, status, and expiration, and a Copy Link button.
+    // Builds one Record List row, with the invite's uses, group, status, and expiration, and its link in a Copy Field.
     //
     // Inputs
     // inv [object]: The invite.
@@ -383,7 +376,7 @@ export default function (view) {
         var st = statusOf(inv);
         var parts = [usesText(inv), groupText(inv)];
         if (inv.HasPin) parts.push('PIN set');
-        var tags = [{ label: st.text, icon: STATUS_LOOK[st.cls].icon }];
+        var tags = [{ label: st.text, icon: STATUS_LOOK[st.cls].icon, color: STATUS_LOOK[st.cls].color }];
         if (inv.ExpiresAt) tags.push({ label: 'Expires ' + expiryDate(inv), icon: 'event' });
         return {
             id: String(inv.Id),
@@ -391,7 +384,7 @@ export default function (view) {
             title: inv.Label || 'Untitled invite',
             secondary: parts.filter(Boolean).join(' · '),
             tags: tags,
-            aside: copyLinkButton(inv)
+            aside: linkField(inv)
         };
     }
 
@@ -448,7 +441,7 @@ export default function (view) {
         if (!inv) return;
         var st = statusOf(inv);
         var body = document.createElement('div');
-        body.innerHTML = '<div class="um-setting"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
+        body.innerHTML = '<div class="inputContainer"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
             + '<div data-mount="details"></div>'
             + '<div class="inputContainer"><label class="inputLabel" for="inviteExpiryField">Invite expiration</label>'
             + '<input is="emby-input" type="date" id="inviteExpiryField" />'

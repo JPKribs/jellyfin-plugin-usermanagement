@@ -43,7 +43,7 @@ How to write, comment, and test code in this plugin. It covers C#, JavaScript, H
 | Lists and row editors | `createCheckboxList`, `createRepeater`, `createKeyValueEditor`, `createTagInput`, `createOrderedList`, `createSortableCardList` |
 | Users | `createUserSelector`, `createUserMultiSelector` |
 | Access schedules | `createAccessSchedule` |
-| A value to copy | `createCopyField` |
+| A value to copy, in a form or inline in a row | `createCopyField`, with `inline: true` inside a row |
 | The public signup page shell | `StatusPage.Render`, `PublicPage.ApplyHardeningHeaders`, `PublicPage.Favicon` |
 | Charts | `createPieChart`, `createUsageMeter`, `createBarChart` |
 | Dialogs | `openDialog`, `confirmDialog`, `promptDialog`, `openEditorDialog`, `bindDialog` |

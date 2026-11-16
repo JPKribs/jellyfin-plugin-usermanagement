@@ -412,6 +412,8 @@ export default function (view) {
                 overrideText: 'Override',
                 onChange: function (value) { if (!value.inherit) refreshManagedRow(row); }
             });
+            // A checkbox setting takes the Inherit Field's checkbox look, its box centered on the Override toggle.
+            if (row.getAttribute('data-type') === 'bool') inheritHandles[key].element.classList.add('check');
         });
     }
 
@@ -707,8 +709,7 @@ export default function (view) {
         var labelHtml = p.label
             ? '<label class="inputLabel"' + (single ? ' for="' + controlId + '"' : '') + '>' + esc(p.label) + '</label>'
             : '';
-        // Not an inputContainer, whose rule sizes every input in it full width, the Override checkbox included.
-        return '<div class="um-setting perm-row"' + attrs + '>'
+        return '<div class="inputContainer perm-row"' + attrs + '>'
             + labelHtml
             + '<div class="perm-control">' + control + '</div>'
             + (p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '')

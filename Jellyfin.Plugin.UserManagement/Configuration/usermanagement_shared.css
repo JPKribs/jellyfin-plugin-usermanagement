@@ -7,10 +7,3 @@
 .um-intro {
     margin-bottom: var(--base-gap-wide);
 }
-
-/* um-setting */
-/* One group setting that is not a checkbox: its label, its Inherit Field, and its description, spaced like a field. */
-/* Example: <div class="um-setting"><label class="inputLabel">SyncPlay access</label><div class="base-inherit">...</div></div> */
-.um-setting {
-    margin-bottom: var(--base-gap-wide);
-}

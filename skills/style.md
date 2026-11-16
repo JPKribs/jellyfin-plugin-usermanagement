@@ -475,14 +475,14 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 
 ## Hand Built Pieces
 
-Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro, and `um-setting` around a group setting that is not a checkbox.
+Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro.
 
-The signup page is the content of Base's status card, so it uses the card's own classes. Two small rules stay in its `<style>` block until the card has them.
+The signup page is the content of Base's status card, so it uses the card's own classes. Two rules in its `<style>` block still stand in for classes the card has, and wait on the owner's go ahead to change the signup page.
 
-| Hand built today | Missing from Base |
+| Hand built today | Base class that replaces it |
 | :--- | :--- |
-| `.base-note.um-error`, the red line under the signup form when a signup is refused | An error look for the status card's `base-note` |
-| `#resources`, which stacks the resource links full width | A stacked or secondary `base-btn` in the status card |
+| `.base-note.um-error`, the red line under the signup form when a signup is refused | `base-status-error` |
+| `#resources`, which stacks the resource links full width | `base-btn-stack`, with `base-btn base-btn-secondary` on each resource link |
 
 ## Checklist
 
