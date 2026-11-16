@@ -3,10 +3,6 @@
 <style>
     .base-status-card > h1:empty, .base-status-card > p:empty { display: none; margin: 0; }
 
-    /* Resource links, the status card's buttons stacked full width. */
-    #resources { display: flex; flex-direction: column; }
-    /* The status card's base-note has no error look, so a refused signup takes the card's red here. */
-    .base-note.um-error { color: #d9534f; }
 </style>
 
 <div id="loading"><div class="base-spinner" role="status" aria-label="Loading"></div></div>
@@ -42,7 +38,7 @@
 <div id="done" class="hidden">
     <h1 id="doneHeading">Your account has been created!</h1>
     <p id="doneMsg"></p>
-    <div id="resources" class="hidden"></div>
+    <div id="resources" class="hidden base-btn-stack"></div>
     <a class="base-btn" id="signinLink" href="../web/">Go to Sign In</a>
 </div>
 
@@ -100,7 +96,7 @@
             (list || []).forEach(function (res) {
                 if (!res || !res.Url || !/^https?:\/\//i.test(res.Url)) { return; }
                 var a = document.createElement('a');
-                a.className = 'base-btn';
+                a.className = 'base-btn base-btn-secondary';
                 a.href = res.Url;
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
@@ -114,11 +110,11 @@
             e.preventDefault();
             var msg = el('msg');
             msg.textContent = '';
-            msg.classList.remove('um-error');
+            msg.className = 'base-note';
 
             var password = el('password').value;
             if (password !== el('confirm').value) {
-                msg.classList.add('um-error');
+                msg.className = 'base-status-error';
                 msg.textContent = 'Passwords do not match.';
                 return;
             }
@@ -143,13 +139,13 @@
                         renderResources(res.Resources);
                         show('done');
                     } else {
-                        msg.classList.add('um-error');
+                        msg.className = 'base-status-error';
                         msg.textContent = (res && res.Message) || 'Something went wrong.';
                         el('submit').disabled = false;
                     }
                 })
                 .catch(function () {
-                    msg.classList.add('um-error');
+                    msg.className = 'base-status-error';
                     msg.textContent = 'Network error. Please try again.';
                     el('submit').disabled = false;
                 });

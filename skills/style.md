@@ -295,7 +295,7 @@ Pick one model per page and keep it.
 
 * Every Save is Base's `createSaveBar` with `fill: true`, and its button reads **Save**. Never a hand placed Save button, a `small` Save, or a Save Bar without `fill`.
 * The Save Bar is the last element of what it saves. Nothing sits beside it or below it in that section.
-* Other actions that belong with a save, such as **Reset to Defaults** or **Test**, go in one `<div class="base-button-row">` directly above the Save Bar. Each is `raised base-button secondary fill`, or `destructive fill` when it deletes or resets data. A select that belongs there stays a normal select in the row. No `small` buttons in that row.
+* Other actions that belong with a save, such as **Reset to Defaults** or **Test**, go in one `<div class="base-button-row">` directly above the Save Bar. Each is `raised base-button secondary fill`, or `destructive fill` when it deletes or resets data. A select that belongs there stays a normal select in the row. No `small` buttons in that row. Base spaces that row. Its buttons have no margin of their own, so their edges line up with the Save Bar's, the row sits one `--base-gap-narrow` above the Save Bar, and its buttons use the same font weight as Save. A plugin adds no margin, gap, or weight of its own. The Save Bar's element goes directly after the row, never inside a wrapper, since Base spaces them as siblings.
 * Wire `setDirty` from the page's change tracking, and have `onSave` return the save promise. A rejected promise shows the failed line.
 * The Save Bar shows the unsaved, saving, saved, and failed lines. Never add a separate status span or `base-unsaved` indicator for a save.
 * Guard leaving the page by passing `isDirty` to `createPage`.
@@ -477,12 +477,7 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 
 Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro.
 
-The signup page is the content of Base's status card, so it uses the card's own classes. Two rules in its `<style>` block still stand in for classes the card has, and wait on the owner's go ahead to change the signup page.
-
-| Hand built today | Base class that replaces it |
-| :--- | :--- |
-| `.base-note.um-error`, the red line under the signup form when a signup is refused | `base-status-error` |
-| `#resources`, which stacks the resource links full width | `base-btn-stack`, with `base-btn base-btn-secondary` on each resource link |
+The signup page is the content of Base's status card and uses only the card's own classes: `base-status-error` for a refused signup, and `base-btn-stack` with `base-btn base-btn-secondary` for the resource links.
 
 ## Checklist
 

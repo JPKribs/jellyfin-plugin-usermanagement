@@ -17,6 +17,7 @@ artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
   changed:
+  - A refused signup shows on the signup page's red error line, and the resource links stack full width under it
   - The Groups, Invites and Resets tabs use the Base buttons, count cards, badges and sections
   - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List
   - Invite resources are rows of a title and a URL, edited in place, and each invite link sits in a copy field
@@ -32,5 +33,5 @@ changelog:
   fixed:
   - The arrows on collapsible sections are back to their usual size
   developer:
-  - Uses JPKribs.Jellyfin.Base 2026.11.18, with the dashboard pages and the signup page on its base- classes, and its Record List tag colors, inline Copy Field and checkbox safe inputContainer in place of local code
+  - Uses JPKribs.Jellyfin.Base 2026.11.19, with the dashboard pages and the signup page on its base- classes, and its Record List tag colors, inline Copy Field and checkbox safe inputContainer in place of local code
   - The repository guides live in starthere.md, agent.md and skills/
