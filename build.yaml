@@ -17,6 +17,7 @@ artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
   changed:
+  - The invite editor shows the full QR code of the invite link beside the link and its buttons
   - A refused signup shows on the signup page's red error line, and the resource links stack full width under it
   - The Groups, Invites and Resets tabs use the Base buttons, count cards, badges and sections
   - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List

@@ -24,7 +24,7 @@ Each invite can also carry:
 
 ## Managing Invites
 
-Every invite is a card with its name and status, then its group, uses, expiration and PIN, then its link. The status is **Active**, **Locked**, **Expired**, **Group Expired** or **Used Up**. The copy button beside the link copies it, and the QR button opens a QR code of the link, with buttons that copy the image or download it. Select a card to see its link and QR code, change its expiration, lock or unlock it, duplicate it, or delete it.
+Every invite is a card with its name and status, then its group, uses, expiration and PIN, then its link. The status is **Active**, **Locked**, **Expired**, **Group Expired** or **Used Up**. The copy button beside the link copies it, and the QR button opens a QR code of the link, with buttons that copy the image or download it. Select a card to open its editor, which shows the full QR code beside the link, and to change its expiration, lock or unlock it, duplicate it, or delete it.
 
 | Invite List | Invite List on a phone |
 | :---: | :---: |

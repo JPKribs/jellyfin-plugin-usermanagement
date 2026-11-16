@@ -496,7 +496,7 @@ Every invite on the **Invites** tab is one card, built the same way.
 * The `base-panel-header` is an `um-invite-head`, with the name in `um-invite-title` and the status badge in `um-invite-status`. The badge comes from `shared.statusBadge`, Active green, Locked purple, Expired and Group Expired orange, and Used Up gray.
 * The `base-panel-body` is an `um-invite-body`, holding a `createDefinitionList` of **Group**, **Uses**, **Expires** or **Expired**, and **PIN** in that order on every card, then the link.
 * Uses read "4 of 10 uses", or "4 uses, no limit". The date is the reader's locale, such as "Jun 12, 2026", or "Never". A PIN reads **Set**, or the list's dimmed **None**.
-* The link is always `createQrCode` with `layout: 'inline'`, on the card and beside the link in the editor dialog. Never a bare Copy Field or a hand built QR button.
+* The link is always `createQrCode`: `layout: 'inline'` on the card, and `layout: 'full'` in the editor dialog, so the whole code shows beside the link. Never a bare Copy Field or a hand built QR button.
 
 ## Hand Built Pieces
 

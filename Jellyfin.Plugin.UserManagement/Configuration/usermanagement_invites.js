@@ -204,16 +204,18 @@ export default function (view) {
     }
 
     // linkQr
-    // Builds an invite's inline QR Code, its link in a Copy Field with a button that opens the full code.
+    // Builds an invite's QR Code: inline on a card, its link in a Copy Field with a button that opens the code, or full in
+    // the editor, the whole code drawn beside its link and buttons.
     //
     // Inputs
     // inv [object]: The invite.
+    // layout [string]: 'inline' or 'full'.
     //
     // Output
     // [object]: The QR Code handle.
-    function linkQr(inv) {
+    function linkQr(inv, layout) {
         return createQrCode({
-            layout: 'inline',
+            layout: layout,
             value: inviteUrl(inv.Token),
             label: 'Invite link of ' + (inv.Label || 'Untitled invite'),
             fileName: 'invite-qr-code.png'
@@ -444,7 +446,7 @@ export default function (view) {
         el.querySelector('.um-invite-title').textContent = inv.Label || 'Untitled invite';
         el.querySelector('.um-invite-status').appendChild(statusBadge(inv));
         var details = createDefinitionList({ items: card.details });
-        var qr = linkQr(inv);
+        var qr = linkQr(inv, 'inline');
         var body = el.querySelector('.um-invite-body');
         body.appendChild(details.element);
         body.appendChild(qr.element);
@@ -526,7 +528,7 @@ export default function (view) {
             + '<span class="material-icons" aria-hidden="true">content_copy</span><span>Duplicate</span></button>'
             + '<div><span class="base-status-text" id="inviteDialogStatus" role="status"></span></div>';
 
-        var link = linkQr(inv);
+        var link = linkQr(inv, 'full');
         var linkInput = link.element.querySelector('input');
         if (linkInput) linkInput.id = 'inviteLinkField';
         body.querySelector('[data-mount="link"]').appendChild(link.element);
