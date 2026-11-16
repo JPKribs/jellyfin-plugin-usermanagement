@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "12.4.2.6"
+version: "12.4.2.7"
 targetAbi: "12.4.0.0"
 framework: "net10.0"
 overview: "Group policy templates, display and playback preferences, account lifecycle, password hygiene, and easier user onboarding for Jellyfin."
@@ -17,12 +17,12 @@ artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
   changed:
-  - Duplicate sits with Delete, Cancel, and Save at the bottom of the invite editor
-  - The invite editor shows the full QR code of the invite link beside the link and its buttons
+  - Each invite is a card with its name and status badge, its group, uses, expiration and PIN, and its full link with a QR code that opens to copy or download
+  - Selecting an invite card opens its editor, with the full QR code beside its link, its expiration and state, and Delete, Duplicate, Cancel and Save at the bottom
   - A refused signup shows on the signup page's red error line, and the resource links stack full width under it
   - The Groups, Invites and Resets tabs use the Base buttons, count cards, badges and sections
   - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List
-  - Invite resources are rows of a title and a URL, edited in place, and each invite link sits in a copy field
+  - Invite resources are rows of a title and a URL, edited in place
   - Group names are entered in a prompt, and deleting a group or an invite asks first in a dialog
   - Each group setting is its own bordered row, with Member and Group pills beside its name, and its controls show only while the group sets it
   - Group sections read like Jellyfin's user pages, and each section header counts the settings the group sets
@@ -30,16 +30,13 @@ changelog:
   - Group channel access can pick single channels
   - Group settings are split into Access and Features, Preferences and Account Rules, with Playback and Display apart and the old Other settings under Profile
   - Session cleanup rules are Base Repeater cards with a client picker
-  - Each invite is a card with its name and status badge, its group, uses, expiration and PIN, and its full link with a QR code that opens to copy or download, and selecting a card opens its link, QR code, expiration and state in a dialog
   - Pending resets are a Base Record List, and each code sits in a masked copy field with an eye that shows it
   - Invite and reset state tags are colored by state, such as green for Active and orange for Expired
   - The count cards are compact, and the Invites and Pending Resets lists sit in fixed sections
   - The signup page shows resource links as the status card's buttons
   - Every Save is the same full width Save Bar, with any other actions in a full width row above it
   - Device Access lists each device on its own row with its app and last user, in a list you can search
-  fixed:
-  - The arrows on collapsible sections are back to their usual size
-  - The Clients list in a session cleanup rule opens under its field
   developer:
-  - Uses JPKribs.Jellyfin.Base 2026.11.19, with the dashboard pages and the signup page on its base- classes, and its Record List tag colors, inline Copy Field and checkbox safe inputContainer in place of local code
+  - Uses JPKribs.Jellyfin.Base 2026.11.20, with the dashboard pages and the signup page on its base- classes, and its Record List tag colors, wrapped inline Copy Field, checkbox safe inputContainer and Editor Dialog footer actions in place of local code
   - The repository guides live in starthere.md, agent.md and skills/
+  - tools/screenshots takes the Groups and Invites docs screenshots from the plugin's own pages with generic sample data
