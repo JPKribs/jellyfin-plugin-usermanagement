@@ -342,7 +342,7 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | A read only value with a copy button, such as an invite link | `createCopyField` |
 | Day and time windows, such as an access schedule | `createAccessSchedule` |
 | A setting that inherits until overridden | `createInheritField` |
-| A group setting row, with its Member's own and Group sets this pills | See [Group Setting Rows](#group-setting-rows) |
+| A group setting row, with its Member and Group pills | See [Group Setting Rows](#group-setting-rows) |
 
 * Use `emby-select`, never `base-selector-dropdown`, for a field. `base-selector-dropdown` is only for the record picker.
 * Every input has a `<label for>`.
@@ -480,11 +480,11 @@ Every setting on the **Groups** tab is one row, built the same way in every sect
 
 * A section's rows are a Base `createList` with `layout: 'rows'`, so each row is bordered and a divider sits between rows. Each row is an `um-setting`.
 * The row starts with its lead, the setting's emby checkbox in an `um-setting-check`, or its name in an `um-setting-label` when the setting has other controls.
-* `createInheritField` wraps the lead, with the default pills, `inheritText: "Member's own"` and `overrideText: 'Group sets this'`. Never the checkbox toggle, and never the word Override.
-* The controls follow in an `um-setting-body`, shown only while the row is on **Group sets this**. A row led by an "all" checkbox shows its Checkbox List only while that checkbox is off, as Jellyfin does.
+* `createInheritField` wraps the lead, with the default pills, `inheritText: "Member"` and `overrideText: 'Group'`. Never the checkbox toggle, and never the word Override.
+* The controls follow in an `um-setting-body`, shown only while the row is on **Group**. A row led by an "all" checkbox shows its Checkbox List only while that checkbox is off, as Jellyfin does.
 * The `fieldDescription` comes last and stays visible either way.
 * A list of libraries, channels, or devices is a `createCheckboxList` whose rows have a label and a sublabel.
-* The section header counts its rows on **Group sets this** with `setCollapsibleBadge`, such as **2 Set by Group**. An **Account Rules** section shows **On** while its first checkbox is on, and its other rows show only then.
+* The section header counts its rows on **Group** with `setCollapsibleBadge`, such as **2 Set by Group**. An **Account Rules** section shows **On** while its first checkbox is on, and its other rows show only then.
 
 ## Hand Built Pieces
 

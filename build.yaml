@@ -22,7 +22,7 @@ changelog:
   - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List
   - Invite resources are rows of a title and a URL, edited in place, and each invite link sits in a copy field
   - Group names are entered in a prompt, and deleting a group or an invite asks first in a dialog
-  - Each group setting is its own bordered row, with Member's own and Group sets this pills beside its name, and its controls show only while the group sets it
+  - Each group setting is its own bordered row, with Member and Group pills beside its name, and its controls show only while the group sets it
   - Group sections read like Jellyfin's user pages, and each section header counts the settings the group sets
   - Library, channel and device access and media deletion show a searchable list under their "all" checkbox only while it is off, and the home screen library rows are searchable lists too
   - Group channel access can pick single channels

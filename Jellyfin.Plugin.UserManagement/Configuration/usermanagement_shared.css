@@ -29,7 +29,7 @@
 }
 
 /* um-setting-body */
-/* The controls under a setting row's lead, which hide while the row is Member's own. */
+/* The controls under a setting row's lead, which hide while the row is Member. */
 /* Example: <div class="um-setting-body"><div class="selectContainer">...</div></div> */
 .um-setting-body {
     display: flex;

@@ -19,7 +19,7 @@ namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
 /// Applies <see cref="GroupDefinition"/> templates onto member <see cref="UserPolicy"/> objects,
-/// honoring the Group sets this / Member's own model: only permissions the group manages are written; the rest
+/// honoring the Group / Member model: only permissions the group manages are written; the rest
 /// are left exactly as the user has them.
 /// </summary>
 public class GroupService
@@ -120,7 +120,7 @@ public class GroupService
     }
 
     /// <summary>
-    /// Applies a group's managed (Group sets this) permissions to a single user. Administrators are always skipped.
+    /// Applies a group's managed (Group) permissions to a single user. Administrators are always skipped.
     /// </summary>
     /// <returns><c>true</c> if the policy was applied; <c>false</c> if the user was skipped.</returns>
     public async Task<bool> ApplyGroupAsync(User user, GroupDefinition group)

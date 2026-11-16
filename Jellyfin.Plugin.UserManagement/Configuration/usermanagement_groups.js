@@ -20,8 +20,8 @@ import {
 } from './configurationpage?name=usermanagement_shared.js';
 
 // Groups page
-// Builds the Groups tab. Each setting row is an Inherit Field whose pills read Member's own and Group sets this, and only
-// settings on Group sets this reach members.
+// Builds the Groups tab. Each setting row is an Inherit Field whose pills read Member and Group, and only
+// settings on Group reach members.
 //
 // Inputs
 // view [HTMLElement]: The page the dashboard passes to the module.
@@ -59,9 +59,9 @@ export default function (view) {
         ['Movie', 'Movies'], ['Music', 'Music'], ['Trailer', 'Trailers'], ['Series', 'Shows']
     ];
 
-    // The two choices of every setting row. Only a setting on Group sets this reaches members.
-    var MEMBER_OWN = 'Member\'s own';
-    var GROUP_SETS = 'Group sets this';
+    // The two choices of every setting row. Only a setting on Group reaches members.
+    var MEMBER_OWN = 'Member';
+    var GROUP_SETS = 'Group';
 
     // Rows led by an "all" checkbox, whose list shows under it only while it is off, as Jellyfin's access page does.
     var ALL_TYPES = { library: true, channels: true, devices: true, deletion: true };
@@ -466,9 +466,9 @@ export default function (view) {
     }
 
     // mountInheritFields
-    // Puts each row's lead, its checkbox or its label, in an Inherit Field whose pills read Member's own and
-    // Group sets this. The row's controls keep the group's own values, so the field handle reads and writes nothing.
-    // While the row is Member's own, the Inherit Field dims the lead and disables its checkbox, and the controls
+    // Puts each row's lead, its checkbox or its label, in an Inherit Field whose pills read Member and
+    // Group. The row's controls keep the group's own values, so the field handle reads and writes nothing.
+    // While the row is Member, the Inherit Field dims the lead and disables its checkbox, and the controls
     // under the lead hide.
     function mountInheritFields() {
         view.querySelectorAll('.perm-row').forEach(function (row) {
@@ -490,7 +490,7 @@ export default function (view) {
     }
 
     // isManaged
-    // Says whether a setting is on Group sets this.
+    // Says whether a setting is on Group.
     //
     // Inputs
     // row [HTMLElement]: The setting row.
@@ -516,7 +516,7 @@ export default function (view) {
     }
 
     // setManaged
-    // Sets whether a setting is on Group sets this, and the group's own value of a checkbox lead.
+    // Sets whether a setting is on Group, and the group's own value of a checkbox lead.
     //
     // Inputs
     // row [HTMLElement]: The setting row.
@@ -525,7 +525,7 @@ export default function (view) {
     function setManaged(row, managed, value) {
         var handle = inheritHandles[row.getAttribute('data-perm')];
         if (!handle) return;
-        // The Inherit Field disables the lead's checkbox while inheriting, so it turns Group sets this on first and
+        // The Inherit Field disables the lead's checkbox while inheriting, so it turns Group on first and
         // the checkbox takes its value while enabled.
         handle.setValue({ inherit: false });
         var input = row.querySelector('.perm-lead-input');
@@ -535,7 +535,7 @@ export default function (view) {
     }
 
     // refreshRow
-    // Shows a row's controls only while it is Group sets this, and an access list only while its "all" checkbox is off.
+    // Shows a row's controls only while it is Group, and an access list only while its "all" checkbox is off.
     //
     // Inputs
     // row [HTMLElement]: The setting row.
@@ -548,7 +548,7 @@ export default function (view) {
     }
 
     // refreshBadges
-    // Counts the rows on Group sets this in each section, and shows the count in the section header.
+    // Counts the rows on Group in each section, and shows the count in the section header.
     function refreshBadges() {
         view.querySelectorAll('#permissionSections .base-collapsible-section, #configSections .base-collapsible-section').forEach(function (section) {
             var count = 0;
@@ -785,7 +785,7 @@ export default function (view) {
     }
 
     // renderPermBody
-    // Builds the controls under a row's lead, which show while the row is Group sets this.
+    // Builds the controls under a row's lead, which show while the row is Group.
     //
     // Inputs
     // p [object]: The setting from PERMISSIONS or CONFIG.
@@ -847,7 +847,7 @@ export default function (view) {
 
     // renderPermRow
     // Builds one setting row. The lead is the setting's checkbox, or its label when the setting has other controls,
-    // and the Inherit Field puts the Member's own and Group sets this pills beside it. The controls follow, then the
+    // and the Inherit Field puts the Member and Group pills beside it. The controls follow, then the
     // description.
     //
     // Inputs

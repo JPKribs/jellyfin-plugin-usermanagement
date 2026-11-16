@@ -7,7 +7,7 @@ using Xunit;
 namespace Jellyfin.Plugin.UserManagement.Tests;
 
 /// <summary>
-/// Tests for the Group sets this / Member's own behavior of <see cref="GroupPermissionsExtensions.ApplyTo"/>.
+/// Tests for the Group / Member behavior of <see cref="GroupPermissionsExtensions.ApplyTo"/>.
 /// </summary>
 public class GroupMergeTests
 {
