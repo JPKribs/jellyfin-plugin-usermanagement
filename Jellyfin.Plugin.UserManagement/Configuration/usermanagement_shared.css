@@ -88,14 +88,6 @@
     margin-bottom: 0 !important;
 }
 
-/* Stopgap for a Base defect. A card Repeater carries a bare "card" class, and Jellyfin's .card rule gives it */
-/* contain and a pointer cursor, which traps the Clients Chip Select's fixed list inside the card, off screen. */
-/* Delete this rule when Base names the class base-repeater-card. */
-.pluginConfigurationPage .base-repeater.card {
-    contain: none;
-    cursor: auto;
-}
-
 /* um-setting-check */
 /* The checkbox that leads a setting row, a field tall so it lines up with the pills beside it. */
 /* Example: <div class="um-setting-check"><label class="emby-checkbox-label">...</label></div> */

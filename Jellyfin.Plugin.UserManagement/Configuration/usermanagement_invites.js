@@ -545,7 +545,7 @@ export default function (view) {
         expiryInput.value = expiryDate(inv);
         enabledInput.checked = !!inv.Enabled;
 
-        var dialog = openEditorDialog({
+        openEditorDialog({
             title: inv.Label || 'Untitled invite',
             body: body,
             className: 'pluginConfigurationPage',
@@ -556,22 +556,15 @@ export default function (view) {
             serialize: function () { return expiryInput.value + '|' + enabledInput.checked; },
             onDone: function () { return saveInvite(inv, expiryInput.value, enabledInput.checked); },
             onRemove: function (close) { deleteInvite(inv.Id).then(function (ok) { if (ok) close(); }); },
+            actions: [{
+                text: 'Duplicate',
+                onClick: function (handle) {
+                    handle.markClean();
+                    handle.close();
+                    duplicateInvite(inv.Id);
+                }
+            }],
             onClose: function () { link.destroy(); details.destroy(); }
-        });
-
-        // Base's editor dialog has no option for an extra footer action, so Duplicate joins its button row by hand.
-        var footer = dialog.element.querySelector('.base-modal-button-row');
-        var duplicate = document.createElement('button');
-        duplicate.type = 'button';
-        duplicate.setAttribute('is', 'emby-button');
-        duplicate.className = 'raised base-modal-button base-button secondary';
-        duplicate.textContent = 'Duplicate';
-        var cancel = [].find.call(footer.querySelectorAll('button'), function (b) { return b.textContent.trim() === 'Cancel'; });
-        footer.insertBefore(duplicate, cancel || null);
-        duplicate.addEventListener('click', function () {
-            dialog.markClean();
-            dialog.close();
-            duplicateInvite(inv.Id);
         });
     }
 
