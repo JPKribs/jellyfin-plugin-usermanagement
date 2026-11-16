@@ -48,7 +48,7 @@ How to write, comment, and test code in this plugin. It covers C#, JavaScript, H
 | Charts | `createPieChart`, `createUsageMeter`, `createBarChart` |
 | Dialogs | `openDialog`, `confirmDialog`, `promptDialog`, `openEditorDialog`, `bindDialog` |
 | Count cards and badges | `shared.renderCards`, `shared.statusBadge`, `shared.badge` |
-| Unsaved changes | `shared.createChangeTracker` |
+| Saving | `createSaveBar({ fill: true })`, with `setDirty` from `shared.createChangeTracker` |
 
 ### Move Code Into Base
 

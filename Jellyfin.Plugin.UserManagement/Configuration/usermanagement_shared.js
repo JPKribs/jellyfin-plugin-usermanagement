@@ -18,9 +18,11 @@ import {
     createInheritField,
     createRepeater,
     createChipSelect,
+    createCheckboxList,
     openEditorDialog,
     confirmDialog,
-    promptDialog
+    promptDialog,
+    createSaveBar
 } from './configurationpage?name=usermanagement_jpkribs_shared.js';
 
 // Re-exports
@@ -38,9 +40,11 @@ export {
     createInheritField,
     createRepeater,
     createChipSelect,
+    createCheckboxList,
     openEditorDialog,
     confirmDialog,
-    promptDialog
+    promptDialog,
+    createSaveBar
 };
 
 var PLUGIN_ID = '670167bd-e7f8-4549-98e2-5ab2e11bc89f';

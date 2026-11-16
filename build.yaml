@@ -26,6 +26,8 @@ changelog:
   - Pending resets are a Base Record List, and each code sits in a masked copy field with an eye that shows it
   - The count cards are compact, and the Invites and Pending Resets lists sit in fixed sections
   - The signup page shows resource links as the status card's buttons
+  - Every Save is the same full width Save Bar, with any other actions in a full width row above it
+  - Device Access lists each device on its own row with its app and last user, in a list you can search
   fixed:
   - The arrows on collapsible sections are back to their usual size
   developer:

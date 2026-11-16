@@ -8,7 +8,8 @@ import {
     createRecordList,
     createDefinitionList,
     openEditorDialog,
-    confirmDialog
+    confirmDialog,
+    createSaveBar
 } from './configurationpage?name=usermanagement_shared.js';
 
 // Invites page
@@ -27,6 +28,7 @@ export default function (view) {
     var _groups = [];
     var _base = '';
     var _defaultGroupId = '';
+    var _urlSaveBar = null;
 
     // inviteUrl
     // Builds an invite's public link from the Server URL, or the server's own address when it is blank.
@@ -198,6 +200,7 @@ export default function (view) {
             if (rcEl) rcEl.value = (results[1] && results[1].InviteRateLimitCount) || 0;
             var rwEl = Shared.getEl('txtRateWindow');
             if (rwEl) rwEl.value = (results[1] && results[1].InviteRateLimitWindowMinutes) || 0;
+            if (_urlSaveBar) _urlSaveBar.setDirty(false);
             updateHttpsWarning();
             var pinHelp = Shared.getEl('pinHelp');
             if (pinHelp) {
@@ -445,7 +448,7 @@ export default function (view) {
         if (!inv) return;
         var st = statusOf(inv);
         var body = document.createElement('div');
-        body.innerHTML = '<div class="inputContainer"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
+        body.innerHTML = '<div class="um-setting"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
             + '<div data-mount="details"></div>'
             + '<div class="inputContainer"><label class="inputLabel" for="inviteExpiryField">Invite expiration</label>'
             + '<input is="emby-input" type="date" id="inviteExpiryField" />'
@@ -689,8 +692,11 @@ export default function (view) {
 
     // saveBaseUrl
     // Saves the Server URL and the rate limit.
+    //
+    // Output
+    // [Promise]: Settles when the save is done, and rejects when it fails.
     function saveBaseUrl() {
-        Shared.getConfig().then(function (config) {
+        return Shared.getConfig().then(function (config) {
             config.InviteBaseUrl = ((Shared.getEl('txtInviteBaseUrl') || {}).value || '').trim().replace(/\/+$/, '');
             var rc = parseInt((Shared.getEl('txtRateCount') || {}).value, 10);
             var rw = parseInt((Shared.getEl('txtRateWindow') || {}).value, 10);
@@ -698,12 +704,11 @@ export default function (view) {
             config.InviteRateLimitWindowMinutes = isNaN(rw) || rw < 0 ? 0 : rw;
             return Shared.saveConfig(config).then(function () {
                 _base = config.InviteBaseUrl;
-                Shared.setStatus('inviteUrlStatus', 'Invite settings saved.', false);
                 updateHttpsWarning();
                 renderInvites();
             });
         }).catch(function () {
-            Shared.setStatus('inviteUrlStatus', 'Could not save the invite settings.', true);
+            throw new Error('Could not save the invite settings.');
         });
     }
 
@@ -742,8 +747,17 @@ export default function (view) {
         ensureResourceEditor();
         var btn = Shared.getEl('btnCreateInvite');
         if (btn) btn.addEventListener('click', createInvite);
-        var burl = Shared.getEl('btnSaveInviteUrl');
-        if (burl) burl.addEventListener('click', saveBaseUrl);
+        _urlSaveBar = createSaveBar({
+            fill: true,
+            savedText: 'Invite settings saved.',
+            onSave: saveBaseUrl
+        });
+        Shared.getEl('inviteUrlSaveBar').appendChild(_urlSaveBar.element);
+        var access = Shared.getEl('manageAccessContent');
+        if (access) {
+            access.addEventListener('input', function () { _urlSaveBar.setDirty(true); });
+            access.addEventListener('change', function () { _urlSaveBar.setDirty(true); });
+        }
         var urlInput = Shared.getEl('txtInviteBaseUrl');
         if (urlInput) urlInput.addEventListener('input', updateHttpsWarning);
         var selGroup = Shared.getEl('selGroup');

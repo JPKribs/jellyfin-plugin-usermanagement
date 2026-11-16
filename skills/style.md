@@ -114,7 +114,7 @@ A placeholder shows an example of a valid value. It is never the only place an i
 
 * A verb, or a verb and a noun. **Save**, **Add Rule**, **Create Invite**.
 * Name the object when the page has more than one of that action. **Add Schedule** and **Add Rule** sit on the same page.
-* A primary Save is **Save**, even when a page has more than one, as long as each sits in its own section.
+* Every Save reads **Save**, even when a page has more than one. Never **Save Settings** or another noun.
 * An icon only button carries a `title` of one to three words, such as `Duplicate`, `Delete`, or `Show`. Never a sentence.
 * A button that runs for a while shows progress in place. See [Progress](#progress).
 
@@ -286,16 +286,19 @@ Every config page uses Jellyfin's page shell.
 
 Pick one model per page and keep it.
 
-| Model | Use it when | Save button |
+| Model | Use it when | Save |
 | :--- | :--- | :--- |
-| One Save per page | Settings depend on each other, as on **Groups** | `raised base-button primary fill` at the bottom |
-| One Save per section | Sections are independent, as on **Invites** | `raised base-button primary small` in `base-collapsible-actions flush` |
+| One Save per page | Settings depend on each other, as on **Groups** | One Save Bar at the bottom of the page |
+| One Save per section | Sections are independent, as on **Invites** | One Save Bar at the bottom of each section's content |
 | Save on change | One switch, as on **Resets** | None. The checkbox saves itself |
 | Editor dialog | Each record is edited on its own | **Done** in `openEditorDialog` |
 
-* Track unsaved changes with `shared.createChangeTracker` and the `base-unsaved` indicator, which reads "Unsaved changes".
+* Every Save is Base's `createSaveBar` with `fill: true`, and its button reads **Save**. Never a hand placed Save button, a `small` Save, or a Save Bar without `fill`.
+* The Save Bar is the last element of what it saves. Nothing sits beside it or below it in that section.
+* Other actions that belong with a save, such as **Reset to Defaults** or **Test**, go in one `<div class="base-button-row">` directly above the Save Bar. Each is `raised base-button secondary fill`, or `destructive fill` when it deletes or resets data. A select that belongs there stays a normal select in the row. No `small` buttons in that row.
+* Wire `setDirty` from the page's change tracking, and have `onSave` return the save promise. A rejected promise shows the failed line.
+* The Save Bar shows the unsaved, saving, saved, and failed lines. Never add a separate status span or `base-unsaved` indicator for a save.
 * Guard leaving the page by passing `isDirty` to `createPage`.
-* Report the result with `shared.setStatus` next to the button.
 * Read the latest config with `shared.getConfig` before a save, and change only the fields the page owns.
 
 ## Components
@@ -324,8 +327,8 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | On or off | `checkboxContainer checkboxContainer-withDescription` with `emby-checkbox` and `fieldDescription checkboxFieldDescription` |
 | A mode that needs a sentence per option | `createChoiceGroup` with `base-choice` cards |
 | Several on or off options in a row | `base-toggle-group` with `base-toggle` pills |
-| Many checkboxes | `base-check-grid` |
-| Many items from a long or searchable list | `createCheckboxList`, with `renderRow` giving each row a `label`, a `sublabel`, and an `image` loader |
+| A few checkboxes with short, distinct labels | `base-check-grid` |
+| Many items from a long or searchable list, or items whose names repeat, such as devices | `createCheckboxList`, with `renderRow` giving each row a `label` and a `sublabel` that tells repeats apart |
 | Rows of several fields that are added and removed | `createRepeater` |
 | Pairs of a name and a value | `createKeyValueEditor` |
 | A list of plain text values | `createStringList` or `createTagInput` |
@@ -350,7 +353,8 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | Primary action | `raised base-button primary` |
 | Destructive action | `raised base-button destructive` |
 | Secondary action | `raised base-button secondary` |
-| Compact action in a section | add `small` |
+| Actions that go with a Save | `raised base-button secondary fill` in one `base-button-row` above the Save Bar |
+| Save | `createSaveBar({ fill: true })`. Never a hand placed button |
 | Icon and label in a toolbar | `raised base-button` holding a `material-icons` span and a label |
 | Icon only in a row | `base-row-btn`, with `.dirty` for unsaved and `.success` after saving |
 

@@ -11,8 +11,10 @@ import {
     createInheritField,
     createRepeater,
     createChipSelect,
+    createCheckboxList,
     confirmDialog,
-    promptDialog
+    promptDialog,
+    createSaveBar
 } from './configurationpage?name=usermanagement_shared.js';
 
 // Groups page
@@ -27,6 +29,7 @@ export default function (view) {
     var memberSel = null;
     var memberNotes = {};
     var tracker = null;
+    var saveBar = null;
     var rowHandles = {};
     var inheritHandles = {};
     var sessionRules = null;
@@ -310,9 +313,10 @@ export default function (view) {
             ensureMemberSelector();
             populateDropdown();
             if (tracker) tracker.markClean();
+            if (saveBar) saveBar.setDirty(false);
             renderUserCards();
         }).catch(function () {
-            Shared.setStatus('groupStatus', 'Could not load the groups. Reload the page.', true);
+            if (saveBar) saveBar.setState('failed', 'Could not load the groups. Reload the page.');
         });
     }
 
@@ -466,7 +470,7 @@ export default function (view) {
     }
 
     // mountRowComponents
-    // Mounts a Tag Input in each tags row, an Access Schedule in the schedule row, and an Ordered List in the library order row.
+    // Mounts a Tag Input in each tags row, an Access Schedule in the schedule row, a Checkbox List in the device row, and an Ordered List in the library order row.
     function mountRowComponents() {
         view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
@@ -477,6 +481,16 @@ export default function (view) {
                 handle = createTagInput({ placeholder: 'Kids', onChange: checkDirty });
             } else if (type === 'schedule') {
                 handle = createAccessSchedule({ addText: 'Add Schedule', onChange: checkDirty });
+            } else if (type === 'devices') {
+                handle = createCheckboxList({
+                    items: allDevices,
+                    idKey: 'Id',
+                    searchKeys: ['CustomName', 'Name', 'AppName', 'LastUserName', 'Id'],
+                    placeholder: 'Search devices',
+                    emptyMessage: 'No devices found.',
+                    renderRow: deviceRow,
+                    onChange: checkDirty
+                });
             } else if (type === 'order') {
                 handle = createOrderedList({
                     render: function (v) { return Shared.escapeHtml(v.name); },
@@ -489,6 +503,24 @@ export default function (view) {
                 rowHandles[key] = handle;
             }
         });
+    }
+
+    // deviceRow
+    // Draws one device in the device list. The sublabel names the app and the last user, or the device id when no one
+    // has signed in, so two devices with the same name can be told apart.
+    //
+    // Inputs
+    // d [object]: The device from the Devices API.
+    //
+    // Output
+    // [object]: The row's { label, sublabel }.
+    function deviceRow(d) {
+        var app = [d.AppName, d.AppVersion].filter(Boolean).join(' ');
+        var who = d.LastUserName ? 'Last used by ' + d.LastUserName : 'ID ' + d.Id;
+        return {
+            label: d.CustomName || d.Name || d.AppName || d.Id,
+            sublabel: [app, who].filter(Boolean).join(' · ')
+        };
     }
 
     // checkGrid
@@ -606,8 +638,7 @@ export default function (view) {
         } else if (p.type === 'devices') {
             control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-alldevices" />'
                 + '<span class="checkboxLabel">Enable access from all devices</span></label>'
-                + checkGrid('perm-devices', 'perm-device', allDevices,
-                    function (d) { return d.Id; }, function (d) { return d.Name || d.AppName || d.Id; });
+                + '<div class="perm-mount perm-devices"></div>';
         } else if (p.type === 'rating') {
             var ropts = '<option value=""></option>';
             parentalRatings.forEach(function (r, i) {
@@ -845,7 +876,7 @@ export default function (view) {
     // Shows or hides the unsaved indicator.
     function checkDirty() {
         // A component that reports its own setValue must not read a half loaded group back.
-        if (tracker && !loading) tracker.check();
+        if (tracker && !loading && saveBar) saveBar.setDirty(tracker.check());
     }
 
     // persistGroups
@@ -1030,8 +1061,7 @@ export default function (view) {
             } else if (type === 'devices') {
                 manage.checked = perms.ManageDeviceAccess === true;
                 row.querySelector('.perm-alldevices').checked = perms.EnableAllDevices !== false;
-                var devs = perms.EnabledDevices || [];
-                row.querySelectorAll('.perm-device').forEach(function (cb) { cb.checked = devs.indexOf(cb.value) !== -1; });
+                if (rowHandles[key]) rowHandles[key].setValue(perms.EnabledDevices || []);
             } else if (type === 'rating') {
                 manage.checked = perms.ManageMaxParentalRating === true;
                 var sel = row.querySelector('.perm-value');
@@ -1433,9 +1463,7 @@ export default function (view) {
             } else if (type === 'devices') {
                 perms.ManageDeviceAccess = managed;
                 perms.EnableAllDevices = row.querySelector('.perm-alldevices').checked;
-                var devs = [];
-                row.querySelectorAll('.perm-device:checked').forEach(function (cb) { devs.push(cb.value); });
-                perms.EnabledDevices = devs;
+                perms.EnabledDevices = rowHandles[key] ? rowHandles[key].getValue() : [];
             } else if (type === 'rating') {
                 perms.ManageMaxParentalRating = managed;
                 var sel = row.querySelector('.perm-value');
@@ -1628,21 +1656,31 @@ export default function (view) {
 
     // save
     // Saves the groups and applies them to their members.
+    //
+    // Output
+    // [Promise]: Settles when the groups are saved and applied, and rejects when either fails.
     function save() {
-        if (currentGroupId) collectCurrentGroup();
+        return persistGroups().then(function () {
+            return Shared.apiRequest('Apply', 'POST');
+        }).then(function () {
+            if (tracker) tracker.markClean();
+            renderUserCards();
+        }).catch(function () {
+            throw new Error('Could not save the groups.');
+        });
+    }
 
+    // confirmSave
+    // Runs before the Save Bar's own click. It reads the open group, asks first when the save would delete members,
+    // and then saves through the bar.
+    //
+    // Inputs
+    // e [Event]: The click on the Save button.
+    function confirmSave(e) {
+        e.stopPropagation();
+        if (currentGroupId) collectCurrentGroup();
         confirmDeleteExpiry().then(function (ok) {
-            if (!ok) return;
-            Shared.setStatus('groupStatus', 'Saving…', false);
-            persistGroups().then(function () {
-                return Shared.apiRequest('Apply', 'POST');
-            }).then(function () {
-                if (tracker) tracker.markClean();
-                renderUserCards();
-                Shared.setStatus('groupStatus', 'Saved and applied to members.', false);
-            }).catch(function () {
-                Shared.setStatus('groupStatus', 'Could not save the groups.', true);
-            });
+            if (ok) saveBar.save();
         });
     }
 
@@ -1652,7 +1690,13 @@ export default function (view) {
     // Inputs
     // shared [object]: The helper bag from createPage.
     function bind(shared) {
-        tracker = shared.createChangeTracker({ serialize: serializeGroups, indicatorId: 'unsavedIndicator' });
+        tracker = shared.createChangeTracker({ serialize: serializeGroups });
+        saveBar = createSaveBar({ fill: true, savedText: 'Saved and applied to members.', onSave: save });
+        // A capture listener on the bar runs before the button's own, so the confirm comes before Saving shows.
+        saveBar.element.addEventListener('click', function (e) {
+            if (e.target.closest('button') === saveBar.button) confirmSave(e);
+        }, true);
+        view.querySelector('#groupSaveBar').appendChild(saveBar.element);
         view.querySelector('#selectGroup').addEventListener('change', function () {
             collectCurrentGroup();
             currentGroupId = this.value;
@@ -1661,7 +1705,6 @@ export default function (view) {
         view.querySelector('#btnNewGroup').addEventListener('click', newGroup);
         view.querySelector('#btnRenameGroup').addEventListener('click', renameGroup);
         view.querySelector('#btnDeleteGroup').addEventListener('click', deleteGroup);
-        view.querySelector('#btnSaveGroups').addEventListener('click', save);
         view.querySelector('#btnDefaultGroup').addEventListener('click', toggleDefaultGroup);
 
         var pwEnabled = view.querySelector('#grpPwEnabled');
