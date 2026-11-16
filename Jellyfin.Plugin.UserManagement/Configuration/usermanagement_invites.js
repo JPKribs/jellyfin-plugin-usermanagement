@@ -231,7 +231,7 @@ export default function (view) {
     // Output
     // [string]: The group's name, or Default group with the name it follows.
     function groupText(inv) {
-        if (inv.UseDefaultGroup) return 'Default group' + (_defaultGroupId ? ' (' + groupName(_defaultGroupId) + ')' : '');
+        if (inv.UseDefaultGroup) return 'Default Group' + (_defaultGroupId ? ' (' + groupName(_defaultGroupId) + ')' : '');
         return inv.GroupId ? groupName(inv.GroupId) : '';
     }
 
@@ -352,7 +352,7 @@ export default function (view) {
         if (def) {
             var defOpt = document.createElement('option');
             defOpt.value = DEFAULT_OPTION;
-            defOpt.textContent = 'Default group (' + (def.Name || 'Unnamed group') + ')' + (groupExpired(def) ? ' (expired)' : '');
+            defOpt.textContent = 'Default Group (' + (def.Name || 'Unnamed group') + ')' + (groupExpired(def) ? ' (expired)' : '');
             sel.appendChild(defOpt);
         }
 
@@ -516,13 +516,13 @@ export default function (view) {
         var inv = findInvite(id);
         if (!inv) return;
         var body = document.createElement('div');
-        body.innerHTML = '<div class="inputContainer"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
+        body.innerHTML = '<div class="inputContainer"><label class="inputLabel" for="inviteLinkField">Invite Link</label><div data-mount="link"></div></div>'
             + '<div data-mount="details"></div>'
-            + '<div class="inputContainer"><label class="inputLabel" for="inviteExpiryField">Invite expiration</label>'
+            + '<div class="inputContainer"><label class="inputLabel" for="inviteExpiryField">Invite Expiration</label>'
             + '<input is="emby-input" type="date" id="inviteExpiryField" />'
             + '<div class="fieldDescription">Leave blank for no expiration.</div></div>'
             + '<div class="checkboxContainer checkboxContainer-withDescription"><label class="emby-checkbox-label">'
-            + '<input type="checkbox" is="emby-checkbox" id="inviteEnabledField" /><span class="checkboxLabel">Accept signups</span></label>'
+            + '<input type="checkbox" is="emby-checkbox" id="inviteEnabledField" /><span class="checkboxLabel">Accept Signups</span></label>'
             + '<div class="fieldDescription checkboxFieldDescription">Turn off to lock the link. Turn on to unlock it after too many wrong PIN tries.</div></div>'
             + '<div><span class="base-status-text" id="inviteDialogStatus" role="status"></span></div>';
 

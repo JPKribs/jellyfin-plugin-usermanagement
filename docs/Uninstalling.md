@@ -7,7 +7,7 @@ Members of such groups are switched onto this plugin's authentication provider w
 
 ## Safe Order
 
-1. Open the **Groups** tab and turn **Enforce password requirements** off on every group that has it (or delete those groups).
+1. Open the **Groups** tab and turn **Enforce Password Requirements** off on every group that has it (or delete those groups).
 2. Save. The save runs an apply, which reverts every enrolled member to the provider they had before.
 3. Confirm on **Dashboard → Activity** that a **Users Removed from Password Rules** entry names each member.
 4. Uninstall the plugin.

@@ -38,8 +38,8 @@ These rules apply to every string a user can see. That includes HTML, JS, C# mes
 | :--- | :--- | :--- |
 | Tab | Title Case, one word | Groups |
 | Section and collapsible title | Title Case | Password Requirements |
-| Field label | Sentence case, as Jellyfin's user pages write it | Minimum length |
-| Checkbox label | Sentence case, as Jellyfin's user pages write it | Allow media playback |
+| Field label | Title Case, no trailing colon | Minimum Length |
+| Checkbox label and dropdown option | Title Case | Allow Media Playback |
 | Button | Title Case, verb first | Add Rule |
 | Dialog title | Title Case | Delete Invite |
 | Badge and status chip | Title Case | Locked |
@@ -48,7 +48,7 @@ These rules apply to every string a user can see. That includes HTML, JS, C# mes
 
 Title Case capitalizes every word except short articles, conjunctions, and prepositions in the middle, such as "a", "and", "of", "to", and "in". Keep acronyms as written, such as "PIN", "URL", and "Mbps".
 
-The **Groups** tab copies the labels of Jellyfin's own user settings, so a member's settings read the same in both places. Field and checkbox labels across the plugin follow that sentence case.
+The **Groups** tab uses the wording of Jellyfin's own user settings, so a member's settings say the same thing in both places, but writes it in Title Case like every other label in the plugin. Placeholders stay in sentence case.
 
 ### Words to Use
 

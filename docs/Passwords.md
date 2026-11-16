@@ -8,13 +8,13 @@ The rules live under **Password Requirements** in the group's **Account Rules** 
 
 ## Password Changes
 
-A **Password changes** dropdown controls whether members may set or change their own password:
+A **Password Changes** dropdown controls whether members may set or change their own password:
 
 * **Allowed**: Members manage their own password, subject to the group's rules.
-* **Initial password only**: A member whose password is *currently empty* may set one, but an *existing password* cannot be changed.
+* **Initial Password Only**: A member whose password is *currently empty* may set one, but an *existing password* cannot be changed.
 * **Disallowed**: Members can neither set nor change a password. Only administrators can.
 
-| Action | Allowed | Initial password only | Disallowed |
+| Action | Allowed | Initial Password Only | Disallowed |
 | --- | --- | --- | --- |
 | Member changes their existing password | ✅ If it meets the rules | ❌ Blocked | ❌ Blocked |
 | Member with an empty password sets one | ✅ If it meets the rules | ✅ If it meets the rules | ❌ Blocked |
@@ -24,7 +24,7 @@ A **Password changes** dropdown controls whether members may set or change their
 ## Notes
 
 * **Administrators are exempt.** Group password rules *never* apply to admin accounts, and admins can never be enrolled in enforcement. A member who is promoted to administrator is dropped from their group's member list on the next save and put back on their original authentication provider by the next sync, so a promotion can never strand them on this plugin's provider.
-* **Allowing empty passwords takes priority.** When **Disallow empty passwords** is false, an empty password is accepted even if it fails the other rules, because an empty password means the account deliberately has no password. This is why **Disallow empty passwords** is true by default.
+* **Allowing empty passwords takes priority.** When **Disallow Empty Passwords** is false, an empty password is accepted even if it fails the other rules, because an empty password means the account deliberately has no password. This is why **Disallow Empty Passwords** is true by default.
 * **Disallowed groups cannot take invites.** A group whose members may never set a password is admin managed by definition, so it cannot be chosen for [invite links](Invites.md). Switching a group to **Disallowed** also disables its outstanding invites, including default group invites when it is the default group. An invite is only allowed if a user can set their password *at least on creation*.
 
 !!! warning "Before uninstalling"

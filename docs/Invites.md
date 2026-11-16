@@ -8,18 +8,18 @@ New invites are made from the **Create Invite** section of the Invites tab.
 
 ## Group
 
-Pick either a specific group or **Default group**. A specific group is fixed for the life of the link. **Default group** resolves at the moment the link is redeemed, so the invite follows whichever group is marked default on the Groups tab, even if that changes after the link is sent.
+Pick either a specific group or **Default Group**. A specific group is fixed for the life of the link. **Default Group** resolves at the moment the link is redeemed, so the invite follows whichever group is marked default on the Groups tab, even if that changes after the link is sent.
 
 An account created through an invite gets exactly the invite's group: its permissions, preferences and [password rules](Passwords.md). The default group is never applied to it on the way, even when the invite points at a different group. If an invite's specific group is deleted later, new accounts fall back to the default group.
 
-A group that has reached its [expiration date](Expiration.md) cannot take new accounts. Redeeming an invite into an expired group is refused with a message saying so, and the Invites tab marks such invites **Group expired** and warns when you pick an expired group for a new invite. Move or clear the group's expiration to bring its invites back.
+A group that has reached its [expiration date](Expiration.md) cannot take new accounts. Redeeming an invite into an expired group is refused with a message saying so, and the Invites tab marks such invites **Group Expired** and warns when you pick an expired group for a new invite. Move or clear the group's expiration to bring its invites back.
 
 ## Options
 
 Each invite can also carry:
 
 * **Name**: An admin name for the invite. It is only shown on the dashboard, so this field is for admin reference only.
-* **Welcome message**: Shown to the invitee under the signup heading.
+* **Welcome Message**: Shown to the invitee under the signup heading.
 * **Resources**: Title and URL pairs presented as link buttons after the account is created, for example a request site or a getting started guide. Each **Add Resource** adds a row. Only absolute http(s) URLs are accepted.
 
 ## Managing Invites
@@ -50,7 +50,7 @@ Opening an invite link shows the invitee a signup page with the welcome message 
 Invite links are public, so a few limits apply to them:
 
 * **PIN lockout**: After 5 wrong PINs an invite locks itself, whoever entered them. Anyone holding the link can enter PINs, so someone you did not send it to can lock it on purpose. A locked invite stays locked until you enable it again on the Invites tab, which also resets the count.
-* **Signup rate limit**: The **Invite rate limit** under **Manage Access** pauses an invite once it has created that many accounts within the window, then lets it work again. It counts successful signups per invite, from every address. It defaults to 10 signups per 60 minutes. Servers whose saved plugin settings already include a rate limit keep it (off, unless you changed it). A server upgraded from a version before the rate limit existed that has not saved its plugin settings since picks up the default. Set either number to 0 to turn it off.
+* **Signup rate limit**: The **Invite Rate Limit** under **Manage Access** pauses an invite once it has created that many accounts within the window, then lets it work again. It counts successful signups per invite, from every address. It defaults to 10 signups per 60 minutes. Servers whose saved plugin settings already include a rate limit keep it (off, unless you changed it). A server upgraded from a version before the rate limit existed that has not saved its plugin settings since picks up the default. Set either number to 0 to turn it off.
 * **Per address limit**: Each network address may open at most 60 invite pages and make at most 10 signup attempts every 15 minutes, across all invites. Every attempt counts, including a wrong PIN, a taken username or a rejected password. Past that, the server answers with "Too many attempts" until the oldest attempt is 15 minutes old. IPv6 visitors are counted per /64 block. These numbers are fixed and reset when the server restarts.
 
 ## Disabled Invites

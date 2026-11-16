@@ -68,77 +68,77 @@ export default function (view) {
 
     var PERMISSIONS = [
         { title: 'Library Access', perms: [
-            { key: 'LibraryAccess', label: 'Enable access to all libraries', type: 'library',
+            { key: 'LibraryAccess', label: 'Enable Access to All Libraries', type: 'library',
                 desc: 'Turn off to pick the libraries members can open.' },
-            { key: 'ChannelAccess', label: 'Enable access to all channels', type: 'channels',
+            { key: 'ChannelAccess', label: 'Enable Access to All Channels', type: 'channels',
                 desc: 'Turn off to pick the channels members can open.' }
         ] },
         { title: 'Device Access', perms: [
-            { key: 'DeviceAccess', label: 'Enable access from all devices', type: 'devices',
+            { key: 'DeviceAccess', label: 'Enable Access from All Devices', type: 'devices',
                 desc: 'Turn off to pick the devices members can sign in from.' }
         ] },
         { title: 'Media Deletion', perms: [
-            { key: 'EnableContentDeletion', label: 'Allow media deletion from all libraries', type: 'deletion',
+            { key: 'EnableContentDeletion', label: 'Allow Media Deletion from All Libraries', type: 'deletion',
                 desc: 'Turn off to pick the libraries members can delete from.' }
         ] },
         { title: 'Media Playback', perms: [
-            { key: 'EnableMediaPlayback', label: 'Allow media playback', type: 'bool' },
-            { key: 'EnableAudioPlaybackTranscoding', label: 'Allow audio playback that requires transcoding', type: 'bool' },
-            { key: 'EnableVideoPlaybackTranscoding', label: 'Allow video playback that requires transcoding', type: 'bool' },
-            { key: 'EnablePlaybackRemuxing', label: 'Allow video playback that requires conversion without re-encoding', type: 'bool' },
-            { key: 'ForceRemoteSourceTranscoding', label: 'Force transcoding of remote media sources such as Live TV', type: 'bool',
+            { key: 'EnableMediaPlayback', label: 'Allow Media Playback', type: 'bool' },
+            { key: 'EnableAudioPlaybackTranscoding', label: 'Allow Audio Playback That Requires Transcoding', type: 'bool' },
+            { key: 'EnableVideoPlaybackTranscoding', label: 'Allow Video Playback That Requires Transcoding', type: 'bool' },
+            { key: 'EnablePlaybackRemuxing', label: 'Allow Video Playback That Requires Conversion Without Re-encoding', type: 'bool' },
+            { key: 'ForceRemoteSourceTranscoding', label: 'Force Transcoding of Remote Media Sources Such as Live TV', type: 'bool',
                 desc: 'Limiting transcoding can make playback fail on clients that cannot play the source format.' },
-            { key: 'RemoteClientBitrateLimit', label: 'Internet streaming bitrate limit (Mbps)', type: 'bitrate',
+            { key: 'RemoteClientBitrateLimit', label: 'Internet Streaming Bitrate Limit (Mbps)', type: 'bitrate',
                 desc: 'Limits each stream to devices outside the local network. Leave blank for no limit.' },
-            { key: 'SyncPlayAccess', label: 'SyncPlay access', type: 'enum',
+            { key: 'SyncPlayAccess', label: 'SyncPlay Access', type: 'enum',
                 desc: 'Sets whether members can watch in sync with other people.',
                 options: [
-                    ['CreateAndJoinGroups', 'Allow user to create and join groups'],
-                    ['JoinGroups', 'Allow user to join groups'],
-                    ['None', 'Disabled for this user']
+                    ['CreateAndJoinGroups', 'Allow User to Create and Join Groups'],
+                    ['JoinGroups', 'Allow User to Join Groups'],
+                    ['None', 'Disabled for This User']
                 ] }
         ] },
         { title: 'Live TV', perms: [
-            { key: 'EnableLiveTvAccess', label: 'Allow Live TV access', type: 'bool' },
-            { key: 'EnableLiveTvManagement', label: 'Allow Live TV recording management', type: 'bool' }
+            { key: 'EnableLiveTvAccess', label: 'Allow Live TV Access', type: 'bool' },
+            { key: 'EnableLiveTvManagement', label: 'Allow Live TV Recording Management', type: 'bool' }
         ] },
         { title: 'Remote Control', perms: [
-            { key: 'EnableRemoteControlOfOtherUsers', label: 'Allow remote control of other users', type: 'bool' },
-            { key: 'EnableSharedDeviceControl', label: 'Allow remote control of shared devices', type: 'bool',
+            { key: 'EnableRemoteControlOfOtherUsers', label: 'Allow Remote Control of Other Users', type: 'bool' },
+            { key: 'EnableSharedDeviceControl', label: 'Allow Remote Control of Shared Devices', type: 'bool',
                 desc: 'DLNA devices count as shared until a user starts controlling them.' }
         ] },
         { title: 'Parental Control', perms: [
-            { key: 'MaxParentalRating', label: 'Maximum allowed parental rating', type: 'rating',
+            { key: 'MaxParentalRating', label: 'Maximum Allowed Parental Rating', type: 'rating',
                 desc: 'Hides content rated higher than this. Leave blank for no limit.' },
-            { key: 'BlockUnratedItems', label: 'Block items with no or unrecognized rating information', type: 'unrated' },
-            { key: 'AllowedTags', label: 'Allow items with tags', type: 'tags',
+            { key: 'BlockUnratedItems', label: 'Block Items with No or Unrecognized Rating Information', type: 'unrated' },
+            { key: 'AllowedTags', label: 'Allow Items with Tags', type: 'tags',
                 desc: 'Shows only media with at least one of these tags.' },
-            { key: 'BlockedTags', label: 'Block items with tags', type: 'tags',
+            { key: 'BlockedTags', label: 'Block Items with Tags', type: 'tags',
                 desc: 'Hides media with at least one of these tags.' },
-            { key: 'AccessSchedules', label: 'Access schedule', type: 'schedule',
+            { key: 'AccessSchedules', label: 'Access Schedule', type: 'schedule',
                 desc: 'Limits access to these days and hours.' }
         ] },
         { title: 'Profile', perms: [
-            { key: 'EnableRemoteAccess', label: 'Allow remote connections to this server', type: 'bool',
+            { key: 'EnableRemoteAccess', label: 'Allow Remote Connections to This Server', type: 'bool',
                 desc: 'Blocks every remote connection while off.' },
-            { key: 'EnableCollectionManagement', label: 'Allow this user to manage collections', type: 'bool' },
-            { key: 'EnableSubtitleManagement', label: 'Allow this user to edit subtitles', type: 'bool' },
-            { key: 'EnableLyricManagement', label: 'Allow this user to edit lyrics', type: 'bool' },
-            { key: 'EnableUserPreferenceAccess', label: 'Allow this user to change their own preferences', type: 'bool',
+            { key: 'EnableCollectionManagement', label: 'Allow This User to Manage Collections', type: 'bool' },
+            { key: 'EnableSubtitleManagement', label: 'Allow This User to Edit Subtitles', type: 'bool' },
+            { key: 'EnableLyricManagement', label: 'Allow This User to Edit Lyrics', type: 'bool' },
+            { key: 'EnableUserPreferenceAccess', label: 'Allow This User to Change Their Own Preferences', type: 'bool',
                 desc: 'While off, only an administrator or this group changes display and playback preferences.' },
-            { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
+            { key: 'EnableContentDownloading', label: 'Allow Media Downloads', type: 'bool',
                 desc: 'Lets members save media to their devices. Book libraries need this to work.' },
-            { key: 'EnableMediaConversion', label: 'Allow media conversion', type: 'bool' },
-            { key: 'EnableSyncTranscoding', label: 'Allow sync transcoding', type: 'bool',
+            { key: 'EnableMediaConversion', label: 'Allow Media Conversion', type: 'bool' },
+            { key: 'EnableSyncTranscoding', label: 'Allow Sync Transcoding', type: 'bool',
                 desc: 'Lets the server transcode media that a client downloads for offline use.' },
-            { key: 'EnablePublicSharing', label: 'Allow public sharing', type: 'bool',
+            { key: 'EnablePublicSharing', label: 'Allow Public Sharing', type: 'bool',
                 desc: 'Lets members create public share links for media.' },
-            { key: 'IsDisabled', label: 'Disable this user', type: 'bool',
+            { key: 'IsDisabled', label: 'Disable This User', type: 'bool',
                 desc: 'Refuses every connection from members.' },
-            { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool' },
-            { key: 'LoginAttemptsBeforeLockout', label: 'Failed login tries before user is locked out', type: 'int', min: -1,
+            { key: 'IsHidden', label: 'Hide This User from Login Screens', type: 'bool' },
+            { key: 'LoginAttemptsBeforeLockout', label: 'Failed Login Tries Before User Is Locked Out', type: 'int', min: -1,
                 desc: 'Set 0 for the default of three tries. Set -1 to never lock out.' },
-            { key: 'MaxActiveSessions', label: 'Maximum number of simultaneous user sessions', type: 'int',
+            { key: 'MaxActiveSessions', label: 'Maximum Number of Simultaneous User Sessions', type: 'int',
                 desc: 'Set 0 for no limit.' }
         ] }
     ];
@@ -174,36 +174,36 @@ export default function (view) {
     // Subtitles, Playback, Display, and Home preference pages.
     var CONFIG = [
         { title: 'Subtitles', perms: [
-            { key: 'SubtitleMode', label: 'Subtitle mode', type: 'submode' },
-            { key: 'SubtitleLanguagePreference', label: 'Preferred subtitle language', type: 'culture' },
-            { key: 'RememberSubtitleSelections', label: 'Set subtitle track based on previous item', type: 'bool',
+            { key: 'SubtitleMode', label: 'Subtitle Mode', type: 'submode' },
+            { key: 'SubtitleLanguagePreference', label: 'Preferred Subtitle Language', type: 'culture' },
+            { key: 'RememberSubtitleSelections', label: 'Set Subtitle Track Based on Previous Item', type: 'bool',
                 desc: 'Picks the subtitle track closest to the one used in the last video.' }
         ] },
         { title: 'Playback', perms: [
-            { key: 'AudioLanguagePreference', label: 'Preferred audio language', type: 'culture' },
-            { key: 'PlayDefaultAudioTrack', label: 'Play default audio track regardless of language', type: 'bool', def: true },
-            { key: 'RememberAudioSelections', label: 'Set audio track based on previous item', type: 'bool',
+            { key: 'AudioLanguagePreference', label: 'Preferred Audio Language', type: 'culture' },
+            { key: 'PlayDefaultAudioTrack', label: 'Play Default Audio Track Regardless of Language', type: 'bool', def: true },
+            { key: 'RememberAudioSelections', label: 'Set Audio Track Based on Previous Item', type: 'bool',
                 desc: 'Picks the audio track closest to the one used in the last video.' },
-            { key: 'EnableNextEpisodeAutoPlay', label: 'Play next episode automatically', type: 'bool' },
-            { key: 'CastReceiverId', label: 'Google Cast version', type: 'castreceiver' }
+            { key: 'EnableNextEpisodeAutoPlay', label: 'Play Next Episode Automatically', type: 'bool' },
+            { key: 'CastReceiverId', label: 'Google Cast Version', type: 'castreceiver' }
         ] },
         { title: 'Display', perms: [
-            { key: 'DisplayMissingEpisodes', label: 'Display missing episodes within seasons', type: 'bool',
+            { key: 'DisplayMissingEpisodes', label: 'Display Missing Episodes within Seasons', type: 'bool',
                 desc: 'TV libraries must also have this turned on in the server settings.' },
-            { key: 'DisplayCollectionsView', label: 'Display a Collections view', type: 'bool',
+            { key: 'DisplayCollectionsView', label: 'Display a Collections View', type: 'bool',
                 desc: 'Shows a Collections entry beside the libraries on the home screen.' }
         ] },
         { title: 'Home', perms: [
-            { key: 'HomeSections', label: 'Home screen sections', type: 'homesections',
+            { key: 'HomeSections', label: 'Home Screen Sections', type: 'homesections',
                 desc: 'Sets the order of the home screen sections in the web client.' },
-            { key: 'HidePlayedInLatest', label: 'Hide watched content from Recently Added Media', type: 'bool', def: true },
-            { key: 'OrderedViews', label: 'Media library order', type: 'order',
+            { key: 'HidePlayedInLatest', label: 'Hide Watched Content from Recently Added Media', type: 'bool', def: true },
+            { key: 'OrderedViews', label: 'Media Library Order', type: 'order',
                 desc: 'Sets the order libraries appear on the home screen.' },
-            { key: 'MyMediaExcludes', label: 'Libraries on the home screen', type: 'libgrid', invert: true,
+            { key: 'MyMediaExcludes', label: 'Libraries on the Home Screen', type: 'libgrid', invert: true,
                 desc: 'Picks the libraries in the My Media row.' },
-            { key: 'LatestItemsExcludes', label: 'Libraries in home screen sections', type: 'libgrid', invert: true,
+            { key: 'LatestItemsExcludes', label: 'Libraries in Home Screen Sections', type: 'libgrid', invert: true,
                 desc: 'Picks the libraries in sections such as Recently Added Media and Continue Watching.' },
-            { key: 'GroupedFolders', label: 'Group folders into views', type: 'libgrid', invert: false, source: 'groupable',
+            { key: 'GroupedFolders', label: 'Group Folders into Views', type: 'libgrid', invert: false, source: 'groupable',
                 desc: 'Groups the picked folders into views such as Movies, Music, and TV. The rest show in their own view.' }
         ] }
     ];
@@ -836,7 +836,7 @@ export default function (view) {
             var fields = '';
             for (var hi = 0; hi < HOME_SECTION_COUNT; hi++) {
                 fields += '<div class="selectContainer">'
-                    + '<label class="selectLabel" for="permHomeSection' + hi + '">Home screen section ' + (hi + 1) + '</label>'
+                    + '<label class="selectLabel" for="permHomeSection' + hi + '">Home Screen Section ' + (hi + 1) + '</label>'
                     + '<select is="emby-select" id="permHomeSection' + hi + '" class="perm-homesection" data-index="' + hi + '">' + secOpts + '</select>'
                     + '</div>';
             }
@@ -1443,9 +1443,9 @@ export default function (view) {
             removeText: 'Remove {value}',
             emptyText: 'No rules yet. Select Add Rule to add one.',
             fields: [
-                { key: 'mode', label: 'Applies to', type: 'select', options: SESSION_MODE_OPTIONS },
+                { key: 'mode', label: 'Applies To', type: 'select', options: SESSION_MODE_OPTIONS },
                 { key: 'clients', label: 'Clients', type: 'custom', render: clientField },
-                { key: 'days', label: 'Days before logout', type: 'number', min: 1, placeholder: '30' }
+                { key: 'days', label: 'Days Before Logout', type: 'number', min: 1, placeholder: '30' }
             ],
             onChange: function () {
                 updateSessionOverlaps();

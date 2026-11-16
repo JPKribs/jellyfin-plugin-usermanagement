@@ -78,7 +78,7 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | Locked | The invite is disabled, by hand or by PIN lockout | `Enabled` is `false` |
 | Used up | The invite reached its maximum uses. The count card calls these **Consumed** | `MaxUses` |
 | Expired | The invite reached its expiration date | `ExpiresAt` |
-| Group expired | The invite's group has reached its expiry, so signups are refused | |
+| Group Expired | The invite's group has reached its expiry, so signups are refused | |
 
 ## Password Resets
 

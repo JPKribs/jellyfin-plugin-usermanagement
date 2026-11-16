@@ -1,10 +1,10 @@
 # Sessions
 
-Enable **Clean up old sessions** on a group and its members' stale devices are logged out by the `Clean Expired Sessions` **Scheduled Task**. A device is stale when it has not checked back into the server within a rule's window, so devices in active use are never touched.
+Enable **Clean Up Old Sessions** on a group and its members' stale devices are logged out by the `Clean Expired Sessions` **Scheduled Task**. A device is stale when it has not checked back into the server within a rule's window, so devices in active use are never touched.
 
 ## Rules
 
-Cleanup is driven by one or more **rules**, each a card added with **Add Rule**. Each rule sets **Days before logout** and which clients it applies to, picked by name under **Clients**:
+Cleanup is driven by one or more **rules**, each a card added with **Add Rule**. Each rule sets **Days Before Logout** and which clients it applies to, picked by name under **Clients**:
 
 * **All Clients**: Every client is cleaned up by this rule.
 * **Only These Clients**: Only sessions on the selected clients are removed during cleanup.

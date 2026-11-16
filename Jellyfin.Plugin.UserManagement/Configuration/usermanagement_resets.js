@@ -75,7 +75,7 @@ export default function (view) {
     // Draws the Record List once.
     function ensureList() {
         if (_list) return;
-        _list = createRecordList({ label: 'Pending resets', emptyText: 'No pending password resets.' });
+        _list = createRecordList({ label: 'Pending Resets', emptyText: 'No pending password resets.' });
         Shared.getEl('resetList').appendChild(_list.element);
     }
 
