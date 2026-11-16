@@ -1,0 +1,45 @@
+<!doctype html>
+<html dir="ltr" class="layout-desktop"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>User Management Resets</title>
+<!--stylesheets-->
+<script src="upgrade.js"></script>
+</head><body>
+<div class="skinBody"><div class="mainAnimatedPages skinBody-withFullDrawer"><div id="host"></div></div></div>
+<script>
+window.__errs=[];window.addEventListener('error',function(e){__errs.push(e.message)});window.addEventListener('unhandledrejection',function(e){__errs.push(String(e.reason&&e.reason.stack||e.reason))});var _ce=console.error;console.error=function(){__errs.push([].join.call(arguments,' '));_ce.apply(console,arguments)};
+var config = { EnableResetCodeExtraction: true, Groups: [] };
+function at(min) { return new Date(Date.now() + min * 60000).toISOString(); }
+var RESETS = [
+  { UserName: 'jordan', Pin: '4F7A-29C1', ExpirationDate: at(22), Expired: false },
+  { UserName: 'grandma', Pin: '8D03-E5B6', ExpirationDate: at(3), Expired: false },
+  { UserName: 'Former Roommate From the College Apartment', Pin: '1C9E-70AF', ExpirationDate: at(41), Expired: false },
+  { UserName: 'alex', Pin: '5B2D-3E84', ExpirationDate: at(-90), Expired: true }
+];
+window.__saved = [];
+window.ApiClient = {
+  serverAddress: function () { return 'https://jellyfin.example.com'; },
+  getUrl: function (p, q) { return p + (q ? '?' + new URLSearchParams(q) : ''); },
+  getCurrentUserId: function () { return 'admin'; },
+  getPluginConfiguration: function () { return Promise.resolve(JSON.parse(JSON.stringify(config))); },
+  updatePluginConfiguration: function (id, c) { window.__saved.push(JSON.parse(JSON.stringify(c))); config = JSON.parse(JSON.stringify(c)); return Promise.resolve({}); },
+  ajax: function (o) { return ApiClient.fetch(o); },
+  fetch: function (o) {
+    var url = o.url || o;
+    window.__saved.push({ req: url, type: o.type, data: o.data });
+    if (/Resets$/.test(url) && (o.type || 'GET') === 'GET') return Promise.resolve({ Resets: JSON.parse(JSON.stringify(RESETS)) });
+    return Promise.resolve({});
+  },
+  getJSON: function () { return Promise.resolve({ Items: [] }); },
+  getUserImageUrl: function () { return ''; }
+};
+window.Dashboard = { alert: function (m) { console.error('Dashboard.alert used: ' + m); }, processPluginConfigurationUpdateResult: function () {}, showLoadingMsg: function () {}, hideLoadingMsg: function () {} };
+window.LibraryMenu = { setTabs: function () {} };
+fetch('configurationpage?name=usermanagement_resets').then(function (r) { return r.text(); }).then(function (html) {
+  document.getElementById('host').innerHTML = html;
+  var view = document.querySelector('[data-role=page]');
+  return import('./configurationpage?name=usermanagement_resets.js').then(function (mod) {
+    mod.default(view);
+    view.dispatchEvent(new CustomEvent('viewshow')); window.__view = view;
+  });
+}).catch(function (e) { console.error('harness', e); });
+</script>
+</body></html>

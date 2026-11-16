@@ -55,7 +55,34 @@ async function invites(w, h) {
   return p;
 }
 
+// One collapsible section of the Invites tab at 1280 px, opened.
+async function inviteSection(s) {
+  const p = await invites(1280, 900);
+  const h = await p.evaluateHandle((t) => [...document.querySelectorAll('.base-collapsible-section')].find(x => x.querySelector('.base-collapsible-title').textContent.trim() === t), s.section);
+  await p.evaluate((el) => { const hd = el.querySelector('.base-collapsible-header'); if (hd.classList.contains('collapsed')) hd.click(); }, h);
+  await p.waitForTimeout(400);
+  const r = await p.evaluate((el) => { const b = el.getBoundingClientRect(); return { x: b.left, y: b.top + scrollY, w: b.width, h: b.height }; }, h);
+  await p.screenshot({ path: `${OUT}${s.file}.png`, fullPage: true, clip: { x: r.x - 8, y: r.y - 8, width: r.w + 16, height: r.h + 16 } });
+  return p;
+}
+
 const shots = [
+  {
+    file: 'Overview', run: async (s) => {
+      const p = await b.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
+      await p.goto(ROOT + 'groups.html');
+      await p.waitForFunction(() => document.querySelectorAll('#selectGroup option').length > 0);
+      await p.waitForTimeout(800);
+      // From the title to the group's buttons, above Membership.
+      const r = await p.evaluate(() => {
+        const form = document.querySelector('#UserManagementGroupsForm').getBoundingClientRect();
+        const members = document.querySelector('#memberMount').closest('.base-section').getBoundingClientRect();
+        return { x: form.left, y: form.top + scrollY, w: form.width, h: members.top - form.top };
+      });
+      await p.screenshot({ path: `${OUT}${s.file}.png`, clip: { x: Math.max(0, r.x - 8), y: Math.max(0, r.y - 8), width: r.w + 16, height: r.h + 8 } });
+      return p;
+    }
+  },
   { file: 'Groups', group: 'Kids', page: true, run: groups },
   { file: 'Group Settings', group: 'Kids', section: 'Media Playback', run: groups },
   { file: 'Expiry', group: 'Guests', section: 'Expiry', run: groups },
@@ -82,6 +109,51 @@ const shots = [
       return p;
     }
   },
+  { file: 'Create Invite', section: 'Create Invite', run: inviteSection },
+  { file: 'Manage Access', section: 'Manage Access', run: inviteSection },
+  {
+    file: 'Password Resets', run: async (s) => {
+      const p = await b.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
+      await p.goto(ROOT + 'resets.html');
+      await p.waitForFunction(() => document.querySelectorAll('#resetList .base-copy-field, #resetList input').length > 0);
+      await p.waitForTimeout(600);
+      await (await p.$('#UserManagementResetsForm')).screenshot({ path: `${OUT}${s.file}.png` });
+      return p;
+    }
+  },
+  {
+    file: 'Invite Signup', run: async (s) => {
+      const p = await b.newPage({ viewport: { width: 960, height: 760 }, deviceScaleFactor: 2, colorScheme: 'dark' });
+      await p.addInitScript(() => { window.__errs = []; window.addEventListener('error', (e) => window.__errs.push(e.message)); });
+      await p.goto(ROOT + 'invite/0f3c9a27b1d84e6f');
+      await p.waitForSelector('#form:not(.hidden)');
+      await p.waitForTimeout(400);
+      await p.screenshot({ path: `${OUT}${s.file}.png` });
+      return p;
+    }
+  },
+  {
+    // Jellyfin's own Activity page on the throwaway server activity.py starts, which passes it in JELLYFIN_*.
+    file: 'Activity Log', server: true, run: async (s) => {
+      const env = process.env;
+      const p = await b.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2, colorScheme: 'dark' });
+      await p.addInitScript((c) => {
+        window.__errs = [];
+        localStorage.setItem('jellyfin_credentials', JSON.stringify({ Servers: [{ Id: c.server, ManualAddress: c.url, LocalAddress: c.url, UserId: c.user, AccessToken: c.token, LastConnectionMode: 2, ManualAddressOnly: true, DateLastAccessed: Date.now() }] }));
+      }, { server: env.JELLYFIN_SERVER, url: env.JELLYFIN_URL, user: env.JELLYFIN_USER, token: env.JELLYFIN_TOKEN });
+      await p.goto(env.JELLYFIN_URL + '/web/#/dashboard/activity');
+      await p.waitForSelector('text=Invite Created', { timeout: 60000 });
+      await p.waitForTimeout(1000);
+      // The page's own System filter: entries no user made, which leaves out the sign-in and session rows and the
+      // network address they carry.
+      await p.getByRole('button', { name: 'System', exact: true }).click();
+      await p.waitForSelector('text=Invite Created');
+      await p.waitForTimeout(800);
+      const table = await p.evaluateHandle(() => document.querySelector('.MuiTableContainer-root')?.closest('.MuiPaper-root') || document.querySelector('table'));
+      await table.asElement().screenshot({ path: `${OUT}${s.file}.png` });
+      return p;
+    }
+  },
   {
     file: 'Invite QR Code', run: async (s) => {
       const p = await invites(800, 900);
@@ -98,7 +170,8 @@ for (const name of only) {
   if (!shots.some((s) => s.file === name)) console.error(`No shot named ${name}.`);
 }
 for (const s of shots) {
-  if (only.length && !only.includes(s.file)) continue;
+  if (only.length ? !only.includes(s.file) : s.server) continue;
+  if (s.server && !process.env.JELLYFIN_URL) { console.error(`${s.file} needs a server: run python3 -I activity.py.`); continue; }
   const p = await s.run(s);
   const errs = await p.evaluate(() => window.__errs.filter((e) => !/ResizeObserver/.test(e)));
   console.log(s.file, JSON.stringify(errs));

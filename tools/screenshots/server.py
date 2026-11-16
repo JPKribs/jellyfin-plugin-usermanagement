@@ -1,9 +1,10 @@
-"""User Management screenshot server: serves the plugin pages, Base and jellyfin-web the way Jellyfin does.
+"""User Management screenshot server: serves the plugin pages, Base and jellyfin-web the way Jellyfin does, and the
+invite signup page at /invite/<token> through Base's status template the way InviteController does.
 
 Usage: python3 -I server.py [port]   (default 8842)
 Base comes from the NuGet cache at the version the plugin's csproj references. JELLYFIN_WEB picks the jellyfin-web folder.
 """
-import http.server, os, re, sys, urllib.parse
+import http.server, json, os, re, sys, urllib.parse
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLUGIN = os.path.join(HERE, '..', '..', 'Jellyfin.Plugin.UserManagement')
 CONF = os.path.join(PLUGIN, 'Configuration')
@@ -21,6 +22,20 @@ def base_assets():
     if not os.path.isdir(path):
         sys.exit('Base %s is not in the NuGet cache (%s). Run dotnet restore on the plugin first.' % (m.group(1), path))
     return path
+
+
+def status_page(content):
+    """Mirrors InviteController: StatusPage.Render("", "", title: "Invite", buttonText: null, content: the signup page)."""
+    values = {'TITLE': 'Invite', 'HEADING': '', 'MESSAGE': '', 'SPINNER': '', 'BUTTON': '', 'CONTENT': content}
+    template = open(os.path.join(BASE, '..', 'templates', 'status.html'), encoding='utf-8').read()
+    return re.sub(r'\{\{([A-Z_]+)\}\}', lambda m: values.get(m.group(1), m.group(0)), template)
+
+
+# What the signup page asks the server for, with a generic invite that needs a PIN.
+SIGNUP = {
+    'Info': {'Valid': True, 'RequiresPin': True, 'Message': 'Welcome to the family server. Pick a username and password to get started.'},
+    'System/Info/Public': {'ServerName': 'Jellyfin'},
+}
 
 
 def stylesheets():
@@ -45,6 +60,16 @@ class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
+        invite = re.match(r'^/invite/[^/]+(/Info)?$', u.path)
+        if invite:
+            if invite.group(1):
+                return self.send(json.dumps(SIGNUP['Info']).encode(), 'application/json')
+            page = status_page(open(os.path.join(CONF, 'usermanagement_invite_public.html'), encoding='utf-8').read())
+            return self.send(page.encode(), 'text/html; charset=utf-8')
+        if u.path == '/System/Info/Public':
+            return self.send(json.dumps(SIGNUP['System/Info/Public']).encode(), 'application/json')
+        if u.path.startswith('/web/'):
+            u = u._replace(path='/jf/' + u.path[5:])
         if u.path.endswith('configurationpage') and 'name' in q:
             name = q['name'][0]
             if name.startswith('usermanagement_jpkribs_shared'):
@@ -61,8 +86,11 @@ class H(http.server.BaseHTTPRequestHandler):
         data = open(path, 'rb').read()
         if os.path.dirname(os.path.abspath(path)) == HERE and path.endswith('.html'):
             data = data.replace(b'<!--stylesheets-->\n', LINKS.encode())
+        self.send(data, TYPES.get(os.path.splitext(path)[1], 'text/html'))
+
+    def send(self, data, kind):
         self.send_response(200)
-        self.send_header('Content-Type', TYPES.get(os.path.splitext(path)[1], 'text/html'))
+        self.send_header('Content-Type', kind)
         self.send_header('Cache-Control', 'no-store')
         self.end_headers()
         self.wfile.write(data)

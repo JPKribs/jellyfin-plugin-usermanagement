@@ -153,13 +153,13 @@ Use `##` for README headings. Keep the README under 40 lines.
 
 * Capture every page and dialog a docs page describes.
 * Capture the dark theme only, which is Jellyfin's default.
-* Capture from a test server whose users, groups, and invites have generic names.
+* Capture with the screenshot kit, whose users, groups, and invites have generic names.
 * Capture with groups, invites, and pending resets in place so lists, counts, and badges are filled.
 * Hide nothing with editing. When a value is private, change the test data instead.
 
 ### The Screenshot Kit
 
-`tools/screenshots/` takes the Groups and Invites shots from the plugin's own pages with generic sample data. Its [README](../tools/screenshots/README.md) lists what it needs and how to run it.
+`tools/screenshots/` takes every shot from the plugin's own pages with generic sample data, and Activity Log from a throwaway Docker server. Its [README](../tools/screenshots/README.md) lists what it needs and how to run it.
 
 ```bash
 cd tools/screenshots
@@ -167,7 +167,7 @@ python3 -I server.py &
 PLAYWRIGHT_CORE=/path/to/node_modules/playwright-core/index.mjs node shoot.mjs
 ```
 
-`node shoot.mjs "Invite List"` retakes only the named files. A new Groups or Invites subject is one more entry in the `shots` list of `shoot.mjs`. Take the other screenshots from a test server.
+`python3 -I activity.py` takes Activity Log. `node shoot.mjs "Invite List"` retakes only the named files. A new subject is one more entry in the `shots` list of `shoot.mjs`.
 
 ### Sizes
 
