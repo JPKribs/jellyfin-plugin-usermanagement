@@ -7,7 +7,7 @@ using Xunit;
 namespace Jellyfin.Plugin.UserManagement.Tests;
 
 /// <summary>
-/// Tests for the Override / Inherit behavior of <see cref="GroupConfigurationExtensions.ApplyTo"/>.
+/// Tests for the Group sets this / Member's own behavior of <see cref="GroupConfigurationExtensions.ApplyTo"/>.
 /// </summary>
 public class GroupConfigurationMergeTests
 {

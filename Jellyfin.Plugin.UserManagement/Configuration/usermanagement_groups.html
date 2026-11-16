@@ -13,9 +13,8 @@
 
                     <!-- Intro -->
                     <div class="fieldDescription um-intro">
-                        Groups assign permissions and settings to multiple users at once. A setting marked as an
-                        <strong>override</strong> always uses the group's value. A setting that is not overridden keeps
-                        whatever value each user already has. A user can belong to one group at a time.
+                        Groups apply settings to many users at once, and a user belongs to one group at a time. Only
+                        settings marked <strong>Group sets this</strong> reach members, and the rest stay as each member has them.
                     </div>
 
                     <div id="userCards"></div>
@@ -57,118 +56,117 @@
                             </div>
                         </div>
 
-                        <!-- Settings -->
+                        <!-- Access and Features -->
                         <!-- The Jellyfin user policy settings, drawn by the script. -->
                         <div class="base-section">
-                            <div class="base-section-title">Settings</div>
+                            <div class="base-section-title">Access and Features</div>
                             <div class="base-section-content">
                                 <div id="permissionSections"></div>
                             </div>
                         </div>
 
-                        <!-- Configuration -->
+                        <!-- Preferences -->
                         <!-- The display and playback preferences, drawn by the script. -->
                         <div class="base-section">
-                            <div class="base-section-title">Configuration</div>
+                            <div class="base-section-title">Preferences</div>
                             <div class="base-section-content">
                                 <div id="configSections"></div>
                             </div>
                         </div>
 
-                        <!-- Other -->
-                        <!-- Session cleanup, password requirements, expiry, and inactivity. -->
+                        <!-- Account Rules -->
+                        <!-- Session cleanup, password requirements, expiry, and inactivity. Each is a list of rows led by the checkbox that turns it on. -->
                         <div class="base-section">
-                            <div class="base-section-title">Other</div>
+                            <div class="base-section-title">Account Rules</div>
                             <div class="base-section-content">
 
-                                <!-- Session Management (per group) -->
+                                <!-- Session Management -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
                                         <span class="base-collapsible-title">Session Management</span>
-                                        <span class="base-collapsible-icon">&#9660;</span>
+                                        <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpSessionContent" class="base-collapsible-content collapsed">
-                                        <div class="checkboxContainer checkboxContainer-withDescription">
-                                            <label class="emby-checkbox-label">
-                                                <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
-                                                <span class="checkboxLabel">Clean up old sessions</span>
-                                            </label>
-                                            <div class="fieldDescription checkboxFieldDescription">
-                                                Log out devices belonging to this group's members once they have gone too long
-                                                without checking back into the server. Cleanup is performed by the
-                                                <strong>Clean Expired Sessions</strong> task, so its run time determines when
-                                                devices are logged out.
+                                        <div class="um-rows" data-label="Session Management">
+                                            <div class="um-setting">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
+                                                    <span class="checkboxLabel">Clean up old sessions</span>
+                                                </label>
+                                                <div class="fieldDescription">
+                                                    Logs out members' devices that go too long without checking in. The
+                                                    <strong>Clean Expired Sessions</strong> task does this, so its schedule sets when.
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="base-indent hidden" id="sessionFields">
-                                            <div class="fieldDescription">
-                                                Each rule logs out devices on its clients after that many days without
-                                                checking in. A rule for all clients ignores its client list.
+                                            <div class="um-setting um-session-field">
+                                                <span class="um-setting-label">Rules</span>
+                                                <div id="sessionRuleList"></div>
+                                                <div id="sessionOverlapWarning" class="base-warn hidden"></div>
+                                                <div class="fieldDescription">
+                                                    Each rule logs out devices on its clients after that many days without
+                                                    checking in. A rule for all clients ignores its client list.
+                                                </div>
                                             </div>
-                                            <div id="sessionRuleList"></div>
-                                            <div id="sessionOverlapWarning" class="base-warn hidden"></div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Password Requirements (per group) -->
+                                <!-- Password Requirements -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
                                         <span class="base-collapsible-title">Password Requirements</span>
-                                        <span class="base-collapsible-icon">&#9660;</span>
+                                        <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpPwContent" class="base-collapsible-content collapsed">
-                                        <div class="checkboxContainer checkboxContainer-withDescription">
-                                            <label class="emby-checkbox-label">
-                                                <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
-                                                <span class="checkboxLabel">Enforce password requirements for this group's members</span>
-                                            </label>
-                                            <div class="fieldDescription checkboxFieldDescription">
-                                                Enforce password rules to the members of this group.
+                                        <div class="um-rows" data-label="Password Requirements">
+                                            <div class="um-setting">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
+                                                    <span class="checkboxLabel">Enforce password requirements</span>
+                                                </label>
+                                                <div class="fieldDescription">Holds members' passwords to the rules below.</div>
                                             </div>
-                                        </div>
-                                        <div class="base-indent hidden" id="pwFields">
-                                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                            <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
                                                     <span class="checkboxLabel">Disallow empty passwords</span>
                                                 </label>
                                                 <div class="fieldDescription">
-                                                    When unchecked, an empty password is always accepted and takes priority
-                                                    over the other rules, since an empty password means the account has no
-                                                    password at all.
+                                                    While off, an empty password always passes, since it means the account has no password.
                                                 </div>
                                             </div>
-                                            <div class="inputContainer">
-                                                <label for="grpPwLength">Minimum length</label>
-                                                <input is="emby-input" type="number" id="grpPwLength" min="1" />
+                                            <div class="um-setting um-pw-field">
+                                                <span class="um-setting-label" id="grpPwLengthLabel">Minimum length</span>
+                                                <div class="inputContainer">
+                                                    <input is="emby-input" type="number" id="grpPwLength" min="1" aria-labelledby="grpPwLengthLabel" />
+                                                </div>
                                             </div>
-                                            <div class="selectContainer">
-                                                <label class="selectLabel" for="grpPwChangeMode">Password changes</label>
-                                                <select is="emby-select" id="grpPwChangeMode">
-                                                    <option value="Allowed">Allowed</option>
-                                                    <option value="InitialOnly">Initial password only</option>
-                                                    <option value="Disallowed">Disallowed</option>
-                                                </select>
+                                            <div class="um-setting um-pw-field">
+                                                <span class="um-setting-label" id="grpPwChangeModeLabel">Password changes</span>
+                                                <div class="selectContainer">
+                                                    <select is="emby-select" id="grpPwChangeMode" aria-labelledby="grpPwChangeModeLabel">
+                                                        <option value="Allowed">Allowed</option>
+                                                        <option value="InitialOnly">Initial password only</option>
+                                                        <option value="Disallowed">Disallowed</option>
+                                                    </select>
+                                                </div>
                                                 <div class="fieldDescription">
-                                                    Whether members may set or change their own password. With
-                                                    <strong>Initial password only</strong>, a member whose password is empty
-                                                    may still set one. Administrators can always change a member's password.
+                                                    Sets whether members may set or change their own password. Administrators always can.
                                                 </div>
                                             </div>
-                                            <div class="checkboxContainer">
+                                            <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwUpper" />
                                                     <span class="checkboxLabel">Require a capital letter</span>
                                                 </label>
                                             </div>
-                                            <div class="checkboxContainer">
+                                            <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNumber" />
                                                     <span class="checkboxLabel">Require a number</span>
                                                 </label>
                                             </div>
-                                            <div class="checkboxContainer">
+                                            <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwSymbol" />
                                                     <span class="checkboxLabel">Require a symbol</span>
@@ -178,55 +176,69 @@
                                     </div>
                                 </div>
 
-                                <!-- Expiry (per group) -->
+                                <!-- Expiry -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
                                         <span class="base-collapsible-title">Expiry</span>
-                                        <span class="base-collapsible-icon">&#9660;</span>
+                                        <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpExpiryContent" class="base-collapsible-content collapsed">
-                                        <div class="checkboxContainer">
-                                            <label class="emby-checkbox-label">
-                                                <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
-                                                <span class="checkboxLabel">Set an expiration for the members of this group</span>
-                                            </label>
-                                        </div>
-                                        <div class="base-indent hidden" id="grpExpiryFields">
-                                            <div class="inputContainer">
-                                                <label for="grpExpiryDate">Expiry date</label>
-                                                <input type="date" id="grpExpiryDate" />
-                                                <div class="fieldDescription">Members are expired by the next <strong>Process expired and inactive users</strong> task run on or after this date.</div>
+                                        <div class="um-rows" data-label="Expiry">
+                                            <div class="um-setting">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
+                                                    <span class="checkboxLabel">Expire members on a date</span>
+                                                </label>
+                                                <div class="fieldDescription">Disables or deletes every member once the date comes.</div>
                                             </div>
-                                            <div class="selectContainer">
-                                                <label class="selectLabel" for="grpExpiryAction">Expiration method</label>
-                                                <select is="emby-select" id="grpExpiryAction" class="emby-select-withcolor">
-                                                    <option value="Disable">Disable</option>
-                                                    <option value="Delete">Delete</option>
-                                                </select>
-                                                <div class="fieldDescription">Disable sets the account to inactive which can be reversed. Delete permanently deletes the user and their data.</div>
+                                            <div class="um-setting um-expiry-field">
+                                                <span class="um-setting-label" id="grpExpiryDateLabel">Expiry date</span>
+                                                <div class="inputContainer">
+                                                    <input type="date" id="grpExpiryDate" aria-labelledby="grpExpiryDateLabel" />
+                                                </div>
+                                                <div class="fieldDescription">
+                                                    The next <strong>Process expired and inactive users</strong> task run on or after this date expires members.
+                                                </div>
+                                            </div>
+                                            <div class="um-setting um-expiry-field">
+                                                <span class="um-setting-label" id="grpExpiryActionLabel">Expiration method</span>
+                                                <div class="selectContainer">
+                                                    <select is="emby-select" id="grpExpiryAction" aria-labelledby="grpExpiryActionLabel">
+                                                        <option value="Disable">Disable</option>
+                                                        <option value="Delete">Delete</option>
+                                                    </select>
+                                                </div>
+                                                <div class="fieldDescription">
+                                                    Disable can be undone. Delete removes each member and their data for good.
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Inactivity (per group) -->
+                                <!-- Inactivity -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
                                         <span class="base-collapsible-title">Inactivity</span>
-                                        <span class="base-collapsible-icon">&#9660;</span>
+                                        <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpInactiveContent" class="base-collapsible-content collapsed">
-                                        <div class="checkboxContainer">
-                                            <label class="emby-checkbox-label">
-                                                <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
-                                                <span class="checkboxLabel">Disable inactive users</span>
-                                            </label>
-                                        </div>
-                                        <div class="base-indent hidden" id="inactiveFields">
-                                            <div class="inputContainer">
-                                                <label for="grpInactiveDays">Days of inactivity before disabling</label>
-                                                <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" />
-                                                <div class="fieldDescription">Members with no activity for this many days are disabled by the next <strong>Process expired and inactive users</strong> task run. Members who have never signed in are left alone.</div>
+                                        <div class="um-rows" data-label="Inactivity">
+                                            <div class="um-setting">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
+                                                    <span class="checkboxLabel">Disable inactive users</span>
+                                                </label>
+                                                <div class="fieldDescription">Disables members who stop using the server.</div>
+                                            </div>
+                                            <div class="um-setting um-inactive-field">
+                                                <span class="um-setting-label" id="grpInactiveDaysLabel">Days of inactivity before disabling</span>
+                                                <div class="inputContainer">
+                                                    <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" aria-labelledby="grpInactiveDaysLabel" />
+                                                </div>
+                                                <div class="fieldDescription">
+                                                    The next <strong>Process expired and inactive users</strong> task run disables members with no activity for this long. Members who never signed in are left alone.
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -234,7 +246,7 @@
 
                             </div>
                         </div>
-                        <!-- /Other -->
+                        <!-- /Account Rules -->
 
                         <!-- Save -->
                         <!-- The page's one Save Bar, drawn by the script. -->

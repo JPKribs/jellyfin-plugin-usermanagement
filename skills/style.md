@@ -342,6 +342,7 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | A read only value with a copy button, such as an invite link | `createCopyField` |
 | Day and time windows, such as an access schedule | `createAccessSchedule` |
 | A setting that inherits until overridden | `createInheritField` |
+| A group setting row, with its Member's own and Group sets this pills | See [Group Setting Rows](#group-setting-rows) |
 
 * Use `emby-select`, never `base-selector-dropdown`, for a field. `base-selector-dropdown` is only for the record picker.
 * Every input has a `<label for>`.
@@ -386,7 +387,7 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | A plain list of records | `base-card-list` with `base-card-item-*` |
 | Rows that each open, or hold one control such as a copy field, like the invites and the pending resets | `createRecordList`, with `aside` for the control |
 | Records with several fields, added and removed in place, like session cleanup rules | `createRepeater` with `layout: 'card'` |
-| A setting that applies only when overridden, like every group setting | `createInheritField` with `toggle: 'checkbox'` |
+| A setting that applies only when the group sets it, like every group setting | A [group setting row](#group-setting-rows) |
 | Edit one record in a dialog | `openEditorDialog` |
 | A large searchable list | `createPaginatedTable` |
 | Edit table rows in place | `base-bulk-edit-bar` and `base-edit-row` |
@@ -473,9 +474,21 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 * Size a column in `rem` or `fr`. An `em` width changes with the font size of each row, so a smaller heading row falls out of line with its columns.
 * Never define a color token. Use Base's.
 
+## Group Setting Rows
+
+Every setting on the **Groups** tab is one row, built the same way in every section.
+
+* A section's rows are a Base `createList` with `layout: 'rows'`, so each row is bordered and a divider sits between rows. Each row is an `um-setting`.
+* The row starts with its lead, the setting's emby checkbox in an `um-setting-check`, or its name in an `um-setting-label` when the setting has other controls.
+* `createInheritField` wraps the lead, with the default pills, `inheritText: "Member's own"` and `overrideText: 'Group sets this'`. Never the checkbox toggle, and never the word Override.
+* The controls follow in an `um-setting-body`, shown only while the row is on **Group sets this**. A row led by an "all" checkbox shows its Checkbox List only while that checkbox is off, as Jellyfin does.
+* The `fieldDescription` comes last and stays visible either way.
+* A list of libraries, channels, or devices is a `createCheckboxList` whose rows have a label and a sublabel.
+* The section header counts its rows on **Group sets this** with `setCollapsibleBadge`, such as **2 Set by Group**. An **Account Rules** section shows **On** while its first checkbox is on, and its other rows show only then.
+
 ## Hand Built Pieces
 
-Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro.
+Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro, and `um-setting`, `um-setting-check`, `um-setting-label`, and `um-setting-body` for the [group setting rows](#group-setting-rows). It also holds one marked stopgap for the card Repeater's bare `card` class, which Jellyfin's `.card` rule gives `contain`, so the Clients Chip Select's list opens off screen. Delete it when Base names the class `base-repeater-card`.
 
 The signup page is the content of Base's status card and uses only the card's own classes: `base-status-error` for a refused signup, and `base-btn-stack` with `base-btn base-btn-secondary` for the resource links.
 

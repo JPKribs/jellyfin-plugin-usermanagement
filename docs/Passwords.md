@@ -2,7 +2,7 @@
 
 A group can enforce password rules on its members, such as minimum length and required character types. When a member sets a new password it must meet the rules or the change is rejected. This plugin does not change the standard login process, so all else is kept the same.
 
-The rules live under **Password Requirements** in the group's **Other** section.
+The rules live under **Password Requirements** in the group's **Account Rules** section.
 
 ![Password requirements for a group](screenshots/Password%20Requirements.png)
 

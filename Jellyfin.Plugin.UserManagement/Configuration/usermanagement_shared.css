@@ -7,3 +7,58 @@
 .um-intro {
     margin-bottom: var(--base-gap-wide);
 }
+
+/* um-setting */
+/* One setting row on the Groups tab, a cell of a Base List: its lead line, its controls, then its description. */
+/* Example: <div class="um-setting"><span class="um-setting-label">Minimum length</span><div class="inputContainer">...</div></div> */
+.um-setting {
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-gap-narrow);
+    padding: var(--base-pad-medium) var(--base-pad-large);
+}
+
+/* The row's gap spaces its parts, so the bottom margin Base gives each component on a page, and the margins */
+/* of a description, are dropped inside a row. That covers the Inherit Field's pills and the component a row mounts. */
+.pluginConfigurationPage .um-setting > *,
+.pluginConfigurationPage .um-setting-body > *,
+.pluginConfigurationPage .um-setting-body > div > *,
+.pluginConfigurationPage .um-setting .base-inherit-toggle {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* um-setting-body */
+/* The controls under a setting row's lead, which hide while the row is Member's own. */
+/* Example: <div class="um-setting-body"><div class="selectContainer">...</div></div> */
+.um-setting-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-gap-narrow);
+}
+
+/* um-setting-label */
+/* The name of a setting whose controls sit under it, a field tall so it lines up with the pills beside it. */
+/* Example: <span class="um-setting-label" id="grpPwLengthLabel">Minimum length</span> */
+.um-setting-label {
+    display: flex;
+    align-items: center;
+    min-height: var(--base-field-height);
+}
+
+/* Stopgap for a Base defect. A card Repeater carries a bare "card" class, and Jellyfin's .card rule gives it */
+/* contain and a pointer cursor, which traps the Clients Chip Select's fixed list inside the card, off screen. */
+/* Delete this rule when Base names the class base-repeater-card. */
+.pluginConfigurationPage .base-repeater.card {
+    contain: none;
+    cursor: auto;
+}
+
+/* um-setting-check */
+/* The checkbox that leads a setting row, a field tall so it lines up with the pills beside it. */
+/* Example: <div class="um-setting-check"><label class="emby-checkbox-label">...</label></div> */
+.um-setting-check {
+    display: flex;
+    align-items: center;
+    min-height: var(--base-field-height);
+}

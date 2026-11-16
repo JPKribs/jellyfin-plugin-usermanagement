@@ -12,13 +12,16 @@ import {
     createRepeater,
     createChipSelect,
     createCheckboxList,
+    createList,
+    setCollapsibleBadge,
     confirmDialog,
     promptDialog,
     createSaveBar
 } from './configurationpage?name=usermanagement_shared.js';
 
 // Groups page
-// Builds the Groups tab. Each setting is an Inherit Field with an Override checkbox, and only overridden settings reach members.
+// Builds the Groups tab. Each setting row is an Inherit Field whose pills read Member's own and Group sets this, and only
+// settings on Group sets this reach members.
 //
 // Inputs
 // view [HTMLElement]: The page the dashboard passes to the module.
@@ -32,6 +35,7 @@ export default function (view) {
     var saveBar = null;
     var rowHandles = {};
     var inheritHandles = {};
+    var rowLists = [];
     var sessionRules = null;
     var sessionClients = [];
     var orderState = [];
@@ -43,6 +47,7 @@ export default function (view) {
     var allUsers = [];
     var allLibraries = [];
     var allDevices = [];
+    var allChannels = [];
     var parentalRatings = [];
     var allCultures = [];
     var allCastReceivers = [];
@@ -54,17 +59,27 @@ export default function (view) {
         ['Movie', 'Movies'], ['Music', 'Music'], ['Trailer', 'Trailers'], ['Series', 'Shows']
     ];
 
+    // The two choices of every setting row. Only a setting on Group sets this reaches members.
+    var MEMBER_OWN = 'Member\'s own';
+    var GROUP_SETS = 'Group sets this';
+
+    // Rows led by an "all" checkbox, whose list shows under it only while it is off, as Jellyfin's access page does.
+    var ALL_TYPES = { library: true, channels: true, devices: true, deletion: true };
+
     var PERMISSIONS = [
         { title: 'Library Access', perms: [
-            { key: 'LibraryAccess', label: '', type: 'library',
-                desc: 'Select the libraries to share with this user.' },
-            { key: 'ChannelAccess', label: 'Channels', type: 'channels' }
+            { key: 'LibraryAccess', label: 'Enable access to all libraries', type: 'library',
+                desc: 'Turn off to pick the libraries members can open.' },
+            { key: 'ChannelAccess', label: 'Enable access to all channels', type: 'channels',
+                desc: 'Turn off to pick the channels members can open.' }
         ] },
         { title: 'Device Access', perms: [
-            { key: 'DeviceAccess', label: '', type: 'devices' }
+            { key: 'DeviceAccess', label: 'Enable access from all devices', type: 'devices',
+                desc: 'Turn off to pick the devices members can sign in from.' }
         ] },
         { title: 'Media Deletion', perms: [
-            { key: 'EnableContentDeletion', label: '', type: 'deletion' }
+            { key: 'EnableContentDeletion', label: 'Allow media deletion from all libraries', type: 'deletion',
+                desc: 'Turn off to pick the libraries members can delete from.' }
         ] },
         { title: 'Media Playback', perms: [
             { key: 'EnableMediaPlayback', label: 'Allow media playback', type: 'bool' },
@@ -72,11 +87,11 @@ export default function (view) {
             { key: 'EnableVideoPlaybackTranscoding', label: 'Allow video playback that requires transcoding', type: 'bool' },
             { key: 'EnablePlaybackRemuxing', label: 'Allow video playback that requires conversion without re-encoding', type: 'bool' },
             { key: 'ForceRemoteSourceTranscoding', label: 'Force transcoding of remote media sources such as Live TV', type: 'bool',
-                desc: 'Restricting access to transcoding may cause playback failures in clients due to unsupported media formats.' },
+                desc: 'Limiting transcoding can make playback fail on clients that cannot play the source format.' },
             { key: 'RemoteClientBitrateLimit', label: 'Internet streaming bitrate limit (Mbps)', type: 'bitrate',
-                desc: 'An optional per-stream bitrate limit for all out of network devices.' },
+                desc: 'Limits each stream to devices outside the local network. Leave blank for no limit.' },
             { key: 'SyncPlayAccess', label: 'SyncPlay access', type: 'enum',
-                desc: 'The SyncPlay feature enables to sync playback with other devices.',
+                desc: 'Sets whether members can watch in sync with other people.',
                 options: [
                     ['CreateAndJoinGroups', 'Allow user to create and join groups'],
                     ['JoinGroups', 'Allow user to join groups'],
@@ -90,43 +105,41 @@ export default function (view) {
         { title: 'Remote Control', perms: [
             { key: 'EnableRemoteControlOfOtherUsers', label: 'Allow remote control of other users', type: 'bool' },
             { key: 'EnableSharedDeviceControl', label: 'Allow remote control of shared devices', type: 'bool',
-                desc: 'DLNA devices are considered shared until a user begins controlling them.' }
+                desc: 'DLNA devices count as shared until a user starts controlling them.' }
         ] },
         { title: 'Parental Control', perms: [
             { key: 'MaxParentalRating', label: 'Maximum allowed parental rating', type: 'rating',
-                desc: 'Content with a higher rating will be hidden from this user.' },
+                desc: 'Hides content rated higher than this. Leave blank for no limit.' },
             { key: 'BlockUnratedItems', label: 'Block items with no or unrecognized rating information', type: 'unrated' },
             { key: 'AllowedTags', label: 'Allow items with tags', type: 'tags',
-                desc: 'Only show media with at least one of the specified tags.' },
+                desc: 'Shows only media with at least one of these tags.' },
             { key: 'BlockedTags', label: 'Block items with tags', type: 'tags',
-                desc: 'Hide media with at least one of the specified tags.' },
-            { key: 'AccessSchedules', label: 'Access Schedule', type: 'schedule',
-                desc: 'Create an access schedule to limit access to certain hours.' }
+                desc: 'Hides media with at least one of these tags.' },
+            { key: 'AccessSchedules', label: 'Access schedule', type: 'schedule',
+                desc: 'Limits access to these days and hours.' }
         ] },
         { title: 'Profile', perms: [
             { key: 'EnableRemoteAccess', label: 'Allow remote connections to this server', type: 'bool',
-                desc: 'If unchecked, all remote connections will be blocked.' },
+                desc: 'Blocks every remote connection while off.' },
             { key: 'EnableCollectionManagement', label: 'Allow this user to manage collections', type: 'bool' },
             { key: 'EnableSubtitleManagement', label: 'Allow this user to edit subtitles', type: 'bool' },
             { key: 'EnableLyricManagement', label: 'Allow this user to edit lyrics', type: 'bool' },
             { key: 'EnableUserPreferenceAccess', label: 'Allow this user to change their own preferences', type: 'bool',
-                desc: 'If unchecked, display and playback preferences can only be changed by an administrator or by this group.' }
-        ] },
-        { title: 'Other', perms: [
+                desc: 'While off, only an administrator or this group changes display and playback preferences.' },
             { key: 'EnableContentDownloading', label: 'Allow media downloads', type: 'bool',
-                desc: 'Users can download media and store it on their devices. Book libraries require this enabled to function properly.' },
+                desc: 'Lets members save media to their devices. Book libraries need this to work.' },
             { key: 'EnableMediaConversion', label: 'Allow media conversion', type: 'bool' },
             { key: 'EnableSyncTranscoding', label: 'Allow sync transcoding', type: 'bool',
-                desc: 'Allows the server to transcode media that a client downloads for offline use.' },
+                desc: 'Lets the server transcode media that a client downloads for offline use.' },
             { key: 'EnablePublicSharing', label: 'Allow public sharing', type: 'bool',
-                desc: 'Allows this user to create public share links for media.' },
+                desc: 'Lets members create public share links for media.' },
             { key: 'IsDisabled', label: 'Disable this user', type: 'bool',
-                desc: 'The server will not allow any connections from this user.' },
+                desc: 'Refuses every connection from members.' },
             { key: 'IsHidden', label: 'Hide this user from login screens', type: 'bool' },
             { key: 'LoginAttemptsBeforeLockout', label: 'Failed login tries before user is locked out', type: 'int', min: -1,
-                desc: 'A value of zero means inheriting the default of three tries for normal users and five for administrators. Setting this to -1 will disable the feature.' },
+                desc: 'Set 0 for the default of three tries. Set -1 to never lock out.' },
             { key: 'MaxActiveSessions', label: 'Maximum number of simultaneous user sessions', type: 'int',
-                desc: 'A value of 0 will disable the feature.' }
+                desc: 'Set 0 for no limit.' }
         ] }
     ];
 
@@ -157,40 +170,41 @@ export default function (view) {
     var DEFAULT_HOME_SECTIONS = ['smalllibrarytiles', 'resume', 'resumeaudio', 'resumebook', 'livetv', 'nextup', 'latestmedia', 'none', 'none', 'none'];
     var HOME_SECTION_COUNT = 10;
 
-    // Display and playback preferences applied to the Jellyfin user configuration, mirroring the
-    // fields on a user's Subtitles / Playback / Display / Home preference pages.
+    // Display and playback preferences applied to the Jellyfin user configuration, with the labels of a user's
+    // Subtitles, Playback, Display, and Home preference pages.
     var CONFIG = [
         { title: 'Subtitles', perms: [
             { key: 'SubtitleMode', label: 'Subtitle mode', type: 'submode' },
             { key: 'SubtitleLanguagePreference', label: 'Preferred subtitle language', type: 'culture' },
             { key: 'RememberSubtitleSelections', label: 'Set subtitle track based on previous item', type: 'bool',
-                desc: 'Try to set the subtitle track to the closest match to the last video.' }
+                desc: 'Picks the subtitle track closest to the one used in the last video.' }
         ] },
         { title: 'Playback', perms: [
             { key: 'AudioLanguagePreference', label: 'Preferred audio language', type: 'culture' },
             { key: 'PlayDefaultAudioTrack', label: 'Play default audio track regardless of language', type: 'bool', def: true },
             { key: 'RememberAudioSelections', label: 'Set audio track based on previous item', type: 'bool',
-                desc: 'Try to set the audio track to the closest match to the last video.' },
+                desc: 'Picks the audio track closest to the one used in the last video.' },
             { key: 'EnableNextEpisodeAutoPlay', label: 'Play next episode automatically', type: 'bool' },
-            { key: 'CastReceiverId', label: 'Google Cast Version', type: 'castreceiver' }
+            { key: 'CastReceiverId', label: 'Google Cast version', type: 'castreceiver' }
         ] },
         { title: 'Display', perms: [
             { key: 'DisplayMissingEpisodes', label: 'Display missing episodes within seasons', type: 'bool',
-                desc: 'This must also be enabled for TV libraries in the server configuration.' },
-            { key: 'DisplayCollectionsView', label: "Display a 'Collections' view", type: 'bool',
-                desc: 'Shows a Collections entry alongside the libraries on the home screen.' }
+                desc: 'TV libraries must also have this turned on in the server settings.' },
+            { key: 'DisplayCollectionsView', label: 'Display a Collections view', type: 'bool',
+                desc: 'Shows a Collections entry beside the libraries on the home screen.' }
         ] },
         { title: 'Home', perms: [
-            { key: 'HomeSections', label: 'Customize how the Home Sections are presented to this group.', type: 'homesections',
-                desc: 'Set the order of the home screen sections for the web client. This only affects applicable clients.' },
-            { key: 'HidePlayedInLatest', label: "Hide watched content from 'Recently Added Media'", type: 'bool', def: true },
+            { key: 'HomeSections', label: 'Home screen sections', type: 'homesections',
+                desc: 'Sets the order of the home screen sections in the web client.' },
+            { key: 'HidePlayedInLatest', label: 'Hide watched content from Recently Added Media', type: 'bool', def: true },
             { key: 'OrderedViews', label: 'Media library order', type: 'order',
-                desc: 'Set the order libraries appear on the home screen.' },
-            { key: 'MyMediaExcludes', label: 'Display on home screen', type: 'libgrid', invert: true,
-                desc: 'Choose which libraries appear in the My Media row.' },
-            { key: 'LatestItemsExcludes', label: "Display in home screen sections such as 'Recently Added Media' and 'Continue Watching'", type: 'libgrid', invert: true },
-            { key: 'GroupedFolders', label: "Automatically group content from the following folders into views such as 'Movies', 'Music' and 'TV'", type: 'libgrid', invert: false, source: 'groupable',
-                desc: 'Folders that are unchecked will be displayed by themselves in their own view.' }
+                desc: 'Sets the order libraries appear on the home screen.' },
+            { key: 'MyMediaExcludes', label: 'Libraries on the home screen', type: 'libgrid', invert: true,
+                desc: 'Picks the libraries in the My Media row.' },
+            { key: 'LatestItemsExcludes', label: 'Libraries in home screen sections', type: 'libgrid', invert: true,
+                desc: 'Picks the libraries in sections such as Recently Added Media and Continue Watching.' },
+            { key: 'GroupedFolders', label: 'Group folders into views', type: 'libgrid', invert: false, source: 'groupable',
+                desc: 'Groups the picked folders into views such as Movies, Music, and TV. The rest show in their own view.' }
         ] }
     ];
 
@@ -234,6 +248,19 @@ export default function (view) {
     function fetchDevices() {
         try {
             return ApiClient.getJSON(ApiClient.getUrl('Devices'))
+                .then(function (r) { return (r && r.Items) || []; })
+                .catch(function () { return []; });
+        } catch (e) { return Promise.resolve([]); }
+    }
+
+    // fetchChannels
+    // Reads the channels, as Jellyfin's library access page lists them.
+    //
+    // Output
+    // [Promise]: The channels, or an empty list on failure.
+    function fetchChannels() {
+        try {
+            return ApiClient.getJSON(ApiClient.getUrl('Channels'))
                 .then(function (r) { return (r && r.Items) || []; })
                 .catch(function () { return []; });
         } catch (e) { return Promise.resolve([]); }
@@ -296,7 +323,8 @@ export default function (view) {
             fetchCultures(),
             fetchCastReceivers(),
             fetchUserViews(),
-            fetchGroupingOptions()
+            fetchGroupingOptions(),
+            fetchChannels()
         ]).then(function (results) {
             fullConfig = results[0];
             allUsers = results[1] || [];
@@ -307,6 +335,7 @@ export default function (view) {
             allCastReceivers = results[6] || [];
             allViews = results[7] || [];
             allGroupable = results[8] || [];
+            allChannels = results[9] || [];
             if (!fullConfig.Groups) fullConfig.Groups = [];
 
             renderSections();
@@ -373,14 +402,15 @@ export default function (view) {
             html += '<div class="base-collapsible-section">'
                 + '<button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="' + id + '">'
                 + '<span class="base-collapsible-title">' + esc(section.title) + '</span>'
-                + '<span class="base-collapsible-icon">&#9660;</span></button>'
-                + '<div id="' + id + '" class="base-collapsible-content collapsed">';
+                + '<span class="base-collapsible-icon"></span></button>'
+                + '<div id="' + id + '" class="base-collapsible-content collapsed">'
+                + '<div class="um-rows" data-label="' + esc(section.title) + '">';
 
             section.perms.forEach(function (p) {
                 html += renderPermRow(p, store);
             });
 
-            html += '</div></div>';
+            html += '</div></div></div>';
         });
 
         container.innerHTML = html;
@@ -395,30 +425,72 @@ export default function (view) {
         Shared.initCollapsibles();
         mountRowComponents();
         mountInheritFields();
+        mountRowLists(view.querySelector('#permissionSections'));
+        mountRowLists(view.querySelector('#configSections'));
         bindPermRows();
     }
 
+    // mountRowLists
+    // Puts the rows of each um-rows block in a Base List, so every row is a bordered row with a divider between rows.
+    //
+    // Inputs
+    // root [HTMLElement]: Where to look for um-rows blocks.
+    function mountRowLists(root) {
+        root.querySelectorAll('.um-rows').forEach(function (host) {
+            if (host.getAttribute('data-mounted') === '1') return;
+            host.setAttribute('data-mounted', '1');
+            var rows = Array.prototype.slice.call(host.children);
+            var list = createList({
+                items: rows,
+                render: function (row) { return row; },
+                layout: 'rows',
+                label: host.getAttribute('data-label') || null,
+                emptyText: null
+            });
+            host.appendChild(list.element);
+            if (root === view.querySelector('#permissionSections') || root === view.querySelector('#configSections')) {
+                rowLists.push(list);
+            }
+        });
+    }
+
+    // setRowShown
+    // Shows or hides one setting row, with the List cell that holds it.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
+    // shown [boolean]: Whether it shows.
+    function setRowShown(row, shown) {
+        var cell = row.closest('.base-list-item') || row;
+        cell.classList.toggle('hidden', !shown);
+    }
+
     // mountInheritFields
-    // Wraps each setting's control in an Inherit Field with an Override checkbox. The control keeps its own
-    // value in the page, so the field handle reads and writes nothing, and the Inherit Field only dims and
-    // disables the control while the setting is not overridden.
+    // Puts each row's lead, its checkbox or its label, in an Inherit Field whose pills read Member's own and
+    // Group sets this. The row's controls keep the group's own values, so the field handle reads and writes nothing.
+    // While the row is Member's own, the Inherit Field dims the lead and disables its checkbox, and the controls
+    // under the lead hide.
     function mountInheritFields() {
         view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
-            var control = row.querySelector('.perm-control');
+            var lead = row.querySelector('.perm-lead');
             inheritHandles[key] = createInheritField({
-                field: { element: control, getValue: function () { return null; }, setValue: function () {} },
-                toggle: 'checkbox',
-                overrideText: 'Override',
-                onChange: function (value) { if (!value.inherit) refreshManagedRow(row); }
+                field: { element: lead, getValue: function () { return null; }, setValue: function () {} },
+                inheritText: MEMBER_OWN,
+                overrideText: GROUP_SETS,
+                label: 'Who sets ' + row.getAttribute('data-label'),
+                onChange: function () {
+                    refreshRow(row);
+                    refreshBadges();
+                    if (key === 'LibraryAccess') applyAccessFilter();
+                    checkDirty();
+                }
             });
-            // A checkbox setting takes the Inherit Field's checkbox look, its box centered on the Override toggle.
-            if (row.getAttribute('data-type') === 'bool') inheritHandles[key].element.classList.add('check');
         });
     }
 
     // isManaged
-    // Says whether a setting is overridden.
+    // Says whether a setting is on Group sets this.
     //
     // Inputs
     // row [HTMLElement]: The setting row.
@@ -430,31 +502,60 @@ export default function (view) {
         return !!handle && !handle.getValue().inherit;
     }
 
+    // leadValue
+    // Reads the group's own value of a row led by a checkbox.
+    //
+    // Inputs
+    // row [HTMLElement]: The setting row.
+    //
+    // Output
+    // [boolean]: Whether the group's checkbox is on.
+    function leadValue(row) {
+        var input = row.querySelector('.perm-lead-input');
+        return !!input && input.checked;
+    }
+
     // setManaged
-    // Sets whether a setting is overridden. It passes through Override first, so a control that a component drew
-    // again while inheriting, such as an Ordered List's move buttons, is disabled with the rest.
+    // Sets whether a setting is on Group sets this, and the group's own value of a checkbox lead.
     //
     // Inputs
     // row [HTMLElement]: The setting row.
     // managed [boolean]: Whether the group's value applies.
-    function setManaged(row, managed) {
+    // value [boolean]: The checkbox lead's own value, or undefined for a label lead.
+    function setManaged(row, managed, value) {
         var handle = inheritHandles[row.getAttribute('data-perm')];
         if (!handle) return;
+        // The Inherit Field disables the lead's checkbox while inheriting, so it turns Group sets this on first and
+        // the checkbox takes its value while enabled.
         handle.setValue({ inherit: false });
-        if (managed) refreshManagedRow(row);
-        else handle.setValue({ inherit: true });
+        var input = row.querySelector('.perm-lead-input');
+        if (input && value !== undefined) input.checked = value === true;
+        if (!managed) handle.setValue({ inherit: true });
+        refreshRow(row);
     }
 
-    // refreshManagedRow
-    // Redraws what an overridden row hides or disables by itself.
+    // refreshRow
+    // Shows a row's controls only while it is Group sets this, and an access list only while its "all" checkbox is off.
     //
     // Inputs
     // row [HTMLElement]: The setting row.
-    function refreshManagedRow(row) {
-        updateFolderVisibility(row);
-        // A redraw puts back the move buttons the ends of the list keep disabled.
-        var order = row.getAttribute('data-type') === 'order' ? rowHandles[row.getAttribute('data-perm')] : null;
-        if (order) order.setItems(order.getItems());
+    function refreshRow(row) {
+        var body = row.querySelector('.perm-body');
+        if (!body) return;
+        var managed = isManaged(row);
+        var all = ALL_TYPES[row.getAttribute('data-type')] ? leadValue(row) : false;
+        body.classList.toggle('hidden', !managed || all);
+    }
+
+    // refreshBadges
+    // Counts the rows on Group sets this in each section, and shows the count in the section header.
+    function refreshBadges() {
+        view.querySelectorAll('#permissionSections .base-collapsible-section, #configSections .base-collapsible-section').forEach(function (section) {
+            var count = 0;
+            section.querySelectorAll('.perm-row').forEach(function (row) { if (isManaged(row)) count++; });
+            setCollapsibleBadge(section.querySelector('.base-collapsible-header'),
+                count ? { label: count + ' Set by Group', color: 'blue' } : null);
+        });
     }
 
     // destroyRowHandles
@@ -464,6 +565,8 @@ export default function (view) {
         inheritHandles = {};
         Object.keys(rowHandles).forEach(function (key) { rowHandles[key].destroy(); });
         rowHandles = {};
+        rowLists.forEach(function (list) { list.destroy(); });
+        rowLists = [];
         if (sessionRules) {
             sessionRules.destroy();
             if (sessionRules.element.parentNode) sessionRules.element.parentNode.removeChild(sessionRules.element);
@@ -471,8 +574,66 @@ export default function (view) {
         }
     }
 
+    // LIBRARY_TYPES
+    // Names a library's collection type as Jellyfin's library page does.
+    var LIBRARY_TYPES = {
+        movies: 'Movies', tvshows: 'Shows', music: 'Music', musicvideos: 'Music Videos', books: 'Books',
+        homevideos: 'Home Videos and Photos', boxsets: 'Collections', playlists: 'Playlists', mixed: 'Mixed Content'
+    };
+
+    // libraryRow
+    // Draws one library in a library list. The sublabel names its type and its first folder.
+    //
+    // Inputs
+    // l [object]: The library from getVirtualFolders, or a view with Id and Name.
+    //
+    // Output
+    // [object]: The row's { label, sublabel }.
+    function libraryRow(l) {
+        var id = libraryId(l);
+        var lib = allLibraries.find(function (x) { return x.ItemId === id; }) || l;
+        var type = LIBRARY_TYPES[lib.CollectionType] || (lib.CollectionType ? 'Mixed Content' : '');
+        var path = (lib.Locations && lib.Locations[0]) || '';
+        return { label: l.Name || l.name || id, sublabel: [type, path].filter(Boolean).join(' · ') };
+    }
+
+    // libraryId
+    // Reads the id of a library or a view.
+    //
+    // Inputs
+    // l [object]: The library or view.
+    //
+    // Output
+    // [string]: The id.
+    function libraryId(l) { return l.ItemId || l.Id || l.id; }
+
+    // channelRow
+    // Draws one channel in the channel list. The sublabel names its type, so a channel reads apart from a library.
+    //
+    // Inputs
+    // c [object]: The channel from the Channels API.
+    //
+    // Output
+    // [object]: The row's { label, sublabel }.
+    function channelRow(c) {
+        return { label: c.Name || c.Id, sublabel: 'Channel' + (c.ChannelType ? ' · ' + c.ChannelType : '') };
+    }
+
+    // pickList
+    // Builds a Checkbox List for an access row or a home screen row.
+    //
+    // Inputs
+    // opts [object]: The Checkbox List options this list adds.
+    //
+    // Output
+    // [object]: The Checkbox List handle.
+    function pickList(opts) {
+        return createCheckboxList(Object.assign({ maxHeight: 320, onChange: checkDirty }, opts));
+    }
+
     // mountRowComponents
-    // Mounts a Tag Input in each tags row, an Access Schedule in the schedule row, a Checkbox List in the device row, and an Ordered List in the library order row.
+    // Mounts the Base component each row holds: a Checkbox List in the access and home screen library rows, a Tag
+    // Input in each tags row, an Access Schedule in the schedule row, and an Ordered List in the library order row.
     function mountRowComponents() {
         view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
@@ -483,15 +644,27 @@ export default function (view) {
                 handle = createTagInput({ placeholder: 'Kids', onChange: checkDirty });
             } else if (type === 'schedule') {
                 handle = createAccessSchedule({ addText: 'Add Schedule', onChange: checkDirty });
+            } else if (type === 'library' || type === 'deletion') {
+                handle = pickList({
+                    items: allLibraries, idKey: 'ItemId', searchKeys: ['Name'],
+                    placeholder: 'Search libraries', emptyMessage: 'No libraries found.', renderRow: libraryRow
+                });
+            } else if (type === 'channels') {
+                handle = pickList({
+                    items: allChannels, idKey: 'Id', searchKeys: ['Name'],
+                    placeholder: 'Search channels', emptyMessage: 'No channels found.', renderRow: channelRow
+                });
             } else if (type === 'devices') {
-                handle = createCheckboxList({
-                    items: allDevices,
-                    idKey: 'Id',
-                    searchKeys: ['CustomName', 'Name', 'AppName', 'LastUserName', 'Id'],
-                    placeholder: 'Search devices',
-                    emptyMessage: 'No devices found.',
-                    renderRow: deviceRow,
-                    onChange: checkDirty
+                handle = pickList({
+                    items: allDevices, idKey: 'Id', searchKeys: ['CustomName', 'Name', 'AppName', 'LastUserName', 'Id'],
+                    placeholder: 'Search devices', emptyMessage: 'No devices found.', renderRow: deviceRow
+                });
+            } else if (type === 'libgrid') {
+                var source = row.getAttribute('data-source');
+                handle = pickList({
+                    fetchItems: function () { return homeLibraries(source); },
+                    idKey: libraryId, searchKeys: ['Name', 'name'],
+                    placeholder: 'Search libraries', emptyMessage: 'No libraries found.', renderRow: libraryRow
                 });
             } else if (type === 'order') {
                 handle = createOrderedList({
@@ -505,6 +678,36 @@ export default function (view) {
                 rowHandles[key] = handle;
             }
         });
+    }
+
+    // homeLibraries
+    // Lists the libraries a home screen row offers, leaving out the ones Library Access hides from members.
+    //
+    // Inputs
+    // source [string]: groupable for the folders Jellyfin can group, or empty for every library.
+    //
+    // Output
+    // [Array]: The libraries or folders.
+    function homeLibraries(source) {
+        var access = accessibleLibraryIds();
+        var items = source === 'groupable' ? allGroupable : allLibraries;
+        return items.filter(function (v) { return access === null || access[libraryId(v)] === true; });
+    }
+
+    // inItemOrder
+    // Puts picked ids in the order their items are listed, dropping ids no item has.
+    //
+    // Inputs
+    // ids [Array]: The picked ids.
+    // items [Array]: The listed items.
+    // idOf [function]: Reads an item's id.
+    //
+    // Output
+    // [Array]: The ids, in item order.
+    function inItemOrder(ids, items, idOf) {
+        var picked = {};
+        (ids || []).forEach(function (id) { picked[String(id)] = true; });
+        return items.map(idOf).filter(function (id) { return picked[String(id)] === true; });
     }
 
     // deviceRow
@@ -523,41 +726,6 @@ export default function (view) {
             label: d.CustomName || d.Name || d.AppName || d.Id,
             sublabel: [app, who].filter(Boolean).join(' · ')
         };
-    }
-
-    // checkGrid
-    // Builds a Check Grid of checkboxes.
-    //
-    // Inputs
-    // gridClass [string]: The class that names the grid.
-    // itemClass [string]: The class that names each checkbox.
-    // items [Array]: The items to list.
-    // valueOf [function]: Reads an item's value.
-    // nameOf [function]: Reads an item's label.
-    //
-    // Output
-    // [string]: The grid's HTML.
-    function checkGrid(gridClass, itemClass, items, valueOf, nameOf) {
-        var esc = Shared.escapeHtml;
-        return '<div class="base-check-grid ' + gridClass + '">'
-            + items.map(function (it) {
-                return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="' + itemClass + '" value="'
-                    + esc(valueOf(it)) + '" /><span class="checkboxLabel">' + esc(nameOf(it)) + '</span></label>';
-            }).join('')
-            + '</div>';
-    }
-
-    // libraryGrid
-    // Builds a Check Grid of every library.
-    //
-    // Inputs
-    // itemClass [string]: The class that names each checkbox.
-    //
-    // Output
-    // [string]: The grid's HTML.
-    function libraryGrid(itemClass) {
-        return checkGrid('perm-folders', itemClass, allLibraries,
-            function (l) { return l.ItemId; }, function (l) { return l.Name; });
     }
 
     // cultureOptions
@@ -600,8 +768,87 @@ export default function (view) {
         orderState = orderState.map(function (v) { return shownIds[v.id] ? next.shift() : v; });
     }
 
+    // selectHtml
+    // Builds a select in its own selectContainer, as Jellyfin's emby-select needs for its arrow.
+    //
+    // Inputs
+    // id [string]: The select's id.
+    // cls [string]: Its classes.
+    // options [string]: Its options' HTML.
+    // labelledBy [string]: The id of the element that names it.
+    //
+    // Output
+    // [string]: The select's HTML.
+    function selectHtml(id, cls, options, labelledBy) {
+        return '<div class="selectContainer"><select is="emby-select" id="' + id + '" class="' + cls + '" aria-labelledby="'
+            + labelledBy + '">' + options + '</select></div>';
+    }
+
+    // renderPermBody
+    // Builds the controls under a row's lead, which show while the row is Group sets this.
+    //
+    // Inputs
+    // p [object]: The setting from PERMISSIONS or CONFIG.
+    // controlId [string]: The id of the row's main control.
+    // labelId [string]: The id of the row's label.
+    //
+    // Output
+    // [string]: The controls' HTML, or empty for a checkbox row.
+    function renderPermBody(p, controlId, labelId) {
+        var esc = Shared.escapeHtml;
+        var optionsOf = function (list) {
+            return list.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
+        };
+        if (p.type === 'bool') return '';
+        if (ALL_TYPES[p.type] || p.type === 'tags' || p.type === 'schedule' || p.type === 'order' || p.type === 'libgrid') {
+            return '<div class="perm-mount"></div>';
+        }
+        if (p.type === 'int' || p.type === 'bitrate') {
+            return '<div class="inputContainer"><input is="emby-input" type="number" id="' + controlId + '" class="perm-value" min="'
+                + (p.min != null ? p.min : 0) + '"' + (p.type === 'bitrate' ? ' step="0.1"' : '') + ' aria-labelledby="' + labelId + '" /></div>';
+        }
+        if (p.type === 'enum') return selectHtml(controlId, 'perm-value', optionsOf(p.options || []), labelId);
+        if (p.type === 'rating') {
+            var ropts = '<option value=""></option>';
+            parentalRatings.forEach(function (r, i) {
+                ropts += '<option value="' + i + '">' + esc(ratingName(r)) + '</option>';
+            });
+            return selectHtml(controlId, 'perm-value', ropts, labelId);
+        }
+        if (p.type === 'unrated') {
+            return '<div class="base-check-grid perm-unrated-grid">' + UNRATED_ITEMS.map(function (u) {
+                return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-unrated" value="'
+                    + esc(u[0]) + '" /><span class="checkboxLabel">' + esc(u[1]) + '</span></label>';
+            }).join('') + '</div>';
+        }
+        if (p.type === 'submode') {
+            return selectHtml(controlId, 'perm-value', optionsOf(SUBTITLE_MODES), labelId)
+                + '<div class="fieldDescription perm-submode-help"></div>';
+        }
+        if (p.type === 'culture') return selectHtml(controlId, 'perm-value', cultureOptions(), labelId);
+        if (p.type === 'castreceiver') {
+            return selectHtml(controlId, 'perm-value', allCastReceivers.map(function (r) {
+                return '<option value="' + esc(r.Id || r.id) + '">' + esc(r.Name || r.name || r.Id) + '</option>';
+            }).join(''), labelId);
+        }
+        if (p.type === 'homesections') {
+            var secOpts = optionsOf(HOME_SECTIONS);
+            var fields = '';
+            for (var hi = 0; hi < HOME_SECTION_COUNT; hi++) {
+                fields += '<div class="selectContainer">'
+                    + '<label class="selectLabel" for="permHomeSection' + hi + '">Home screen section ' + (hi + 1) + '</label>'
+                    + '<select is="emby-select" id="permHomeSection' + hi + '" class="perm-homesection" data-index="' + hi + '">' + secOpts + '</select>'
+                    + '</div>';
+            }
+            return fields;
+        }
+        return '';
+    }
+
     // renderPermRow
-    // Builds one setting row, with its Override checkbox, label, control, and description.
+    // Builds one setting row. The lead is the setting's checkbox, or its label when the setting has other controls,
+    // and the Inherit Field puts the Member's own and Group sets this pills beside it. The controls follow, then the
+    // description.
     //
     // Inputs
     // p [object]: The setting from PERMISSIONS or CONFIG.
@@ -611,123 +858,42 @@ export default function (view) {
     // [string]: The row's HTML.
     function renderPermRow(p, store) {
         var esc = Shared.escapeHtml;
-        var control = '';
-
-        if (p.type === 'bool') {
-            control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
-                + '<span class="checkboxLabel">Enabled</span></label>';
-        } else if (p.type === 'int') {
-            control = '<input is="emby-input" type="number" min="' + (p.min != null ? p.min : 0) + '" class="perm-value" aria-label="' + esc(p.label) + '" />';
-        } else if (p.type === 'bitrate') {
-            control = '<input is="emby-input" type="number" min="0" step="0.1" class="perm-value" aria-label="' + esc(p.label) + '" />';
-        } else if (p.type === 'enum') {
-            var opts = (p.options || []).map(function (o) {
-                return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
-            }).join('');
-            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + opts + '</select>';
-        } else if (p.type === 'library') {
-            control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-allfolders" />'
-                + '<span class="checkboxLabel">Enable access to all libraries</span></label>'
-                + libraryGrid('perm-folder');
-        } else if (p.type === 'deletion') {
-            control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-alldelete" />'
-                + '<span class="checkboxLabel">All libraries</span></label>'
-                + checkGrid('perm-delete-folders', 'perm-delete-folder', allLibraries,
-                    function (l) { return l.ItemId; }, function (l) { return l.Name; });
-        } else if (p.type === 'channels') {
-            control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-allchannels" />'
-                + '<span class="checkboxLabel">Enable access to all channels</span></label>';
-        } else if (p.type === 'devices') {
-            control = '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-alldevices" />'
-                + '<span class="checkboxLabel">Enable access from all devices</span></label>'
-                + '<div class="perm-mount perm-devices"></div>';
-        } else if (p.type === 'rating') {
-            var ropts = '<option value=""></option>';
-            parentalRatings.forEach(function (r, i) {
-                ropts += '<option value="' + i + '">' + esc(ratingName(r)) + '</option>';
-            });
-            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + ropts + '</select>';
-        } else if (p.type === 'unrated') {
-            control = '<div class="base-check-grid perm-unrated-grid">' + UNRATED_ITEMS.map(function (u) {
-                return '<label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-unrated" value="'
-                    + esc(u[0]) + '" /><span class="checkboxLabel">' + esc(u[1]) + '</span></label>';
-            }).join('') + '</div>';
-        } else if (p.type === 'tags' || p.type === 'schedule' || p.type === 'order') {
-            control = '<div class="perm-mount"></div>';
-        } else if (p.type === 'submode') {
-            var mopts = SUBTITLE_MODES.map(function (m) {
-                return '<option value="' + esc(m[0]) + '">' + esc(m[1]) + '</option>';
-            }).join('');
-            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + mopts + '</select>'
-                + '<div class="fieldDescription perm-submode-help"></div>';
-        } else if (p.type === 'culture') {
-            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + cultureOptions() + '</select>';
-        } else if (p.type === 'castreceiver') {
-            var copts = allCastReceivers.map(function (r) {
-                return '<option value="' + esc(r.Id || r.id) + '">' + esc(r.Name || r.name || r.Id) + '</option>';
-            }).join('');
-            control = '<select is="emby-select" class="perm-value emby-select-withcolor">' + copts + '</select>';
-        } else if (p.type === 'homesections') {
-            var secOpts = HOME_SECTIONS.map(function (o) {
-                return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>';
-            }).join('');
-            var secRows = '';
-            for (var hi = 0; hi < HOME_SECTION_COUNT; hi++) {
-                secRows += '<div class="selectContainer">'
-                    + '<label class="selectLabel" for="permHomeSection' + hi + '">Home screen section ' + (hi + 1) + '</label>'
-                    + '<select is="emby-select" id="permHomeSection' + hi + '" class="perm-homesection emby-select-withcolor" data-index="' + hi + '">' + secOpts + '</select>'
-                    + '</div>';
-            }
-            control = secRows;
-        } else if (p.type === 'libgrid') {
-            // GroupedFolders lists only the folders Jellyfin can group. The exclude grids list every library.
-            var gridItems = (p.source === 'groupable') ? allGroupable : allLibraries;
-            var idOf = (p.source === 'groupable')
-                ? function (v) { return v.Id || v.id; }
-                : function (l) { return l.ItemId; };
-            control = checkGrid('perm-lib-grid', 'perm-lib', gridItems,
-                idOf, function (v) { return v.Name || v.name || ''; });
-        }
-
-        var invertAttr = (p.type === 'libgrid') ? ' data-invert="' + (p.invert ? '1' : '0') + '"' : '';
-        var defAttr = p.def ? ' data-default="1"' : '';
-        var attrs = ' data-store="' + esc(store) + '" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '"' + invertAttr + defAttr;
-
-        // A checkbox setting reads as Jellyfin's own checkbox, with the setting as its label.
-        if (p.type === 'bool') {
-            return '<div class="checkboxContainer checkboxContainer-withDescription perm-row"' + attrs + '>'
-                + '<div class="perm-control"><label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-value" />'
-                + '<span class="checkboxLabel">' + esc(p.label) + '</span></label></div>'
-                + (p.desc ? '<div class="fieldDescription checkboxFieldDescription">' + esc(p.desc) + '</div>' : '')
-                + '</div>';
-        }
-
-        // A single input or select takes the label's for, so the label names it.
-        var single = /^<(input|select)\b/.test(control) && control.indexOf('<select', 1) === -1;
         var controlId = 'perm' + store + p.key;
-        if (single) control = control.replace(/^<(input|select)\b/, '<$1 id="' + controlId + '"');
-        var labelHtml = p.label
-            ? '<label class="inputLabel"' + (single ? ' for="' + controlId + '"' : '') + '>' + esc(p.label) + '</label>'
-            : '';
-        return '<div class="inputContainer perm-row"' + attrs + '>'
-            + labelHtml
-            + '<div class="perm-control">' + control + '</div>'
+        var labelId = controlId + 'Label';
+        var lead = (p.type === 'bool' || ALL_TYPES[p.type])
+            ? '<div class="um-setting-check perm-lead"><label class="emby-checkbox-label"><input type="checkbox" is="emby-checkbox" class="perm-lead-input" />'
+                + '<span class="checkboxLabel">' + esc(p.label) + '</span></label></div>'
+            : '<span class="um-setting-label perm-lead" id="' + labelId + '">' + esc(p.label) + '</span>';
+        var body = renderPermBody(p, controlId, labelId);
+
+        var attrs = ' data-store="' + esc(store) + '" data-perm="' + esc(p.key) + '" data-type="' + esc(p.type) + '"'
+            + ' data-label="' + esc(p.label) + '"'
+            + (p.type === 'libgrid' ? ' data-invert="' + (p.invert ? '1' : '0') + '"' : '')
+            + (p.source ? ' data-source="' + esc(p.source) + '"' : '')
+            + (p.def ? ' data-default="1"' : '');
+
+        return '<div class="um-setting perm-row"' + attrs + '>'
+            + lead
+            + (body ? '<div class="um-setting-body perm-body">' + body + '</div>' : '')
             + (p.desc ? '<div class="fieldDescription">' + esc(p.desc) + '</div>' : '')
             + '</div>';
     }
 
     // bindPermRows
-    // Wires each row's Override checkbox and its own controls.
+    // Wires the controls inside each row.
     function bindPermRows() {
         view.querySelectorAll('.perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
 
-            row.querySelectorAll('.perm-allfolders, .perm-alldelete, .perm-alldevices').forEach(function (toggle) {
-                toggle.addEventListener('change', function () { updateFolderVisibility(row); });
-            });
+            if (ALL_TYPES[type]) {
+                row.querySelector('.perm-lead-input').addEventListener('change', function () {
+                    refreshRow(row);
+                    if (type === 'library') applyAccessFilter();
+                });
+            }
 
             // The home screen library lists follow Library Access, so they are filtered again on each change.
-            if (row.getAttribute('data-perm') === 'LibraryAccess') {
+            if (type === 'library') {
                 row.addEventListener('change', applyAccessFilter);
             }
 
@@ -750,27 +916,6 @@ export default function (view) {
         var mode = SUBTITLE_MODES.find(function (m) { return m[0] === val; });
         help.textContent = mode ? mode[2] : '';
     }
-
-    // updateFolderVisibility
-    // Hides a check grid while its All checkbox is on.
-    //
-    // Inputs
-    // row [HTMLElement]: The setting row.
-    function updateFolderVisibility(row) {
-        var pairs = [
-            ['.perm-allfolders', '.perm-folders'],
-            ['.perm-alldelete', '.perm-delete-folders'],
-            ['.perm-alldevices', '.perm-devices']
-        ];
-        pairs.forEach(function (pair) {
-            var all = row.querySelector(pair[0]);
-            var grid = row.querySelector(pair[1]);
-            if (all && grid) {
-                grid.classList.toggle('hidden', all.checked);
-            }
-        });
-    }
-
     // groupLabel
     // Names a group in the select, marking the default.
     //
@@ -908,9 +1053,8 @@ export default function (view) {
     // cfg [object]: The group's configuration.
     // key [string]: The setting.
     // type [string]: The row's control type.
-    // manage [object]: Takes the Override state in checked.
-    function loadConfigRow(row, cfg, key, type, manage) {
-        manage.checked = cfg['Manage' + key] === true;
+    function loadConfigRow(row, cfg, key, type) {
+        var managed = cfg['Manage' + key] === true;
 
         if (type === 'order') {
             // Saved views go first in their saved order, and the rest follow in the default order.
@@ -920,12 +1064,15 @@ export default function (view) {
             var front = (cfg.OrderedViews || []).filter(function (id) { return byId[id]; }).map(function (id) { return byId[id]; });
             orderState = front.concat(views.filter(function (v) { return front.indexOf(v) === -1; }));
         } else if (type === 'libgrid') {
+            // A row lists libraries as shown, so an exclude list is turned around into the libraries that show.
             var invert = row.getAttribute('data-invert') === '1';
-            var stored = cfg[key] || [];
-            row.querySelectorAll('.perm-lib').forEach(function (cb) {
-                var listed = stored.indexOf(cb.value) !== -1;
-                cb.checked = invert ? !listed : listed;
+            var stored = (cfg[key] || []).map(String);
+            var items = row.getAttribute('data-source') === 'groupable' ? allGroupable : allLibraries;
+            var shown = items.map(libraryId).filter(function (id) {
+                var listed = stored.indexOf(String(id)) !== -1;
+                return invert ? !listed : listed;
             });
+            if (rowHandles[key]) rowHandles[key].setValue(shown);
         } else if (type === 'homesections') {
             var secs = (cfg.HomeSections && cfg.HomeSections.length) ? cfg.HomeSections : DEFAULT_HOME_SECTIONS;
             row.querySelectorAll('.perm-homesection').forEach(function (sel, idx) {
@@ -939,12 +1086,13 @@ export default function (view) {
             var val = cfg[key];
             sel.value = (val == null) ? (sel.options[0] ? sel.options[0].value : '') : val;
         } else {
-            var v = row.querySelector('.perm-value');
             var stored2 = cfg[key];
-            v.checked = (stored2 === true || stored2 === false)
+            setManaged(row, managed, (stored2 === true || stored2 === false)
                 ? stored2 === true
-                : row.getAttribute('data-default') === '1';
+                : row.getAttribute('data-default') === '1');
+            return;
         }
+        setManaged(row, managed);
     }
 
     // collectConfigRow
@@ -955,23 +1103,21 @@ export default function (view) {
     // cfg [object]: The group's configuration.
     // key [string]: The setting.
     // type [string]: The row's control type.
-    // managed [boolean]: Whether the row is overridden.
-    function collectConfigRow(row, cfg, key, type, managed) {
-        cfg['Manage' + key] = managed;
+    function collectConfigRow(row, cfg, key, type) {
+        cfg['Manage' + key] = isManaged(row);
 
         if (type === 'order') {
             // Only the libraries members can see are shown, so only those are saved in the order.
             var order = rowHandles[key];
             cfg.OrderedViews = order ? order.getItems().map(function (v) { return v.id; }) : [];
         } else if (type === 'libgrid') {
+            // Only the libraries members can see are listed, so only those are saved.
             var invert = row.getAttribute('data-invert') === '1';
-            var out = [];
-            row.querySelectorAll('.perm-lib').forEach(function (cb) {
-                var label = cb.closest('.emby-checkbox-label');
-                if (label && label.classList.contains('hidden')) return;
-                if (invert ? !cb.checked : cb.checked) out.push(cb.value);
+            var checked = {};
+            (rowHandles[key] ? rowHandles[key].getValue() : []).forEach(function (id) { checked[String(id)] = true; });
+            cfg[key] = homeLibraries(row.getAttribute('data-source')).map(libraryId).filter(function (id) {
+                return invert ? !checked[String(id)] : checked[String(id)] === true;
             });
-            cfg[key] = out;
         } else if (type === 'homesections') {
             var secs = [];
             row.querySelectorAll('.perm-homesection').forEach(function (sel) { secs.push(sel.value); });
@@ -979,7 +1125,7 @@ export default function (view) {
         } else if (type === 'submode' || type === 'culture' || type === 'castreceiver') {
             cfg[key] = row.querySelector('.perm-value').value;
         } else {
-            cfg[key] = row.querySelector('.perm-value').checked;
+            cfg[key] = leadValue(row);
         }
     }
 
@@ -990,17 +1136,15 @@ export default function (view) {
     // [object]: A set of library ids, or null when every library is visible.
     function accessibleLibraryIds() {
         var row = view.querySelector('.perm-row[data-perm="LibraryAccess"]');
-        if (!row) return null;
-        var managed = isManaged(row);
-        var allFolders = row.querySelector('.perm-allfolders').checked;
-        if (!managed || allFolders) return null;
+        if (!row || !inheritHandles.LibraryAccess || !rowHandles.LibraryAccess) return null;
+        if (!isManaged(row) || leadValue(row)) return null;
         var set = {};
-        row.querySelectorAll('.perm-folder:checked').forEach(function (cb) { set[cb.value] = true; });
+        rowHandles.LibraryAccess.getValue().forEach(function (id) { set[id] = true; });
         return set;
     }
 
     // applyAccessFilter
-    // Hides the home screen libraries members cannot see, so an admin cannot order or toggle a hidden library.
+    // Hides the home screen libraries members cannot see, so an admin cannot order or pick a hidden library.
     function applyAccessFilter() {
         var access = accessibleLibraryIds();
         var accessible = function (id) { return access === null || access[id] === true; };
@@ -1010,17 +1154,12 @@ export default function (view) {
 
         view.querySelectorAll('#configSections .perm-row').forEach(function (row) {
             var type = row.getAttribute('data-type');
+            var handle = rowHandles[row.getAttribute('data-perm')];
+            if (!handle) return;
             if (type === 'order') {
-                var order = rowHandles[row.getAttribute('data-perm')];
-                if (order) {
-                    order.setItems(orderState.filter(function (v) { return libIds[v.id] !== true || accessible(v.id); }));
-                    setManaged(row, isManaged(row));
-                }
+                handle.setItems(orderState.filter(function (v) { return libIds[v.id] !== true || accessible(v.id); }));
             } else if (type === 'libgrid') {
-                row.querySelectorAll('.perm-lib').forEach(function (cb) {
-                    var label = cb.closest('.emby-checkbox-label');
-                    if (label) label.classList.toggle('hidden', !accessible(cb.value));
-                });
+                handle.refresh();
             }
         });
     }
@@ -1038,33 +1177,27 @@ export default function (view) {
         view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
-            var manage = { checked: false };
 
             if (row.getAttribute('data-store') === 'config') {
-                loadConfigRow(row, cfg, key, type, manage);
-                setManaged(row, manage.checked);
+                loadConfigRow(row, cfg, key, type);
                 return;
             }
 
+            var managed = perms['Manage' + key] === true;
+            var lead;
             if (type === 'library') {
-                manage.checked = perms.ManageLibraryAccess === true;
-                row.querySelector('.perm-allfolders').checked = perms.EnableAllFolders !== false;
-                var enabled = perms.EnabledFolders || [];
-                row.querySelectorAll('.perm-folder').forEach(function (cb) { cb.checked = enabled.indexOf(cb.value) !== -1; });
+                lead = perms.EnableAllFolders !== false;
+                if (rowHandles[key]) rowHandles[key].setValue(perms.EnabledFolders || []);
             } else if (type === 'channels') {
-                manage.checked = perms.ManageChannelAccess === true;
-                row.querySelector('.perm-allchannels').checked = perms.EnableAllChannels !== false;
+                lead = perms.EnableAllChannels !== false;
+                if (rowHandles[key]) rowHandles[key].setValue(perms.EnabledChannels || []);
             } else if (type === 'deletion') {
-                manage.checked = perms.ManageEnableContentDeletion === true;
-                row.querySelector('.perm-alldelete').checked = perms.EnableContentDeletion === true;
-                var delFolders = perms.EnableContentDeletionFromFolders || [];
-                row.querySelectorAll('.perm-delete-folder').forEach(function (cb) { cb.checked = delFolders.indexOf(cb.value) !== -1; });
+                lead = perms.EnableContentDeletion === true;
+                if (rowHandles[key]) rowHandles[key].setValue(perms.EnableContentDeletionFromFolders || []);
             } else if (type === 'devices') {
-                manage.checked = perms.ManageDeviceAccess === true;
-                row.querySelector('.perm-alldevices').checked = perms.EnableAllDevices !== false;
+                lead = perms.EnableAllDevices !== false;
                 if (rowHandles[key]) rowHandles[key].setValue(perms.EnabledDevices || []);
             } else if (type === 'rating') {
-                manage.checked = perms.ManageMaxParentalRating === true;
                 var sel = row.querySelector('.perm-value');
                 sel.value = '';
                 if (perms.MaxParentalRating != null) {
@@ -1077,33 +1210,27 @@ export default function (view) {
                     }
                 }
             } else if (type === 'unrated') {
-                manage.checked = perms.ManageBlockUnratedItems === true;
                 var blocked = perms.BlockUnratedItems || [];
                 row.querySelectorAll('.perm-unrated').forEach(function (cb) { cb.checked = blocked.indexOf(cb.value) !== -1; });
             } else if (type === 'tags') {
-                manage.checked = perms['Manage' + key] === true;
                 if (rowHandles[key]) rowHandles[key].setValue(perms[key] || []);
             } else if (type === 'schedule') {
-                manage.checked = perms.ManageAccessSchedules === true;
                 if (rowHandles[key]) rowHandles[key].setValue(perms.AccessSchedules || []);
             } else if (type === 'bitrate') {
-                manage.checked = perms.ManageRemoteClientBitrateLimit === true;
                 row.querySelector('.perm-value').value = (perms.RemoteClientBitrateLimit || 0) / 1000000 || '';
+            } else if (type === 'bool') {
+                lead = perms[key] === true;
+            } else if (type === 'int') {
+                row.querySelector('.perm-value').value = perms[key] || 0;
             } else {
-                manage.checked = perms['Manage' + key] === true;
                 var val = row.querySelector('.perm-value');
-                if (type === 'bool') {
-                    val.checked = perms[key] === true;
-                } else if (type === 'int') {
-                    val.value = perms[key] || 0;
-                } else {
-                    val.value = perms[key] || (val.options[0] && val.options[0].value);
-                }
+                val.value = perms[key] || (val.options[0] && val.options[0].value);
             }
 
-            setManaged(row, manage.checked);
+            setManaged(row, managed, lead);
         });
 
+        refreshBadges();
         applyAccessFilter();
         loadGroupExtras(group);
         if (memberSel) {
@@ -1212,23 +1339,32 @@ export default function (view) {
         return CHANGE_MODES.indexOf(value) >= 0 ? value : 'Allowed';
     }
 
-    // updatePwEnabledState
-    // Shows the password fields while password requirements are on.
-    function updatePwEnabledState() {
-        Shared.setVisible('pwFields', !!(view.querySelector('#grpPwEnabled') || {}).checked);
+    // showRuleRows
+    // Shows the rows of an Account Rules section while its first checkbox is on, and marks the section header On.
+    //
+    // Inputs
+    // checkboxId [string]: The id of the checkbox that turns the rule on.
+    // rowClass [string]: The class of the rows that depend on it.
+    function showRuleRows(checkboxId, rowClass) {
+        var box = view.querySelector('#' + checkboxId);
+        if (!box) return;
+        var on = box.checked;
+        view.querySelectorAll('.' + rowClass).forEach(function (row) { setRowShown(row, on); });
+        var section = box.closest('.base-collapsible-section');
+        if (section) setCollapsibleBadge(section.querySelector('.base-collapsible-header'), on ? { label: 'On', color: 'blue' } : null);
     }
+
+    // updatePwEnabledState
+    // Shows the password rows while password requirements are on.
+    function updatePwEnabledState() { showRuleRows('grpPwEnabled', 'um-pw-field'); }
 
     // updateExpiryEnabledState
-    // Shows the expiry fields while expiry is on.
-    function updateExpiryEnabledState() {
-        Shared.setVisible('grpExpiryFields', !!(view.querySelector('#grpExpiryEnabled') || {}).checked);
-    }
+    // Shows the expiry rows while expiry is on.
+    function updateExpiryEnabledState() { showRuleRows('grpExpiryEnabled', 'um-expiry-field'); }
 
     // updateInactiveEnabledState
-    // Shows the inactivity fields while inactivity is on.
-    function updateInactiveEnabledState() {
-        Shared.setVisible('inactiveFields', !!(view.querySelector('#grpInactiveEnabled') || {}).checked);
-    }
+    // Shows the inactivity row while inactivity is on.
+    function updateInactiveEnabledState() { showRuleRows('grpInactiveEnabled', 'um-inactive-field'); }
 
     var SESSION_MODES = ['All', 'Only', 'AllExcept'];
 
@@ -1373,9 +1509,7 @@ export default function (view) {
 
     // updateSessionEnabledState
     // Shows the rules while session cleanup is on.
-    function updateSessionEnabledState() {
-        Shared.setVisible('sessionFields', !!(view.querySelector('#grpSessionEnabled') || {}).checked);
-    }
+    function updateSessionEnabledState() { showRuleRows('grpSessionEnabled', 'um-session-field'); }
 
     // renderUserCards
     // Draws the count cards. Inactive counts the members the expiry task would disable, by each group's own window.
@@ -1439,34 +1573,29 @@ export default function (view) {
         view.querySelectorAll('.perm-row').forEach(function (row) {
             var key = row.getAttribute('data-perm');
             var type = row.getAttribute('data-type');
-            var managed = isManaged(row);
 
             if (row.getAttribute('data-store') === 'config') {
-                collectConfigRow(row, cfg, key, type, managed);
+                collectConfigRow(row, cfg, key, type);
                 return;
             }
 
+            perms['Manage' + key] = isManaged(row);
+            var picked = rowHandles[key] ? rowHandles[key].getValue() : [];
             if (type === 'library') {
-                perms.ManageLibraryAccess = managed;
-                perms.EnableAllFolders = row.querySelector('.perm-allfolders').checked;
-                var folders = [];
-                row.querySelectorAll('.perm-folder:checked').forEach(function (cb) { folders.push(cb.value); });
-                perms.EnabledFolders = folders;
+                perms.EnableAllFolders = leadValue(row);
+                perms.EnabledFolders = inItemOrder(picked, allLibraries, libraryId);
             } else if (type === 'channels') {
-                perms.ManageChannelAccess = managed;
-                perms.EnableAllChannels = row.querySelector('.perm-allchannels').checked;
+                perms.EnableAllChannels = leadValue(row);
+                // With no channels to list, the saved channels are kept as they are. A group that never saved a
+                // channel list and picks none is left without one, which reads as the same empty list.
+                if (allChannels.length && (perms.EnabledChannels !== undefined || picked.length)) perms.EnabledChannels = inItemOrder(picked, allChannels, function (c) { return c.Id; });
             } else if (type === 'deletion') {
-                perms.ManageEnableContentDeletion = managed;
-                perms.EnableContentDeletion = row.querySelector('.perm-alldelete').checked;
-                var delFolders = [];
-                row.querySelectorAll('.perm-delete-folder:checked').forEach(function (cb) { delFolders.push(cb.value); });
-                perms.EnableContentDeletionFromFolders = delFolders;
+                perms.EnableContentDeletion = leadValue(row);
+                perms.EnableContentDeletionFromFolders = inItemOrder(picked, allLibraries, libraryId);
             } else if (type === 'devices') {
-                perms.ManageDeviceAccess = managed;
-                perms.EnableAllDevices = row.querySelector('.perm-alldevices').checked;
-                perms.EnabledDevices = rowHandles[key] ? rowHandles[key].getValue() : [];
+                perms.EnableAllDevices = leadValue(row);
+                perms.EnabledDevices = picked;
             } else if (type === 'rating') {
-                perms.ManageMaxParentalRating = managed;
                 var sel = row.querySelector('.perm-value');
                 if (sel.value === '' || parentalRatings[sel.value] === undefined) {
                     perms.MaxParentalRating = null;
@@ -1478,30 +1607,20 @@ export default function (view) {
                     perms.MaxParentalSubRating = sub == null ? null : sub;
                 }
             } else if (type === 'unrated') {
-                perms.ManageBlockUnratedItems = managed;
                 var items = [];
                 row.querySelectorAll('.perm-unrated:checked').forEach(function (cb) { items.push(cb.value); });
                 perms.BlockUnratedItems = items;
-            } else if (type === 'tags') {
-                perms['Manage' + key] = managed;
-                perms[key] = rowHandles[key] ? rowHandles[key].getValue() : [];
-            } else if (type === 'schedule') {
-                perms.ManageAccessSchedules = managed;
-                perms.AccessSchedules = rowHandles[key] ? rowHandles[key].getValue() : [];
+            } else if (type === 'tags' || type === 'schedule') {
+                perms[key] = picked;
             } else if (type === 'bitrate') {
-                perms.ManageRemoteClientBitrateLimit = managed;
                 var mbps = parseFloat(row.querySelector('.perm-value').value);
                 perms.RemoteClientBitrateLimit = isNaN(mbps) || mbps < 0 ? 0 : Math.round(mbps * 1000000);
+            } else if (type === 'bool') {
+                perms[key] = leadValue(row);
+            } else if (type === 'int') {
+                perms[key] = parseInt(row.querySelector('.perm-value').value, 10) || 0;
             } else {
-                perms['Manage' + key] = managed;
-                var val = row.querySelector('.perm-value');
-                if (type === 'bool') {
-                    perms[key] = val.checked;
-                } else if (type === 'int') {
-                    perms[key] = parseInt(val.value, 10) || 0;
-                } else {
-                    perms[key] = val.value;
-                }
+                perms[key] = row.querySelector('.perm-value').value;
             }
         });
 
@@ -1698,6 +1817,7 @@ export default function (view) {
             if (e.target.closest('button') === saveBar.button) confirmSave(e);
         }, true);
         view.querySelector('#groupSaveBar').appendChild(saveBar.element);
+        mountRowLists(view.querySelector('#groupEditor'));
         view.querySelector('#selectGroup').addEventListener('change', function () {
             collectCurrentGroup();
             currentGroupId = this.value;

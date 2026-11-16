@@ -6,7 +6,7 @@ namespace Jellyfin.Plugin.UserManagement.Models;
 /// <summary>
 /// The display and playback preferences a group applies to its members, mirroring the fields Jellyfin
 /// exposes on a user's Display / Home / Playback / Subtitles preference pages. Follows the same
-/// Override / Inherit model as <see cref="GroupPermissions"/>: only settings the group manages overwrite
+/// Group sets this / Member's own model as <see cref="GroupPermissions"/>: only settings the group manages overwrite
 /// the member's value; the rest are left exactly as the user has them.
 /// </summary>
 public class GroupConfiguration

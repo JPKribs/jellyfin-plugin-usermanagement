@@ -22,7 +22,12 @@ changelog:
   - Group tags, access schedules and the media library order use the Base Tag Input, Access Schedule and Ordered List
   - Invite resources are rows of a title and a URL, edited in place, and each invite link sits in a copy field
   - Group names are entered in a prompt, and deleting a group or an invite asks first in a dialog
-  - Each group setting is a Base Inherit Field with its Override checkbox beside it, and session cleanup rules are Base Repeater cards with a client picker
+  - Each group setting is its own bordered row, with Member's own and Group sets this pills beside its name, and its controls show only while the group sets it
+  - Group sections read like Jellyfin's user pages, and each section header counts the settings the group sets
+  - Library, channel and device access and media deletion show a searchable list under their "all" checkbox only while it is off, and the home screen library rows are searchable lists too
+  - Group channel access can pick single channels
+  - Group settings are split into Access and Features, Preferences and Account Rules, with Playback and Display apart and the old Other settings under Profile
+  - Session cleanup rules are Base Repeater cards with a client picker
   - Invites are a Base Record List with each link in a copy field on its row, and selecting one opens its link, expiration and state in a dialog
   - Pending resets are a Base Record List, and each code sits in a masked copy field with an eye that shows it
   - Invite and reset state tags are colored by state, such as green for Active and orange for Expired
@@ -32,6 +37,7 @@ changelog:
   - Device Access lists each device on its own row with its app and last user, in a list you can search
   fixed:
   - The arrows on collapsible sections are back to their usual size
+  - The Clients list in a session cleanup rule opens under its field
   developer:
   - Uses JPKribs.Jellyfin.Base 2026.11.19, with the dashboard pages and the signup page on its base- classes, and its Record List tag colors, inline Copy Field and checkbox safe inputContainer in place of local code
   - The repository guides live in starthere.md, agent.md and skills/

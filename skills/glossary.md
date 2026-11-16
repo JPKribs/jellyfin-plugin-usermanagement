@@ -15,10 +15,12 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | Member | A user in a group. A user belongs to one group at a time | `MemberIds` | Assignee, participant |
 | Membership | The **Groups** section that picks a group's members | | Users list |
 | Default group | The group new users join, marked **(Default)** in the group select | `DefaultGroupId` | Primary group, fallback group |
-| Override | A setting the group forces onto every member. A setting that is not overridden keeps each member's own value | `Manage<Setting>` | Manage, enforce, lock |
-| Settings | The **Groups** section of Jellyfin user policy settings, such as library access and parental control | `GroupPermissions` | Permissions page, policy |
-| Configuration | The **Groups** section of display and playback preferences, such as subtitles and home screen | `GroupConfiguration` | Preferences page |
-| Other | The **Groups** section of session management, password requirements, expiry, and inactivity | | Lifecycle, extras |
+| Group sets this | The pill that makes a setting reach members. The group's value is written onto every member | `Manage<Setting>` is `true` | Override, manage, enforce, lock |
+| Member's own | The pill that leaves a setting alone, so each member keeps their own value | `Manage<Setting>` is `false` | Inherit, unmanaged |
+| Set by Group | The count of a section's settings on **Group sets this**, shown in its header as **2 Set by Group** | | Overrides, managed |
+| Access and Features | The **Groups** section of Jellyfin user policy settings, such as library access and parental control | `GroupPermissions` | Settings, permissions page, policy |
+| Preferences | The **Groups** section of display and playback preferences, such as subtitles and home screen | `GroupConfiguration` | Configuration, preferences page |
+| Account Rules | The **Groups** section of session management, password requirements, expiry, and inactivity | | Other, lifecycle, extras |
 | Access Schedule | The day and time windows when members may use the server | `AccessSchedules`, `AccessScheduleEntry` | Time limit, curfew |
 | Media library order | The order libraries appear on the home screen | `OrderedViews` | Library sort |
 | Apply | Writes every group's overridden settings onto its members, on save and on a schedule | `GroupService`, `POST /UserManagement/Apply` | Sync, push |

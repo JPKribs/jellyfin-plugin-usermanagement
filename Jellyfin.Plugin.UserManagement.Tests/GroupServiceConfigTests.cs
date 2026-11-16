@@ -16,7 +16,7 @@ namespace Jellyfin.Plugin.UserManagement.Tests;
 /// <summary>
 /// Tests that <see cref="Services.GroupService.ApplyGroupAsync"/> pushes a group's managed
 /// <see cref="GroupConfiguration"/> onto the member through <c>UpdateConfigurationAsync</c>, honoring
-/// the Override / Inherit model and the <see cref="GroupConfigurationExtensions.ManagesAnything"/> gate.
+/// the Group sets this / Member's own model and the <see cref="GroupConfigurationExtensions.ManagesAnything"/> gate.
 /// </summary>
 [Collection("Plugin")]
 public class GroupServiceConfigTests
