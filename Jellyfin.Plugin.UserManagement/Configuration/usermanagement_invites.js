@@ -4,8 +4,8 @@
 import {
     createPage,
     createKeyValueEditor,
-    createCopyField,
-    createRecordList,
+    createQrCode,
+    createList,
     createDefinitionList,
     openEditorDialog,
     confirmDialog,
@@ -121,29 +121,38 @@ export default function (view) {
         return _groups.filter(function (g) { return g.Id === gid; })[0] || null;
     }
 
-    var STATUS_LOOK = {
-        Active: { color: 'green', icon: 'check_circle' },
-        Locked: { color: 'purple', icon: 'lock' },
-        UsedUp: { color: 'gray', icon: 'block' },
-        Expired: { color: 'orange', icon: 'event_busy' }
-    };
-
     // statusOf
-    // Picks an invite's status for its tag, its badge, and the count cards.
+    // Picks an invite's status for its badge and the count cards. state is the Base badge state that colors it,
+    // or gray for Used up, which BADGE_STATES has no state for.
     //
     // Inputs
     // inv [object]: The invite.
     //
     // Output
-    // [object]: { cls, text }, where cls is Active, Locked, UsedUp, or Expired.
+    // [object]: { cls, text, state }, where cls is Active, Locked, UsedUp, or Expired.
     function statusOf(inv) {
-        if (inviteExpired(inv)) return { cls: 'Expired', text: 'Expired' };
-        if (!inv.Enabled) return { cls: 'Locked', text: 'Locked' };
-        if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'UsedUp', text: 'Used Up' };
+        if (inviteExpired(inv)) return { cls: 'Expired', text: 'Expired', state: 'Expired' };
+        if (!inv.Enabled) return { cls: 'Locked', text: 'Locked', state: 'Locked' };
+        if (inv.MaxUses > 0 && inv.UsedCount >= inv.MaxUses) return { cls: 'UsedUp', text: 'Used Up', state: 'gray' };
         // The server refuses signups into an expired group, so the link is dead until the group's
         // expiration moves even though the invite itself is still enabled.
-        if (groupExpired(inviteGroup(inv))) return { cls: 'Expired', text: 'Group Expired' };
-        return { cls: 'Active', text: 'Active' };
+        if (groupExpired(inviteGroup(inv))) return { cls: 'Expired', text: 'Group Expired', state: 'Expired' };
+        return { cls: 'Active', text: 'Active', state: 'Active' };
+    }
+
+    // statusBadge
+    // Draws an invite's status as a Base badge.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [HTMLElement]: The badge.
+    function statusBadge(inv) {
+        var st = statusOf(inv);
+        var holder = document.createElement('span');
+        holder.innerHTML = Shared.statusBadge(st.text, st.state);
+        return holder.firstElementChild || holder;
     }
 
     // usesText
@@ -153,9 +162,62 @@ export default function (view) {
     // inv [object]: The invite.
     //
     // Output
-    // [string]: Such as "1 use of 5" or "3 uses".
+    // [string]: Such as "4 of 10 uses" or "4 uses, no limit".
     function usesText(inv) {
-        return Shared.plural(inv.UsedCount || 0, 'use') + (inv.MaxUses > 0 ? ' of ' + inv.MaxUses : '');
+        var used = inv.UsedCount || 0;
+        if (inv.MaxUses > 0) return used + ' of ' + Shared.plural(inv.MaxUses, 'use');
+        return Shared.plural(used, 'use') + ', no limit';
+    }
+
+    // expiryLine
+    // Names an invite's expiration date in the reader's locale. The stored date is a UTC day, so it is shown in UTC.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [object]: { label, value }, such as Expires and Jun 12, 2026, Expired and the date once it passed, or Expires and Never.
+    function expiryLine(inv) {
+        var day = expiryDate(inv);
+        if (!day) return { label: 'Expires', value: 'Never' };
+        var date = new Date(day + 'T00:00:00Z');
+        var text = isNaN(date.getTime()) ? day : date.toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' });
+        return { label: inviteExpired(inv) ? 'Expired' : 'Expires', value: text };
+    }
+
+    // detailItems
+    // Lists an invite's group, uses, expiration, and PIN for a Definition List, in the same order on every card.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [Array]: The Definition List items.
+    function detailItems(inv) {
+        var expiry = expiryLine(inv);
+        return [
+            { label: 'Group', value: groupText(inv) || null },
+            { label: 'Uses', value: usesText(inv) },
+            { label: expiry.label, value: expiry.value },
+            { label: 'PIN', value: inv.HasPin ? 'Set' : null }
+        ];
+    }
+
+    // linkQr
+    // Builds an invite's inline QR Code, its link in a Copy Field with a button that opens the full code.
+    //
+    // Inputs
+    // inv [object]: The invite.
+    //
+    // Output
+    // [object]: The QR Code handle.
+    function linkQr(inv) {
+        return createQrCode({
+            layout: 'inline',
+            value: inviteUrl(inv.Token),
+            label: 'Invite link of ' + (inv.Label || 'Untitled invite'),
+            fileName: 'invite-qr-code.png'
+        });
     }
 
     // groupText
@@ -345,64 +407,76 @@ export default function (view) {
         ]);
     }
 
-    // linkField
-    // Builds the row's inline Copy Field, which shows the invite's link and copies it.
+    // toCard
+    // Takes what one invite card shows, so the List redraws a card only when something on it changed.
     //
     // Inputs
     // inv [object]: The invite.
     //
     // Output
-    // [object]: The Copy Field handle.
-    function linkField(inv) {
-        return createCopyField({
-            value: inviteUrl(inv.Token),
-            inline: true,
-            size: 'small',
-            label: 'Link of ' + (inv.Label || 'Untitled invite'),
-            copyLabel: 'Copy Link',
-            copiedText: 'Link copied.'
-        });
-    }
-
-    // toItem
-    // Builds one Record List row, with the invite's uses, group, status, and expiration, and its link in a Copy Field.
-    //
-    // Inputs
-    // inv [object]: The invite.
-    //
-    // Output
-    // [object]: The Record List item.
-    function toItem(inv) {
-        var st = statusOf(inv);
-        var parts = [usesText(inv), groupText(inv)];
-        if (inv.HasPin) parts.push('PIN set');
-        var tags = [{ label: st.text, icon: STATUS_LOOK[st.cls].icon, color: STATUS_LOOK[st.cls].color }];
-        if (inv.ExpiresAt) tags.push({ label: 'Expires ' + expiryDate(inv), icon: 'event' });
+    // [object]: { id, inv, url, status, details } for renderCard.
+    function toCard(inv) {
         return {
             id: String(inv.Id),
-            inviteId: inv.Id,
-            title: inv.Label || 'Untitled invite',
-            secondary: parts.filter(Boolean).join(' · '),
-            tags: tags,
-            aside: linkField(inv)
+            inv: inv,
+            url: inviteUrl(inv.Token),
+            status: statusOf(inv),
+            details: detailItems(inv)
         };
     }
 
+    // renderCard
+    // Draws one invite as a Base panel, its name and status badge in the header, then its details and its inline QR Code.
+    // A click on the card opens the invite, except on the QR Code, whose field and buttons act on their own.
+    //
+    // Inputs
+    // card [object]: The card from toCard.
+    //
+    // Output
+    // [object]: { element, destroy }.
+    function renderCard(card) {
+        var inv = card.inv;
+        var el = document.createElement('div');
+        el.className = 'base-panel openable um-invite';
+        el.tabIndex = 0;
+        el.innerHTML = '<div class="base-panel-header um-invite-head"><span class="um-invite-title"></span><span class="um-invite-status"></span></div>'
+            + '<div class="base-panel-body um-invite-body"></div>';
+        el.querySelector('.um-invite-title').textContent = inv.Label || 'Untitled invite';
+        el.querySelector('.um-invite-status').appendChild(statusBadge(inv));
+        var details = createDefinitionList({ items: card.details });
+        var qr = linkQr(inv);
+        var body = el.querySelector('.um-invite-body');
+        body.appendChild(details.element);
+        body.appendChild(qr.element);
+        el.addEventListener('click', function (e) {
+            if (e.target.closest && e.target.closest('.base-qr-code')) return;
+            openInvite(inv.Id);
+        });
+        el.addEventListener('keydown', function (e) {
+            if (e.target !== el || (e.key !== 'Enter' && e.key !== ' ')) return;
+            e.preventDefault();
+            openInvite(inv.Id);
+        });
+        return { element: el, destroy: function () { details.destroy(); qr.destroy(); } };
+    }
+
     // ensureInviteList
-    // Draws the Record List once.
+    // Draws the List of invite cards once.
     function ensureInviteList() {
         if (_inviteList) return;
-        _inviteList = createRecordList({
+        _inviteList = createList({
+            layout: 'plain',
+            wrap: false,
+            key: 'id',
             label: 'Invites',
             emptyText: 'No invites yet. Create one above.',
-            openLabel: 'Open {value}',
-            onOpen: function (item) { openInvite(item.inviteId); }
+            render: renderCard
         });
         Shared.getEl('inviteList').appendChild(_inviteList.element);
     }
 
     // destroyInviteList
-    // Tears down the Record List when the page hides.
+    // Tears down the List when the page hides.
     function destroyInviteList() {
         if (!_inviteList) return;
         _inviteList.destroy();
@@ -411,11 +485,11 @@ export default function (view) {
     }
 
     // renderInvites
-    // Draws the count cards and one row per invite.
+    // Draws the count cards and one card per invite.
     function renderInvites() {
         renderInviteCards();
         ensureInviteList();
-        _inviteList.setItems(_invites.map(toItem));
+        _inviteList.setItems(_invites.map(toCard));
     }
 
     // findInvite
@@ -431,7 +505,7 @@ export default function (view) {
     }
 
     // openInvite
-    // Opens an invite in an editor dialog with its link, its details, its expiration, and whether it accepts signups.
+    // Opens an invite in an editor dialog with its link and QR Code, its details, its expiration, and whether it accepts signups.
     // Save writes what changed, Delete asks first, and Duplicate copies it into the Create Invite form.
     //
     // Inputs
@@ -439,7 +513,6 @@ export default function (view) {
     function openInvite(id) {
         var inv = findInvite(id);
         if (!inv) return;
-        var st = statusOf(inv);
         var body = document.createElement('div');
         body.innerHTML = '<div class="inputContainer"><label class="inputLabel" for="inviteLinkField">Invite link</label><div data-mount="link"></div></div>'
             + '<div data-mount="details"></div>'
@@ -453,15 +526,16 @@ export default function (view) {
             + '<span class="material-icons" aria-hidden="true">content_copy</span><span>Duplicate</span></button>'
             + '<div><span class="base-status-text" id="inviteDialogStatus" role="status"></span></div>';
 
-        var link = createCopyField({ value: inviteUrl(inv.Token), label: 'Invite link', copiedText: 'Link copied.' });
-        link.input.id = 'inviteLinkField';
+        var link = linkQr(inv);
+        var linkInput = link.element.querySelector('input');
+        if (linkInput) linkInput.id = 'inviteLinkField';
         body.querySelector('[data-mount="link"]').appendChild(link.element);
         var details = createDefinitionList({
             items: [
-                { label: 'Status', value: { badge: { label: st.text, color: STATUS_LOOK[st.cls].color } } },
+                { label: 'Status', value: statusBadge(inv) },
+                { label: 'Group', value: groupText(inv) || null },
                 { label: 'Uses', value: usesText(inv) },
-                { label: 'Group', value: groupText(inv) },
-                { label: 'PIN', value: inv.HasPin ? 'Set' : 'None' }
+                { label: 'PIN', value: inv.HasPin ? 'Set' : null }
             ]
         });
         body.querySelector('[data-mount="details"]').appendChild(details.element);

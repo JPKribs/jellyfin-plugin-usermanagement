@@ -56,6 +56,8 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | :--- | :--- | :--- | :--- |
 | Invite | A shareable signup link that creates one account per use in its group | `Invite` | Invitation, signup code |
 | Invite link | The public address of an invite, built from the Server URL and the token | `Token` | Signup URL, invite URL |
+| Invite card | One invite on the **Invites** tab, with its name, status, details, and link | `renderCard` | Invite row, tile |
+| QR code | A scannable image of an invite link, opened by the QR button beside the link | `createQrCode` | Barcode, QR image |
 | Name | An invite's label, shown only on the dashboard | `Label` | Title, description |
 | Welcome message | The text shown under the signup heading | `Message` | Greeting, note |
 | Resources | Title and URL pairs shown as link buttons after signup | `InviteResource` | Links, bookmarks |

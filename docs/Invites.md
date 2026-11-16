@@ -24,9 +24,13 @@ Each invite can also carry:
 
 ## Managing Invites
 
-Every invite is listed with its usage, group, status and expiration, and its link in a copy field with a button that copies it. Select an invite to see its link, change its expiration, lock or unlock it, duplicate it, or delete it.
+Every invite is a card with its name and status, then its group, uses, expiration and PIN, then its link. The status is **Active**, **Locked**, **Expired**, **Group Expired** or **Used Up**. The copy button beside the link copies it, and the QR button opens a QR code of the link, with buttons that copy the image or download it. Select a card to see its link and QR code, change its expiration, lock or unlock it, duplicate it, or delete it.
 
-![Invite list](screenshots/Invite%20List.png)
+| Invite List | Invite List on a phone |
+| :---: | :---: |
+| ![Invite List](screenshots/Invite%20List.png) | ![Invite List on a phone](screenshots/Invite%20List%20Phone.png) |
+
+![Invite QR code](screenshots/Invite%20QR%20Code.png)
 
 **Manage Access** sets the public server URL used to build links and the signup rate limit applied to each invite.
 

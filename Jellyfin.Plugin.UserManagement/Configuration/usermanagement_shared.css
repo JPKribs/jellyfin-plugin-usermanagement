@@ -46,6 +46,48 @@
     min-height: var(--base-field-height);
 }
 
+/* um-invite-head */
+/* An invite card's panel header, its name at the start and its status badge at the end. The cards are Base panels in a */
+/* plain Base List, and each panel's own bottom margin spaces them. */
+/* Example: <div class="base-panel-header um-invite-head"><span class="um-invite-title">Family</span><span class="base-badge green">Active</span></div> */
+.um-invite-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--base-gap-narrow);
+}
+
+/* um-invite-title */
+/* An invite's name, which wraps rather than pushing the badge out of the card. */
+/* Example: <span class="um-invite-title">Family</span> */
+.um-invite-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* um-invite-status */
+/* The status badge's holder at the end of the header, which keeps the badge on one line beside a long name. */
+/* Example: <span class="um-invite-status"><span class="base-badge green">Active</span></span> */
+.um-invite-status {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+/* um-invite-body */
+/* An invite card's panel body, its details and then its inline QR Code, a wide gap apart. */
+/* Example: <div class="base-panel-body um-invite-body"><dl class="base-defs"></dl><div class="base-qr-code inline"></div></div> */
+.um-invite-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-gap-wide);
+}
+
+/* The body's gap spaces its parts, so the bottom margin Base gives each component on a page is dropped inside it. */
+.pluginConfigurationPage .um-invite-body > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
 /* Stopgap for a Base defect. A card Repeater carries a bare "card" class, and Jellyfin's .card rule gives it */
 /* contain and a pointer cursor, which traps the Clients Chip Select's fixed list inside the card, off screen. */
 /* Delete this rule when Base names the class base-repeater-card. */

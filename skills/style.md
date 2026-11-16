@@ -339,7 +339,8 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | A secret | `bindSecretField`, `readSecretField`, and `clearSecretField` |
 | A template with `{name}` tokens | `placeholderHint` and `bindPlaceholders` |
 | Code or JSON, read only | `base-code-block` |
-| A read only value with a copy button, such as an invite link | `createCopyField` |
+| A read only value with a copy button, such as a webhook URL | `createCopyField` |
+| A link to hand to a phone, such as an invite link | `createQrCode` with `layout: 'inline'`, its Copy Field with a QR button that opens the code |
 | Day and time windows, such as an access schedule | `createAccessSchedule` |
 | A setting that inherits until overridden | `createInheritField` |
 | A group setting row, with its Member and Group pills | See [Group Setting Rows](#group-setting-rows) |
@@ -385,7 +386,8 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | Records in priority order | `createSortableCardList` |
 | A short list in order, moved with up and down buttons | `createOrderedList` |
 | A plain list of records | `base-card-list` with `base-card-item-*` |
-| Rows that each open, or hold one control such as a copy field, like the invites and the pending resets | `createRecordList`, with `aside` for the control |
+| Rows that each open, or hold one control such as a copy field, like the pending resets | `createRecordList`, with `aside` for the control |
+| Records with several details and a link, each opened by a click, like the invites | `base-panel` cards in a `createList` with `layout: 'plain'`. See [Invite Cards](#invite-cards) |
 | Records with several fields, added and removed in place, like session cleanup rules | `createRepeater` with `layout: 'card'` |
 | A setting that applies only when the group sets it, like every group setting | A [group setting row](#group-setting-rows) |
 | Edit one record in a dialog | `openEditorDialog` |
@@ -486,9 +488,19 @@ Every setting on the **Groups** tab is one row, built the same way in every sect
 * A list of libraries, channels, or devices is a `createCheckboxList` whose rows have a label and a sublabel.
 * The section header counts its rows on **Group** with `setCollapsibleBadge`, such as **2 Set by Group**. An **Account Rules** section shows **On** while its first checkbox is on, and its other rows show only then.
 
+## Invite Cards
+
+Every invite on the **Invites** tab is one card, built the same way.
+
+* The card is a `base-panel`, `openable` and focusable, in a plain `createList` with `wrap: false`, so each panel's own margin spaces the cards. A click, Enter, or Space opens the invite's editor, except inside the QR Code.
+* The `base-panel-header` is an `um-invite-head`, with the name in `um-invite-title` and the status badge in `um-invite-status`. The badge comes from `shared.statusBadge`, Active green, Locked purple, Expired and Group Expired orange, and Used Up gray.
+* The `base-panel-body` is an `um-invite-body`, holding a `createDefinitionList` of **Group**, **Uses**, **Expires** or **Expired**, and **PIN** in that order on every card, then the link.
+* Uses read "4 of 10 uses", or "4 uses, no limit". The date is the reader's locale, such as "Jun 12, 2026", or "Never". A PIN reads **Set**, or the list's dimmed **None**.
+* The link is always `createQrCode` with `layout: 'inline'`, on the card and beside the link in the editor dialog. Never a bare Copy Field or a hand built QR button.
+
 ## Hand Built Pieces
 
-Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro, and `um-setting`, `um-setting-check`, `um-setting-label`, and `um-setting-body` for the [group setting rows](#group-setting-rows). It also holds one marked stopgap for the card Repeater's bare `card` class, which Jellyfin's `.card` rule gives `contain`, so the Clients Chip Select's list opens off screen. Delete it when Base names the class `base-repeater-card`.
+Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro, `um-setting`, `um-setting-check`, `um-setting-label`, and `um-setting-body` for the [group setting rows](#group-setting-rows), and `um-invite-head`, `um-invite-title`, `um-invite-status`, and `um-invite-body` for the [invite cards](#invite-cards). It also holds one marked stopgap for the card Repeater's bare `card` class, which Jellyfin's `.card` rule gives `contain`, so the Clients Chip Select's list opens off screen. Delete it when Base names the class `base-repeater-card`.
 
 The signup page is the content of Base's status card and uses only the card's own classes: `base-status-error` for a refused signup, and `base-btn-stack` with `base-btn base-btn-secondary` for the resource links.
 
