@@ -524,8 +524,6 @@ export default function (view) {
             + '<div class="checkboxContainer checkboxContainer-withDescription"><label class="emby-checkbox-label">'
             + '<input type="checkbox" is="emby-checkbox" id="inviteEnabledField" /><span class="checkboxLabel">Accept signups</span></label>'
             + '<div class="fieldDescription checkboxFieldDescription">Turn off to lock the link. Turn on to unlock it after too many wrong PIN tries.</div></div>'
-            + '<button is="emby-button" type="button" class="raised base-button secondary small" id="inviteDuplicate">'
-            + '<span class="material-icons" aria-hidden="true">content_copy</span><span>Duplicate</span></button>'
             + '<div><span class="base-status-text" id="inviteDialogStatus" role="status"></span></div>';
 
         var link = linkQr(inv, 'full');
@@ -561,7 +559,16 @@ export default function (view) {
             onClose: function () { link.destroy(); details.destroy(); }
         });
 
-        body.querySelector('#inviteDuplicate').addEventListener('click', function () {
+        // Base's editor dialog has no option for an extra footer action, so Duplicate joins its button row by hand.
+        var footer = dialog.element.querySelector('.base-modal-button-row');
+        var duplicate = document.createElement('button');
+        duplicate.type = 'button';
+        duplicate.setAttribute('is', 'emby-button');
+        duplicate.className = 'raised base-modal-button base-button secondary';
+        duplicate.textContent = 'Duplicate';
+        var cancel = [].find.call(footer.querySelectorAll('button'), function (b) { return b.textContent.trim() === 'Cancel'; });
+        footer.insertBefore(duplicate, cancel || null);
+        duplicate.addEventListener('click', function () {
             dialog.markClean();
             dialog.close();
             duplicateInvite(inv.Id);

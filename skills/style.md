@@ -500,6 +500,8 @@ Every invite on the **Invites** tab is one card, built the same way.
 
 ## Hand Built Pieces
 
+* The invite editor's **Duplicate** button is added to the dialog's footer row by hand, because `openEditorDialog` has no option for an extra footer action. Replace it with Base's footer actions option once Base has one, and delete the hand step.
+
 Nothing on the dashboard tabs is built by hand. The plugin CSS holds only spacing on Base tokens: `um-intro` under a page intro, `um-setting`, `um-setting-check`, `um-setting-label`, and `um-setting-body` for the [group setting rows](#group-setting-rows), and `um-invite-head`, `um-invite-title`, `um-invite-status`, and `um-invite-body` for the [invite cards](#invite-cards). It also holds one marked stopgap for the card Repeater's bare `card` class, which Jellyfin's `.card` rule gives `contain`, so the Clients Chip Select's list opens off screen. Delete it when Base names the class `base-repeater-card`.
 
 The signup page is the content of Base's status card and uses only the card's own classes: `base-status-error` for a refused signup, and `base-btn-stack` with `base-btn base-btn-secondary` for the resource links.
