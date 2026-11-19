@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "12.4.2.9",
+        "changelog": "\n## Developer\n- Raises every GitHub Action in the workflows to its latest major version, pinned to a commit digest\n- Builds the docs with Python 3.15 and mkdocs-material 9.8.2\n- Renovate brings every update in one pull request, with Base on its own, and leaves the packages Jellyfin ships to the Jellyfin version",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v12.4.2.9/jellyfin-plugin-usermanagement-12.4.2.9.zip",
+        "checksum": "7fb23a854bf89d94f2f40707e4053d61",
+        "timestamp": "2026-11-19T22:00:10Z"
+      },
+      {
         "version": "12.4.2.8",
         "changelog": "\n## Changed\n- Every field label, checkbox label and dropdown option is in Title Case, on the Groups, Invites and Resets tabs and the signup page\n\n## Developer\n- The screenshot kit takes every docs screenshot, with Activity Log from a throwaway Docker server\n- Uses JPKribs.Jellyfin.Base 2026.11.21, which keeps a scrolling Data Table's frame in view and an open card's body on the plain surface, with no local code to replace\n- Raises Microsoft.NET.Test.Sdk to 18.12.0\n- Pins every GitHub Action in the workflows to a commit digest",
         "targetAbi": "12.4.0.0",
