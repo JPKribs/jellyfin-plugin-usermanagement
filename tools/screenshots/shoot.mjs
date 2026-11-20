@@ -84,7 +84,7 @@ const shots = [
     }
   },
   { file: 'Groups', group: 'Kids', page: true, run: groups },
-  { file: 'Group Settings', group: 'Kids', section: 'Media Playback', run: groups },
+  { file: 'Group Settings', group: 'Kids', section: 'Media playback', run: groups },
   { file: 'Expiry', group: 'Guests', section: 'Expiry', run: groups },
   { file: 'Inactivity', group: 'Kids', section: 'Inactivity', run: groups },
   { file: 'Sessions', group: 'Kids', section: 'Session management', run: groups },
