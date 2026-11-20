@@ -8,14 +8,11 @@
                 <div class="verticalSection verticalSection-extrabottompadding">
 
                     <div class="sectionTitleContainer flex align-items-center">
-                        <h1 class="sectionTitle">Invites</h1>
+                        <h1 class="sectionTitle" data-str="HeaderInvites">Invites</h1>
                     </div>
 
                     <!-- Intro -->
-                    <div class="fieldDescription um-intro">
-                        Create a shareable signup link. Anyone with the link and the PIN can create one account
-                        until the invite expires or runs out of uses.
-                    </div>
+                    <div class="fieldDescription um-intro" data-str="InvitesIntro">Create a shareable signup link. Anyone with the link and the PIN can create one account until the invite expires or runs out of uses.</div>
 
                     <div class="base-cards compact" id="inviteCards"></div>
 
@@ -23,66 +20,64 @@
                     <!-- Builds a new invite link from a name, message, resources, PIN, group, and limits. -->
                     <div class="base-collapsible-section">
                         <button type="button" class="base-collapsible-header" aria-expanded="true" data-target="newInviteContent">
-                            <span class="base-collapsible-title">Create Invite</span>
+                            <span class="base-collapsible-title" data-str="HeaderCreateInvite">Create Invite</span>
                             <span class="base-collapsible-icon">&#9660;</span>
                         </button>
                         <div id="newInviteContent" class="base-collapsible-content">
                             <div class="inputContainer">
-                                <label for="txtLabel">Name</label>
-                                <input is="emby-input" type="text" id="txtLabel" placeholder="Family and friends" />
-                                <div class="fieldDescription">Only shown here, never to the invitee.</div>
+                                <label for="txtLabel" data-str="LabelName">Name</label>
+                                <input is="emby-input" type="text" id="txtLabel" placeholder="Family and friends" data-str-placeholder="InviteNamePlaceholder" />
+                                <div class="fieldDescription" data-str="InviteNameHelp">Only shown here, never to the invitee.</div>
                             </div>
                             <div class="inputContainer">
-                                <label for="txtMessage">Welcome Message</label>
-                                <textarea id="txtMessage" class="emby-input" autocomplete="off" rows="3" placeholder="Welcome to the family server."></textarea>
-                                <div class="fieldDescription">Shown to the invitee under the signup heading.</div>
+                                <label for="txtMessage" data-str="LabelWelcomeMessage">Welcome Message</label>
+                                <textarea id="txtMessage" class="emby-input" autocomplete="off" rows="3" placeholder="Welcome to the family server." data-str-placeholder="WelcomeMessagePlaceholder"></textarea>
+                                <div class="fieldDescription" data-str="WelcomeMessageHelp">Shown to the invitee under the signup heading.</div>
                             </div>
                             <div class="inputContainer">
-                                <label class="inputLabel">Resources for New Users</label>
+                                <label class="inputLabel" data-str="LabelResources">Resources for New Users</label>
                                 <div id="resourceMount"></div>
-                                <div class="fieldDescription">Link buttons shown to the new user after their account is created.</div>
+                                <div class="fieldDescription" data-str="ResourcesHelp">Link buttons shown to the new user after their account is created.</div>
                             </div>
                             <div class="inputContainer">
-                                <label for="txtPin">PIN</label>
-                                <input is="emby-input" type="password" id="txtPin" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="Leave blank for no PIN" />
-                                <div class="fieldDescription" id="pinHelp">A 6 digit code the invitee must enter, like a Quick Connect code. The invite locks itself after too many wrong tries.</div>
+                                <label for="txtPin" data-str="LabelPin">PIN</label>
+                                <input is="emby-input" type="password" id="txtPin" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="Leave blank for no PIN" data-str-placeholder="PinPlaceholder" />
+                                <div class="fieldDescription" id="pinHelp" data-str="PinHelp">A 6 digit code the invitee must enter, like a Quick Connect code. The invite locks itself after too many wrong tries.</div>
                             </div>
                             <div class="selectContainer" id="groupSelectRow">
-                                <label class="selectLabel" for="selGroup">Add New Users to Group</label>
+                                <label class="selectLabel" for="selGroup" data-str="LabelAddNewUsersToGroup">Add New Users to Group</label>
                                 <select is="emby-select" id="selGroup" class="emby-select-withcolor"></select>
-                                <div class="fieldDescription">Choosing the default group keeps the invite pointed at whichever group is the default when it is redeemed.</div>
-                                <div class="base-warn hidden" id="groupExpiredWarn">
-                                    This group has expired. Signups into it are refused until its expiration date is moved or cleared on the Groups tab.
-                                </div>
+                                <div class="fieldDescription" data-str="AddNewUsersToGroupHelp">Choosing the default group keeps the invite pointed at whichever group is the default when it is redeemed.</div>
+                                <div class="base-warn hidden" id="groupExpiredWarn" data-str="GroupExpiredWarning">This group has expired. Signups into it are refused until its expiration date is moved or cleared on the Groups tab.</div>
                             </div>
                             <div class="checkboxContainer">
                                 <label class="emby-checkbox-label">
                                     <input type="checkbox" is="emby-checkbox" id="chkSetExpiry" />
-                                    <span class="checkboxLabel">Set Invite Expiration</span>
+                                    <span class="checkboxLabel" data-str="LabelSetInviteExpiration">Set Invite Expiration</span>
                                 </label>
                             </div>
                             <div class="base-indent hidden" id="expiryFields">
                                 <div class="inputContainer">
-                                    <label for="dateExpiry">Invite Expiration</label>
+                                    <label for="dateExpiry" data-str="LabelInviteExpiration">Invite Expiration</label>
                                     <input type="date" id="dateExpiry" />
-                                    <div class="fieldDescription">Expires on or after this date during the next <strong>Process expired and inactive users</strong> task run.</div>
+                                    <div class="fieldDescription" data-str="InviteExpirationHelp">Expires on or after this date during the next Process expired and inactive users task run.</div>
                                 </div>
                             </div>
                             <div class="checkboxContainer">
                                 <label class="emby-checkbox-label">
                                     <input type="checkbox" is="emby-checkbox" id="chkSetMaxUses" />
-                                    <span class="checkboxLabel">Set Maximum Usages</span>
+                                    <span class="checkboxLabel" data-str="LabelSetMaximumUsages">Set Maximum Usages</span>
                                 </label>
                             </div>
                             <div class="base-indent hidden" id="maxUsesFields">
                                 <div class="inputContainer">
-                                    <label for="txtMaxUses">Usages</label>
+                                    <label for="txtMaxUses" data-str="LabelUsages">Usages</label>
                                     <input is="emby-input" type="number" id="txtMaxUses" min="1" value="1" />
-                                    <div class="fieldDescription">Invite link is disabled after this number of people use it.</div>
+                                    <div class="fieldDescription" data-str="UsagesHelp">Invite link is disabled after this number of people use it.</div>
                                 </div>
                             </div>
                             <button is="emby-button" type="button" id="btnCreateInvite" class="raised base-button primary fill">
-                                <span>Create Invite</span>
+                                <span data-str="HeaderCreateInvite">Create Invite</span>
                             </button>
                         </div>
                     </div>
@@ -91,34 +86,29 @@
                     <!-- Sets the public Server URL for links and the per invite rate limit. -->
                     <div class="base-collapsible-section">
                         <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="manageAccessContent">
-                            <span class="base-collapsible-title">Manage Access</span>
+                            <span class="base-collapsible-title" data-str="HeaderManageAccess">Manage Access</span>
                             <span class="base-collapsible-icon">&#9660;</span>
                         </button>
                         <div id="manageAccessContent" class="base-collapsible-content collapsed">
-                            <div class="base-warn hidden" id="httpsWarn">
-                                It is not recommended to use a non-HTTPS link for invites. Passwords are sent over this link so any non-encrypted traffic can be surveilled.
-                            </div>
+                            <div class="base-warn hidden" id="httpsWarn" data-str="InviteHttpsWarning">It is not recommended to use a non-HTTPS link for invites. Passwords are sent over this link so any non-encrypted traffic can be surveilled.</div>
                             <div class="inputContainer">
-                                <label for="txtInviteBaseUrl">Server URL</label>
+                                <label for="txtInviteBaseUrl" data-str="LabelServerUrl">Server URL</label>
                                 <input is="emby-input" type="text" id="txtInviteBaseUrl" placeholder="https://jellyfin.example.com" />
-                                <div class="fieldDescription">
-                                    Public address used to build invite links, such as a reverse proxy.
-                                    Leave blank to use the server's own address.
-                                </div>
+                                <div class="fieldDescription" data-str="ServerUrlHelp">Public address used to build invite links, such as a reverse proxy. Leave blank to use the server's own address.</div>
                             </div>
                             <div class="inputContainer">
-                                <label>Invite Rate Limit</label>
+                                <label data-str="LabelInviteRateLimit">Invite Rate Limit</label>
                                 <div class="base-field-row">
                                     <div class="base-field">
-                                        <label for="txtRateCount">Accepts</label>
+                                        <label for="txtRateCount" data-str="LabelAccepts">Accepts</label>
                                         <input is="emby-input" type="number" id="txtRateCount" min="0" />
                                     </div>
                                     <div class="base-field">
-                                        <label for="txtRateWindow">Per (Minutes)</label>
+                                        <label for="txtRateWindow" data-str="LabelPerMinutes">Per (Minutes)</label>
                                         <input is="emby-input" type="number" id="txtRateWindow" min="0" />
                                     </div>
                                 </div>
-                                <div class="fieldDescription">After this many signups through one invite, that link pauses for the window. Set either to 0 to disable. Separately, each network address is always limited to 10 signup attempts every 15 minutes, successful or not.</div>
+                                <div class="fieldDescription" data-str="RateLimitHelp">After this many signups through one invite, that link pauses for the window. Set either to 0 to disable. Separately, each network address is always limited to 10 signup attempts every 15 minutes, successful or not.</div>
                             </div>
                             <!-- The section's Save Bar, drawn by the script. -->
                             <div id="inviteUrlSaveBar"></div>
@@ -129,7 +119,7 @@
                     <!-- Lists every invite. Each row copies its link, and opens to change its expiration and state. -->
                     <div class="base-collapsible-section fixed">
                         <div class="base-collapsible-header">
-                            <span class="base-collapsible-title">Invites</span>
+                            <span class="base-collapsible-title" data-str="HeaderInvites">Invites</span>
                         </div>
                         <div class="base-collapsible-content">
                             <span id="inviteStatus" class="base-status-text"></span>

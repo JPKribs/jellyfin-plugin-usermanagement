@@ -1,7 +1,7 @@
 // usermanagement_resets.js
 // The Resets tab, which turns reset code extraction on and off and lists pending reset codes by user.
 
-import { createPage, createRecordList, createCopyField } from './configurationpage?name=usermanagement_shared.js';
+import { createPage, createRecordList, createCopyField, t } from './configurationpage?name=usermanagement_shared.js';
 
 // Resets page
 // Builds the Resets tab. Each code sits masked in a Copy Field until revealed.
@@ -32,11 +32,19 @@ export default function (view) {
         return 'active';
     }
 
-    var TAGS = {
-        active: { label: 'Active', icon: 'schedule', color: 'green' },
-        expiring: { label: 'Expiring', icon: 'timer', color: 'orange' },
-        expired: { label: 'Expired', icon: 'timer_off', color: 'red' }
-    };
+    // tagOf
+    // Builds the Record List tag of a state.
+    //
+    // Inputs
+    // state [string]: active, expiring, or expired.
+    //
+    // Output
+    // [object]: The tag, with its label, icon, and color.
+    function tagOf(state) {
+        if (state === 'expired') return { label: t.tr('StatusExpired'), icon: 'timer_off', color: 'red' };
+        if (state === 'expiring') return { label: t.tr('StatusExpiring'), icon: 'timer', color: 'orange' };
+        return { label: t.tr('StatusActive'), icon: 'schedule', color: 'green' };
+    }
 
     // toItem
     // Builds one Record List row, with the user, the expiration, a state tag, and the code in a Copy Field.
@@ -51,12 +59,12 @@ export default function (view) {
     function toItem(r, i, now) {
         var state = stateOf(r, now);
         var due = r.ExpirationDate ? new Date(r.ExpirationDate) : null;
-        var name = r.UserName || 'Unknown user';
+        var name = r.UserName || t.tr('UnknownUser');
         return {
             id: name + '|' + (r.ExpirationDate || i),
             title: name,
-            secondary: due ? (state === 'expired' ? 'Expired ' : 'Expires ') + due.toLocaleString() : null,
-            tags: [TAGS[state]],
+            secondary: due ? (state === 'expired' ? t.format('ExpiredOnDate', due.toLocaleString()) : t.format('ExpiresOnDate', due.toLocaleString())) : null,
+            tags: [tagOf(state)],
             state: state,
             aside: createCopyField({
                 value: r.Pin,
@@ -64,9 +72,12 @@ export default function (view) {
                 allowExpose: true,
                 inline: true,
                 size: 'small',
-                label: 'Reset code for ' + name,
-                copyLabel: 'Copy Code',
-                copiedText: 'Code copied.'
+                label: t.format('ResetCodeFor', name),
+                copyLabel: t.tr('ButtonCopyCode'),
+                copiedText: t.tr('ToastCodeCopied'),
+                failedText: t.tr('ToastCopyFailed'),
+                revealLabel: t.tr('ButtonShow'),
+                hideLabel: t.tr('Hide')
             })
         };
     }
@@ -75,7 +86,7 @@ export default function (view) {
     // Draws the Record List once.
     function ensureList() {
         if (_list) return;
-        _list = createRecordList({ label: 'Pending Resets', emptyText: 'No pending password resets.' });
+        _list = createRecordList({ label: t.tr('HeaderPendingResets'), emptyText: t.tr('EmptyPendingResets') });
         Shared.getEl('resetList').appendChild(_list.element);
     }
 
@@ -108,9 +119,9 @@ export default function (view) {
         items.forEach(function (it) { counts[it.state]++; });
 
         Shared.renderCards('resetCards', [
-            { count: counts.active, label: 'Active', color: 'green' },
-            { count: counts.expiring, label: 'Expiring', color: 'orange' },
-            { count: counts.expired, label: 'Expired', color: 'red' }
+            { count: counts.active, label: t.tr('StatusActive'), color: 'green' },
+            { count: counts.expiring, label: t.tr('StatusExpiring'), color: 'orange' },
+            { count: counts.expired, label: t.tr('StatusExpired'), color: 'red' }
         ]);
         _list.setItems(items);
     }
@@ -126,7 +137,7 @@ export default function (view) {
             Shared.getEl('chkEnableResets').checked = enabled;
             renderResets((results[1] && results[1].Resets) || [], enabled);
         }).catch(function () {
-            Shared.setStatus('resetStatus', 'Could not load the resets.', true);
+            Shared.setStatus('resetStatus', t.tr('ErrorLoadResets'), true);
         });
     }
 
@@ -140,10 +151,10 @@ export default function (view) {
             cfg.EnableResetCodeExtraction = enabled;
             return Shared.saveConfig(cfg);
         }).then(function () {
-            Shared.setStatus('resetStatus', enabled ? 'Reset code extraction enabled.' : 'Reset code extraction disabled.', false);
+            Shared.setStatus('resetStatus', enabled ? t.tr('ToastResetsEnabled') : t.tr('ToastResetsDisabled'), false);
             load();
         }).catch(function () {
-            Shared.setStatus('resetStatus', 'Could not save the setting.', true);
+            Shared.setStatus('resetStatus', t.tr('ErrorSaveSetting'), true);
             load();
         });
     }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Services;
 using Jellyfin.Plugin.UserManagement.Utilities;
+using JPKribs.Jellyfin.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +45,19 @@ public class UserManagementController : ControllerBase
     }
 
     /// <summary>
+    /// Returns the plugin's strings in a language, for the dashboard pages and the public signup page. The strings are
+    /// not secret, and the signup page has no signed in user, so the route allows anonymous requests.
+    /// </summary>
+    /// <param name="language">The language, such as de or pt-br. Blank gives US English.</param>
+    /// <returns>The strings by key, or 304 when the page already has them.</returns>
+    [HttpGet("Translations")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
+    public IActionResult Translations([FromQuery] string? language)
+        => BaseTranslations.Serve(language, Request, Response);
+
+    /// <summary>
     /// Returns the pending password reset codes from the server's reset files. Codes are only included
     /// while reset code extraction is enabled in the plugin configuration, so they never leave the
     /// server by default.
@@ -65,11 +79,12 @@ public class UserManagementController : ControllerBase
     /// <summary>
     /// Reconciles every member to their group's permissions and password-rule enrollment on apply.
     /// </summary>
+    /// <param name="language">The language of the error message, such as de.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>Success status.</returns>
     [HttpPost("Apply")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult> Apply(CancellationToken cancellationToken)
+    public async Task<ActionResult> Apply([FromQuery] string? language, CancellationToken cancellationToken)
     {
         try
         {
@@ -80,7 +95,7 @@ public class UserManagementController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error applying group policies");
-            return StatusCode(500, new { Error = "An internal error occurred. Check server logs for details." });
+            return StatusCode(500, new { Error = BaseTranslations.Get(TranslationKeys.ErrorInternal, language) });
         }
     }
 
@@ -93,26 +108,27 @@ public class UserManagementController : ControllerBase
 
     /// <summary>Creates an invite and returns it, with the PIN hash redacted to a boolean.</summary>
     /// <param name="request">The invite parameters.</param>
+    /// <param name="language">The language of the error message, such as de.</param>
     /// <returns>The created invite.</returns>
     [HttpPost("Invites")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult<InviteSummary> CreateInvite([FromBody] CreateInviteRequest request)
+    public ActionResult<InviteSummary> CreateInvite([FromBody] CreateInviteRequest request, [FromQuery] string? language = null)
     {
         var plugin = Plugin.Instance;
         if (plugin is null)
         {
-            return StatusCode(500, new { Error = "Plugin not initialized." });
+            return StatusCode(500, new { Error = BaseTranslations.Get(TranslationKeys.ErrorPluginNotInitialized, language) });
         }
 
         if (request is null)
         {
-            return BadRequest(new { Error = "Missing request body." });
+            return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorMissingBody, language) });
         }
 
         if (!InviteService.IsValidPin(request.Pin))
         {
-            return BadRequest(new { Error = "The PIN must be exactly 6 digits, like a Quick Connect code." });
+            return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorPinFormat, language) });
         }
 
         // A body with "Resources": null or a null entry is a bad request, not a server error.
@@ -120,7 +136,7 @@ public class UserManagementController : ControllerBase
         {
             if (resource is null || string.IsNullOrWhiteSpace(resource.Title) || !InviteService.IsValidResourceUrl(resource.Url))
             {
-                return BadRequest(new { Error = "Each resource needs a title and a full http(s) URL." });
+                return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorResourceInvalid, language) });
             }
         }
 
@@ -131,7 +147,7 @@ public class UserManagementController : ControllerBase
                 c.DefaultGroupId is { } id ? c.Groups.FirstOrDefault(g => g.Id.Equals(id)) : null);
             if (targetGroup is null)
             {
-                return BadRequest(new { Error = "No default group is configured. Set one on the Groups tab, or choose a specific group for this invite." });
+                return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorNoDefaultGroup, language) });
             }
         }
         else
@@ -141,13 +157,13 @@ public class UserManagementController : ControllerBase
                 : null;
             if (targetGroup is null)
             {
-                return BadRequest(new { Error = "Choose a group for this invite." });
+                return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorSelectGroup, language) });
             }
         }
 
         if (targetGroup.BlocksInvites())
         {
-            return BadRequest(new { Error = "This group disallows all password changes, so it cannot be used for invites. Members of it are managed by administrators." });
+            return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorGroupBlocksInvites, language) });
         }
 
         var invite = _inviteService.Create(request);
@@ -156,15 +172,16 @@ public class UserManagementController : ControllerBase
 
     /// <summary>Deletes an invite.</summary>
     /// <param name="id">The invite ID.</param>
+    /// <param name="language">The language of the error message, such as de.</param>
     /// <returns>Success status.</returns>
     [HttpDelete("Invites/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult DeleteInvite(Guid id)
+    public ActionResult DeleteInvite(Guid id, [FromQuery] string? language = null)
     {
         if (!_inviteService.Delete(id))
         {
-            return NotFound(new { Error = "Invite not found." });
+            return NotFound(new { Error = BaseTranslations.Get(TranslationKeys.ErrorInviteNotFound, language) });
         }
 
         return Ok(new { Success = true });
@@ -173,23 +190,24 @@ public class UserManagementController : ControllerBase
     /// <summary>Enables or disables an invite, also clearing its PIN lockout when enabling.</summary>
     /// <param name="id">The invite ID.</param>
     /// <param name="request">The desired enabled state.</param>
+    /// <param name="language">The language of the error message, such as de.</param>
     /// <returns>Success status.</returns>
     [HttpPost("Invites/{id}/Enabled")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult SetInviteEnabled(Guid id, [FromBody] SetInviteEnabledRequest request)
+    public ActionResult SetInviteEnabled(Guid id, [FromBody] SetInviteEnabledRequest request, [FromQuery] string? language = null)
     {
         if (request is null)
         {
-            return BadRequest(new { Error = "Missing request body." });
+            return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorMissingBody, language) });
         }
 
         return _inviteService.SetEnabled(id, request.Enabled) switch
         {
-            InviteToggleResult.NotFound => NotFound(new { Error = "Invite not found." }),
-            InviteToggleResult.Expired => BadRequest(new { Error = "This invite's expiration date has passed. Move the expiration forward to re-enable it." }),
-            InviteToggleResult.GroupBlocksInvites => BadRequest(new { Error = "This invite's group disallows all password changes, so the invite cannot be enabled. Change the group's password mode first." }),
+            InviteToggleResult.NotFound => NotFound(new { Error = BaseTranslations.Get(TranslationKeys.ErrorInviteNotFound, language) }),
+            InviteToggleResult.Expired => BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorInviteExpiredPassed, language) }),
+            InviteToggleResult.GroupBlocksInvites => BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorInviteGroupBlocks, language) }),
             _ => Ok(new { Success = true })
         };
     }
@@ -197,21 +215,22 @@ public class UserManagementController : ControllerBase
     /// <summary>Changes an invite's expiry date, reviving it when moved to a future date.</summary>
     /// <param name="id">The invite ID.</param>
     /// <param name="request">The new expiry date.</param>
+    /// <param name="language">The language of the error message, such as de.</param>
     /// <returns>Success status.</returns>
     [HttpPost("Invites/{id}/Expiry")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult SetInviteExpiry(Guid id, [FromBody] SetInviteExpiryRequest request)
+    public ActionResult SetInviteExpiry(Guid id, [FromBody] SetInviteExpiryRequest request, [FromQuery] string? language = null)
     {
         if (request is null)
         {
-            return BadRequest(new { Error = "Missing request body." });
+            return BadRequest(new { Error = BaseTranslations.Get(TranslationKeys.ErrorMissingBody, language) });
         }
 
         if (!_inviteService.SetExpiry(id, request.ExpiresAt))
         {
-            return NotFound(new { Error = "Invite not found." });
+            return NotFound(new { Error = BaseTranslations.Get(TranslationKeys.ErrorInviteNotFound, language) });
         }
 
         return Ok(new { Success = true });

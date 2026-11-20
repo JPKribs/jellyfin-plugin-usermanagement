@@ -8,8 +8,8 @@ using Xunit;
 namespace Jellyfin.Plugin.UserManagement.Tests;
 
 /// <summary>
-/// Guards the authorization shape of the API: the admin controller requires elevation for every action,
-/// and only the public invite controller is reachable anonymously.
+/// Guards the authorization shape of the API: the admin controller requires elevation for every action but
+/// its strings, and the public invite controller is reachable anonymously.
 /// </summary>
 public class ControllerSecurityTests
 {
@@ -22,8 +22,13 @@ public class ControllerSecurityTests
         Assert.Equal("RequiresElevation", attribute!.Policy);
     }
 
+    /// <summary>
+    /// The only anonymous action on the admin controller is Translations, which the signup page needs.
+    /// True: every other admin route still needs an elevated user.
+    /// False: an admin route would be open to anyone, or the signup page could not load its strings.
+    /// </summary>
     [Fact]
-    public void AdminController_HasNoAnonymousActions()
+    public void AdminController_OnlyTranslationsIsAnonymous()
     {
         var anonymous = typeof(UserManagementController)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -31,7 +36,7 @@ public class ControllerSecurityTests
             .Select(m => m.Name)
             .ToList();
 
-        Assert.Empty(anonymous);
+        Assert.Equal(new[] { nameof(UserManagementController.Translations) }, anonymous);
         Assert.Null(typeof(UserManagementController).GetCustomAttribute<AllowAnonymousAttribute>());
     }
 

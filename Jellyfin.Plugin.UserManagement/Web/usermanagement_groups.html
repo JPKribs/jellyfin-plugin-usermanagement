@@ -8,48 +8,45 @@
                 <div class="verticalSection verticalSection-extrabottompadding">
 
                     <div class="sectionTitleContainer flex align-items-center">
-                        <h1 class="sectionTitle">Groups</h1>
+                        <h1 class="sectionTitle" data-str="HeaderGroups">Groups</h1>
                     </div>
 
                     <!-- Intro -->
-                    <div class="fieldDescription um-intro">
-                        Groups apply settings to many users at once, and a user belongs to one group at a time. Only
-                        settings marked <strong>Group</strong> reach members, and the rest stay as each member has them.
-                    </div>
+                    <div class="fieldDescription um-intro" data-str="GroupsIntro">Groups apply settings to many users at once, and a user belongs to one group at a time. Only settings marked Group reach members, and the rest stay as each member has them.</div>
 
                     <div id="userCards"></div>
 
                     <!-- Group Selector -->
                     <!-- Picks the group to edit, with New, Rename, Delete, and Default. -->
                     <div class="base-selector">
-                        <select is="emby-select" id="selectGroup" class="base-selector-dropdown" aria-label="Group"></select>
+                        <select is="emby-select" id="selectGroup" class="base-selector-dropdown" aria-label="Group" data-str-label="LabelGroup"></select>
                         <div class="base-selector-actions">
-                            <button is="emby-button" type="button" id="btnNewGroup" class="raised base-button primary" title="New">
+                            <button is="emby-button" type="button" id="btnNewGroup" class="raised base-button primary" title="New" data-str-title="New">
                                 <span class="material-icons" aria-hidden="true">add</span>
-                                <span>New</span>
+                                <span data-str="New">New</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised base-button secondary" title="Rename">
+                            <button is="emby-button" type="button" id="btnRenameGroup" class="raised base-button secondary" title="Rename" data-str-title="ButtonRename">
                                 <span class="material-icons" aria-hidden="true">edit</span>
-                                <span>Rename</span>
+                                <span data-str="ButtonRename">Rename</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised base-button destructive" title="Delete">
+                            <button is="emby-button" type="button" id="btnDeleteGroup" class="raised base-button destructive" title="Delete" data-str-title="Delete">
                                 <span class="material-icons" aria-hidden="true">delete</span>
-                                <span>Delete</span>
+                                <span data-str="Delete">Delete</span>
                             </button>
-                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised base-button secondary" title="Set as Default">
+                            <button is="emby-button" type="button" id="btnDefaultGroup" class="raised base-button secondary" title="Set as default" data-str-title="EnableAutoCast">
                                 <span class="material-icons" aria-hidden="true">star_border</span>
-                                <span>Default</span>
+                                <span data-str="Default">Default</span>
                             </button>
                         </div>
                     </div>
 
-                    <div id="emptyState" class="base-empty-section hidden">No groups yet. Select <strong>New</strong> to add one.</div>
+                    <div id="emptyState" class="base-empty-section hidden" data-str="EmptyGroups">No groups yet. Select New to add one.</div>
 
                     <div id="groupEditor">
                         <!-- Membership -->
                         <!-- Picks the users in the group. -->
                         <div class="base-section">
-                            <div class="base-section-title">Membership</div>
+                            <div class="base-section-title" data-str="HeaderMembership">Membership</div>
                             <div class="base-section-content">
                                 <div id="memberSummary" class="fieldDescription"></div>
                                 <div id="memberMount"></div>
@@ -59,7 +56,7 @@
                         <!-- Access and Features -->
                         <!-- The Jellyfin user policy settings, drawn by the script. -->
                         <div class="base-section">
-                            <div class="base-section-title">Access and Features</div>
+                            <div class="base-section-title" data-str="HeaderAccessAndFeatures">Access and Features</div>
                             <div class="base-section-content">
                                 <div id="permissionSections"></div>
                             </div>
@@ -68,7 +65,7 @@
                         <!-- Preferences -->
                         <!-- The display and playback preferences, drawn by the script. -->
                         <div class="base-section">
-                            <div class="base-section-title">Preferences</div>
+                            <div class="base-section-title" data-str="HeaderPreferences">Preferences</div>
                             <div class="base-section-content">
                                 <div id="configSections"></div>
                             </div>
@@ -77,35 +74,29 @@
                         <!-- Account Rules -->
                         <!-- Session cleanup, password requirements, expiry, and inactivity. Each is a list of rows led by the checkbox that turns it on. -->
                         <div class="base-section">
-                            <div class="base-section-title">Account Rules</div>
+                            <div class="base-section-title" data-str="HeaderAccountRules">Account Rules</div>
                             <div class="base-section-content">
 
                                 <!-- Session Management -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
-                                        <span class="base-collapsible-title">Session Management</span>
+                                        <span class="base-collapsible-title" data-str="HeaderSessionManagement">Session Management</span>
                                         <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpSessionContent" class="base-collapsible-content collapsed">
-                                        <div class="um-rows" data-label="Session Management">
+                                        <div class="um-rows" aria-label="Session Management" data-str-label="HeaderSessionManagement">
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
-                                                    <span class="checkboxLabel">Clean Up Old Sessions</span>
+                                                    <span class="checkboxLabel" data-str="LabelCleanUpOldSessions">Clean Up Old Sessions</span>
                                                 </label>
-                                                <div class="fieldDescription">
-                                                    Logs out members' devices that go too long without checking in. The
-                                                    <strong>Clean Expired Sessions</strong> task does this, so its schedule sets when.
-                                                </div>
+                                                <div class="fieldDescription" data-str="CleanUpOldSessionsHelp">Logs out members' devices that go too long without checking in. The Clean Expired Sessions task does this, so its schedule sets when.</div>
                                             </div>
                                             <div class="um-setting um-session-field">
-                                                <span class="um-setting-label">Rules</span>
+                                                <span class="um-setting-label" data-str="LabelRules">Rules</span>
                                                 <div id="sessionRuleList"></div>
                                                 <div id="sessionOverlapWarning" class="base-warn hidden"></div>
-                                                <div class="fieldDescription">
-                                                    Each rule logs out devices on its clients after that many days without
-                                                    checking in. A rule for all clients ignores its client list.
-                                                </div>
+                                                <div class="fieldDescription" data-str="SessionRulesHelp">Each rule logs out devices on its clients after that many days without checking in. A rule for all clients ignores its client list.</div>
                                             </div>
                                         </div>
                                     </div>
@@ -114,62 +105,58 @@
                                 <!-- Password Requirements -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
-                                        <span class="base-collapsible-title">Password Requirements</span>
+                                        <span class="base-collapsible-title" data-str="HeaderPasswordRequirements">Password Requirements</span>
                                         <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpPwContent" class="base-collapsible-content collapsed">
-                                        <div class="um-rows" data-label="Password Requirements">
+                                        <div class="um-rows" aria-label="Password Requirements" data-str-label="HeaderPasswordRequirements">
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
-                                                    <span class="checkboxLabel">Enforce Password Requirements</span>
+                                                    <span class="checkboxLabel" data-str="LabelEnforcePasswordRequirements">Enforce Password Requirements</span>
                                                 </label>
-                                                <div class="fieldDescription">Holds members' passwords to the rules below.</div>
+                                                <div class="fieldDescription" data-str="EnforcePasswordRequirementsHelp">Holds members' passwords to the rules below.</div>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
-                                                    <span class="checkboxLabel">Disallow Empty Passwords</span>
+                                                    <span class="checkboxLabel" data-str="LabelDisallowEmptyPasswords">Disallow Empty Passwords</span>
                                                 </label>
-                                                <div class="fieldDescription">
-                                                    While off, an empty password always passes, since it means the account has no password.
-                                                </div>
+                                                <div class="fieldDescription" data-str="DisallowEmptyPasswordsHelp">While off, an empty password always passes, since it means the account has no password.</div>
                                             </div>
                                             <div class="um-setting um-pw-field">
-                                                <span class="um-setting-label" id="grpPwLengthLabel">Minimum Length</span>
+                                                <span class="um-setting-label" id="grpPwLengthLabel" data-str="LabelMinimumLength">Minimum Length</span>
                                                 <div class="inputContainer">
                                                     <input is="emby-input" type="number" id="grpPwLength" min="1" aria-labelledby="grpPwLengthLabel" />
                                                 </div>
                                             </div>
                                             <div class="um-setting um-pw-field">
-                                                <span class="um-setting-label" id="grpPwChangeModeLabel">Password Changes</span>
+                                                <span class="um-setting-label" id="grpPwChangeModeLabel" data-str="LabelPasswordChanges">Password Changes</span>
                                                 <div class="selectContainer">
                                                     <select is="emby-select" id="grpPwChangeMode" aria-labelledby="grpPwChangeModeLabel">
-                                                        <option value="Allowed">Allowed</option>
-                                                        <option value="InitialOnly">Initial Password Only</option>
-                                                        <option value="Disallowed">Disallowed</option>
+                                                        <option value="Allowed" data-str="OptionAllowed">Allowed</option>
+                                                        <option value="InitialOnly" data-str="OptionInitialPasswordOnly">Initial Password Only</option>
+                                                        <option value="Disallowed" data-str="OptionDisallowed">Disallowed</option>
                                                     </select>
                                                 </div>
-                                                <div class="fieldDescription">
-                                                    Sets whether members may set or change their own password. Administrators always can.
-                                                </div>
+                                                <div class="fieldDescription" data-str="PasswordChangesHelp">Sets whether members may set or change their own password. Administrators always can.</div>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwUpper" />
-                                                    <span class="checkboxLabel">Require a Capital Letter</span>
+                                                    <span class="checkboxLabel" data-str="LabelRequireCapitalLetter">Require a Capital Letter</span>
                                                 </label>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNumber" />
-                                                    <span class="checkboxLabel">Require a Number</span>
+                                                    <span class="checkboxLabel" data-str="LabelRequireNumber">Require a Number</span>
                                                 </label>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwSymbol" />
-                                                    <span class="checkboxLabel">Require a Symbol</span>
+                                                    <span class="checkboxLabel" data-str="LabelRequireSymbol">Require a Symbol</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -179,38 +166,34 @@
                                 <!-- Expiry -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpExpiryContent">
-                                        <span class="base-collapsible-title">Expiry</span>
+                                        <span class="base-collapsible-title" data-str="HeaderExpiry">Expiry</span>
                                         <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpExpiryContent" class="base-collapsible-content collapsed">
-                                        <div class="um-rows" data-label="Expiry">
+                                        <div class="um-rows" aria-label="Expiry" data-str-label="HeaderExpiry">
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
-                                                    <span class="checkboxLabel">Expire Members on a Date</span>
+                                                    <span class="checkboxLabel" data-str="LabelExpireMembersOnDate">Expire Members on a Date</span>
                                                 </label>
-                                                <div class="fieldDescription">Disables or deletes every member once the date comes.</div>
+                                                <div class="fieldDescription" data-str="ExpireMembersOnDateHelp">Disables or deletes every member once the date comes.</div>
                                             </div>
                                             <div class="um-setting um-expiry-field">
-                                                <span class="um-setting-label" id="grpExpiryDateLabel">Expiry Date</span>
+                                                <span class="um-setting-label" id="grpExpiryDateLabel" data-str="LabelExpiryDate">Expiry Date</span>
                                                 <div class="inputContainer">
                                                     <input type="date" id="grpExpiryDate" aria-labelledby="grpExpiryDateLabel" />
                                                 </div>
-                                                <div class="fieldDescription">
-                                                    The next <strong>Process expired and inactive users</strong> task run on or after this date expires members.
-                                                </div>
+                                                <div class="fieldDescription" data-str="ExpiryDateHelp">The next Process expired and inactive users task run on or after this date expires members.</div>
                                             </div>
                                             <div class="um-setting um-expiry-field">
-                                                <span class="um-setting-label" id="grpExpiryActionLabel">Expiration Method</span>
+                                                <span class="um-setting-label" id="grpExpiryActionLabel" data-str="LabelExpirationMethod">Expiration Method</span>
                                                 <div class="selectContainer">
                                                     <select is="emby-select" id="grpExpiryAction" aria-labelledby="grpExpiryActionLabel">
-                                                        <option value="Disable">Disable</option>
-                                                        <option value="Delete">Delete</option>
+                                                        <option value="Disable" data-str="DisablePlugin">Disable</option>
+                                                        <option value="Delete" data-str="Delete">Delete</option>
                                                     </select>
                                                 </div>
-                                                <div class="fieldDescription">
-                                                    Disable can be undone. Delete removes each member and their data for good.
-                                                </div>
+                                                <div class="fieldDescription" data-str="ExpirationMethodHelp">Disable can be undone. Delete removes each member and their data for good.</div>
                                             </div>
                                         </div>
                                     </div>
@@ -219,26 +202,24 @@
                                 <!-- Inactivity -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpInactiveContent">
-                                        <span class="base-collapsible-title">Inactivity</span>
+                                        <span class="base-collapsible-title" data-str="HeaderInactivity">Inactivity</span>
                                         <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpInactiveContent" class="base-collapsible-content collapsed">
-                                        <div class="um-rows" data-label="Inactivity">
+                                        <div class="um-rows" aria-label="Inactivity" data-str-label="HeaderInactivity">
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
-                                                    <span class="checkboxLabel">Disable Inactive Users</span>
+                                                    <span class="checkboxLabel" data-str="LabelDisableInactiveUsers">Disable Inactive Users</span>
                                                 </label>
-                                                <div class="fieldDescription">Disables members who stop using the server.</div>
+                                                <div class="fieldDescription" data-str="DisableInactiveUsersHelp">Disables members who stop using the server.</div>
                                             </div>
                                             <div class="um-setting um-inactive-field">
-                                                <span class="um-setting-label" id="grpInactiveDaysLabel">Days of Inactivity Before Disabling</span>
+                                                <span class="um-setting-label" id="grpInactiveDaysLabel" data-str="LabelInactiveDays">Days of Inactivity Before Disabling</span>
                                                 <div class="inputContainer">
                                                     <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" aria-labelledby="grpInactiveDaysLabel" />
                                                 </div>
-                                                <div class="fieldDescription">
-                                                    The next <strong>Process expired and inactive users</strong> task run disables members with no activity for this long. Members who never signed in are left alone.
-                                                </div>
+                                                <div class="fieldDescription" data-str="InactiveDaysHelp">The next Process expired and inactive users task run disables members with no activity for this long. Members who never signed in are left alone.</div>
                                             </div>
                                         </div>
                                     </div>

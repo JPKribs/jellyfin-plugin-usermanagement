@@ -16,7 +16,9 @@ import {
     setCollapsibleBadge,
     confirmDialog,
     promptDialog,
-    createSaveBar
+    createSaveBar,
+    saveBarOptions,
+    t
 } from './configurationpage?name=usermanagement_shared.js';
 
 // Groups page
@@ -54,159 +56,165 @@ export default function (view) {
     var allViews = [];
     var allGroupable = [];
 
-    var UNRATED_ITEMS = [
-        ['Book', 'Books'], ['ChannelContent', 'Channels'], ['LiveTvChannel', 'Live TV'],
-        ['Movie', 'Movies'], ['Music', 'Music'], ['Trailer', 'Trailers'], ['Series', 'Shows']
-    ];
-
-    // The two choices of every setting row. Only a setting on Group reaches members.
-    var MEMBER_OWN = 'Member';
-    var GROUP_SETS = 'Group';
-
     // Rows led by an "all" checkbox, whose list shows under it only while it is off, as Jellyfin's access page does.
     var ALL_TYPES = { library: true, channels: true, devices: true, deletion: true };
-
-    var PERMISSIONS = [
-        { title: 'Library Access', perms: [
-            { key: 'LibraryAccess', label: 'Enable Access to All Libraries', type: 'library',
-                desc: 'Turn off to pick the libraries members can open.' },
-            { key: 'ChannelAccess', label: 'Enable Access to All Channels', type: 'channels',
-                desc: 'Turn off to pick the channels members can open.' }
-        ] },
-        { title: 'Device Access', perms: [
-            { key: 'DeviceAccess', label: 'Enable Access from All Devices', type: 'devices',
-                desc: 'Turn off to pick the devices members can sign in from.' }
-        ] },
-        { title: 'Media Deletion', perms: [
-            { key: 'EnableContentDeletion', label: 'Allow Media Deletion from All Libraries', type: 'deletion',
-                desc: 'Turn off to pick the libraries members can delete from.' }
-        ] },
-        { title: 'Media Playback', perms: [
-            { key: 'EnableMediaPlayback', label: 'Allow Media Playback', type: 'bool' },
-            { key: 'EnableAudioPlaybackTranscoding', label: 'Allow Audio Playback That Requires Transcoding', type: 'bool' },
-            { key: 'EnableVideoPlaybackTranscoding', label: 'Allow Video Playback That Requires Transcoding', type: 'bool' },
-            { key: 'EnablePlaybackRemuxing', label: 'Allow Video Playback That Requires Conversion Without Re-encoding', type: 'bool' },
-            { key: 'ForceRemoteSourceTranscoding', label: 'Force Transcoding of Remote Media Sources Such as Live TV', type: 'bool',
-                desc: 'Limiting transcoding can make playback fail on clients that cannot play the source format.' },
-            { key: 'RemoteClientBitrateLimit', label: 'Internet Streaming Bitrate Limit (Mbps)', type: 'bitrate',
-                desc: 'Limits each stream to devices outside the local network. Leave blank for no limit.' },
-            { key: 'SyncPlayAccess', label: 'SyncPlay Access', type: 'enum',
-                desc: 'Sets whether members can watch in sync with other people.',
-                options: [
-                    ['CreateAndJoinGroups', 'Allow User to Create and Join Groups'],
-                    ['JoinGroups', 'Allow User to Join Groups'],
-                    ['None', 'Disabled for This User']
-                ] }
-        ] },
-        { title: 'Live TV', perms: [
-            { key: 'EnableLiveTvAccess', label: 'Allow Live TV Access', type: 'bool' },
-            { key: 'EnableLiveTvManagement', label: 'Allow Live TV Recording Management', type: 'bool' }
-        ] },
-        { title: 'Remote Control', perms: [
-            { key: 'EnableRemoteControlOfOtherUsers', label: 'Allow Remote Control of Other Users', type: 'bool' },
-            { key: 'EnableSharedDeviceControl', label: 'Allow Remote Control of Shared Devices', type: 'bool',
-                desc: 'DLNA devices count as shared until a user starts controlling them.' }
-        ] },
-        { title: 'Parental Control', perms: [
-            { key: 'MaxParentalRating', label: 'Maximum Allowed Parental Rating', type: 'rating',
-                desc: 'Hides content rated higher than this. Leave blank for no limit.' },
-            { key: 'BlockUnratedItems', label: 'Block Items with No or Unrecognized Rating Information', type: 'unrated' },
-            { key: 'AllowedTags', label: 'Allow Items with Tags', type: 'tags',
-                desc: 'Shows only media with at least one of these tags.' },
-            { key: 'BlockedTags', label: 'Block Items with Tags', type: 'tags',
-                desc: 'Hides media with at least one of these tags.' },
-            { key: 'AccessSchedules', label: 'Access Schedule', type: 'schedule',
-                desc: 'Limits access to these days and hours.' }
-        ] },
-        { title: 'Profile', perms: [
-            { key: 'EnableRemoteAccess', label: 'Allow Remote Connections to This Server', type: 'bool',
-                desc: 'Blocks every remote connection while off.' },
-            { key: 'EnableCollectionManagement', label: 'Allow This User to Manage Collections', type: 'bool' },
-            { key: 'EnableSubtitleManagement', label: 'Allow This User to Edit Subtitles', type: 'bool' },
-            { key: 'EnableLyricManagement', label: 'Allow This User to Edit Lyrics', type: 'bool' },
-            { key: 'EnableUserPreferenceAccess', label: 'Allow This User to Change Their Own Preferences', type: 'bool',
-                desc: 'While off, only an administrator or this group changes display and playback preferences.' },
-            { key: 'EnableContentDownloading', label: 'Allow Media Downloads', type: 'bool',
-                desc: 'Lets members save media to their devices. Book libraries need this to work.' },
-            { key: 'EnableMediaConversion', label: 'Allow Media Conversion', type: 'bool' },
-            { key: 'EnableSyncTranscoding', label: 'Allow Sync Transcoding', type: 'bool',
-                desc: 'Lets the server transcode media that a client downloads for offline use.' },
-            { key: 'EnablePublicSharing', label: 'Allow Public Sharing', type: 'bool',
-                desc: 'Lets members create public share links for media.' },
-            { key: 'IsDisabled', label: 'Disable This User', type: 'bool',
-                desc: 'Refuses every connection from members.' },
-            { key: 'IsHidden', label: 'Hide This User from Login Screens', type: 'bool' },
-            { key: 'LoginAttemptsBeforeLockout', label: 'Failed Login Tries Before User Is Locked Out', type: 'int', min: -1,
-                desc: 'Set 0 for the default of three tries. Set -1 to never lock out.' },
-            { key: 'MaxActiveSessions', label: 'Maximum Number of Simultaneous User Sessions', type: 'int',
-                desc: 'Set 0 for no limit.' }
-        ] }
-    ];
-
-    var SUBTITLE_MODES = [
-        ['Default', 'Default', 'Subtitles are loaded based on the default and forced flags in the embedded metadata. Language preferences are considered when multiple options are available.'],
-        ['Smart', 'Smart', 'Subtitles matching the language preference will be loaded when the audio is in a foreign language.'],
-        ['OnlyForced', 'Only Forced', 'Only subtitles marked as forced will be loaded.'],
-        ['Always', 'Always Play', 'Subtitles matching the language preference will be loaded regardless of the audio language.'],
-        ['None', 'None', 'Subtitles will not be loaded by default. They can still be turned on manually during playback.']
-    ];
-
-    // Home screen section options for the web client, in the order and wording Jellyfin uses.
-    // The value keys map (case-insensitively) onto the server's HomeSectionType.
-    var HOME_SECTIONS = [
-        ['smalllibrarytiles', 'My Media'],
-        ['librarybuttons', 'My Media (small)'],
-        ['activerecordings', 'Active Recordings'],
-        ['resume', 'Continue Watching'],
-        ['resumeaudio', 'Continue Listening'],
-        ['resumebook', 'Continue Reading'],
-        ['latestmedia', 'Recently Added Media'],
-        ['nextup', 'Next Up'],
-        ['livetv', 'Live TV'],
-        ['none', 'None']
-    ];
 
     // Jellyfin's default home layout, used when a group has not set an explicit order yet.
     var DEFAULT_HOME_SECTIONS = ['smalllibrarytiles', 'resume', 'resumeaudio', 'resumebook', 'livetv', 'nextup', 'latestmedia', 'none', 'none', 'none'];
     var HOME_SECTION_COUNT = 10;
 
-    // Display and playback preferences applied to the Jellyfin user configuration, with the labels of a user's
-    // Subtitles, Playback, Display, and Home preference pages.
-    var CONFIG = [
-        { title: 'Subtitles', perms: [
-            { key: 'SubtitleMode', label: 'Subtitle Mode', type: 'submode' },
-            { key: 'SubtitleLanguagePreference', label: 'Preferred Subtitle Language', type: 'culture' },
-            { key: 'RememberSubtitleSelections', label: 'Set Subtitle Track Based on Previous Item', type: 'bool',
-                desc: 'Picks the subtitle track closest to the one used in the last video.' }
-        ] },
-        { title: 'Playback', perms: [
-            { key: 'AudioLanguagePreference', label: 'Preferred Audio Language', type: 'culture' },
-            { key: 'PlayDefaultAudioTrack', label: 'Play Default Audio Track Regardless of Language', type: 'bool', def: true },
-            { key: 'RememberAudioSelections', label: 'Set Audio Track Based on Previous Item', type: 'bool',
-                desc: 'Picks the audio track closest to the one used in the last video.' },
-            { key: 'EnableNextEpisodeAutoPlay', label: 'Play Next Episode Automatically', type: 'bool' },
-            { key: 'CastReceiverId', label: 'Google Cast Version', type: 'castreceiver' }
-        ] },
-        { title: 'Display', perms: [
-            { key: 'DisplayMissingEpisodes', label: 'Display Missing Episodes within Seasons', type: 'bool',
-                desc: 'TV libraries must also have this turned on in the server settings.' },
-            { key: 'DisplayCollectionsView', label: 'Display a Collections View', type: 'bool',
-                desc: 'Shows a Collections entry beside the libraries on the home screen.' }
-        ] },
-        { title: 'Home', perms: [
-            { key: 'HomeSections', label: 'Home Screen Sections', type: 'homesections',
-                desc: 'Sets the order of the home screen sections in the web client.' },
-            { key: 'HidePlayedInLatest', label: 'Hide Watched Content from Recently Added Media', type: 'bool', def: true },
-            { key: 'OrderedViews', label: 'Media Library Order', type: 'order',
-                desc: 'Sets the order libraries appear on the home screen.' },
-            { key: 'MyMediaExcludes', label: 'Libraries on the Home Screen', type: 'libgrid', invert: true,
-                desc: 'Picks the libraries in the My Media row.' },
-            { key: 'LatestItemsExcludes', label: 'Libraries in Home Screen Sections', type: 'libgrid', invert: true,
-                desc: 'Picks the libraries in sections such as Recently Added Media and Continue Watching.' },
-            { key: 'GroupedFolders', label: 'Group Folders into Views', type: 'libgrid', invert: false, source: 'groupable',
-                desc: 'Groups the picked folders into views such as Movies, Music, and TV. The rest show in their own view.' }
-        ] }
-    ];
+    var UNRATED_ITEMS, MEMBER_OWN, GROUP_SETS, PERMISSIONS, SUBTITLE_MODES, HOME_SECTIONS, CONFIG;
+
+    // defineSettings
+    // Builds the setting lists in the viewer's language, once the strings have loaded.
+    function defineSettings() {
+        UNRATED_ITEMS = [
+            ['Book', t.tr('Books')], ['ChannelContent', t.tr('Channels')], ['LiveTvChannel', t.tr('LiveTV')],
+            ['Movie', t.tr('Movies')], ['Music', t.tr('TabMusic')], ['Trailer', t.tr('Trailers')], ['Series', t.tr('Shows')]
+        ];
+
+        // The two choices of every setting row. Only a setting on Group reaches members.
+        MEMBER_OWN = t.tr('LabelMember');
+        GROUP_SETS = t.tr('LabelGroup');
+
+        PERMISSIONS = [
+            { title: t.tr('HeaderLibraryAccess'), perms: [
+                { key: 'LibraryAccess', label: t.tr('OptionEnableAccessToAllLibraries'), type: 'library',
+                    desc: t.tr('AllLibrariesHelp') },
+                { key: 'ChannelAccess', label: t.tr('OptionEnableAccessToAllChannels'), type: 'channels',
+                    desc: t.tr('AllChannelsHelp') }
+            ] },
+            { title: t.tr('HeaderDeviceAccess'), perms: [
+                { key: 'DeviceAccess', label: t.tr('OptionEnableAccessFromAllDevices'), type: 'devices',
+                    desc: t.tr('AllDevicesHelp') }
+            ] },
+            { title: t.tr('HeaderMediaDeletion'), perms: [
+                { key: 'EnableContentDeletion', label: t.tr('LabelAllowDeletionFromAllLibraries'), type: 'deletion',
+                    desc: t.tr('DeletionAccessHelp') }
+            ] },
+            { title: t.tr('HeaderPlayback'), perms: [
+                { key: 'EnableMediaPlayback', label: t.tr('OptionAllowMediaPlayback'), type: 'bool' },
+                { key: 'EnableAudioPlaybackTranscoding', label: t.tr('OptionAllowAudioPlaybackTranscoding'), type: 'bool' },
+                { key: 'EnableVideoPlaybackTranscoding', label: t.tr('OptionAllowVideoPlaybackTranscoding'), type: 'bool' },
+                { key: 'EnablePlaybackRemuxing', label: t.tr('OptionAllowVideoPlaybackRemuxing'), type: 'bool' },
+                { key: 'ForceRemoteSourceTranscoding', label: t.tr('OptionForceRemoteSourceTranscoding'), type: 'bool',
+                    desc: t.tr('ForceRemoteTranscodingHelp') },
+                { key: 'RemoteClientBitrateLimit', label: t.tr('LabelRemoteClientBitrateLimit'), type: 'bitrate',
+                    desc: t.tr('BitrateLimitHelp') },
+                { key: 'SyncPlayAccess', label: t.tr('LabelSyncPlayAccess'), type: 'enum',
+                    desc: t.tr('SyncPlayHelp'),
+                    options: [
+                        ['CreateAndJoinGroups', t.tr('LabelSyncPlayAccessCreateAndJoinGroups')],
+                        ['JoinGroups', t.tr('LabelSyncPlayAccessJoinGroups')],
+                        ['None', t.tr('LabelSyncPlayAccessNone')]
+                    ] }
+            ] },
+            { title: t.tr('LiveTV'), perms: [
+                { key: 'EnableLiveTvAccess', label: t.tr('OptionAllowBrowsingLiveTv'), type: 'bool' },
+                { key: 'EnableLiveTvManagement', label: t.tr('OptionAllowManageLiveTv'), type: 'bool' }
+            ] },
+            { title: t.tr('HeaderRemoteControl'), perms: [
+                { key: 'EnableRemoteControlOfOtherUsers', label: t.tr('OptionAllowRemoteControlOthers'), type: 'bool' },
+                { key: 'EnableSharedDeviceControl', label: t.tr('OptionAllowRemoteSharedDevices'), type: 'bool',
+                    desc: t.tr('SharedDevicesHelp') }
+            ] },
+            { title: t.tr('TabParentalControl'), perms: [
+                { key: 'MaxParentalRating', label: t.tr('LabelMaxParentalRating'), type: 'rating',
+                    desc: t.tr('MaxRatingHelp') },
+                { key: 'BlockUnratedItems', label: t.tr('HeaderBlockItemsWithNoRating'), type: 'unrated' },
+                { key: 'AllowedTags', label: t.tr('LabelAllowContentWithTags'), type: 'tags',
+                    desc: t.tr('AllowedTagsHelp') },
+                { key: 'BlockedTags', label: t.tr('LabelBlockContentWithTags'), type: 'tags',
+                    desc: t.tr('BlockedTagsHelp') },
+                { key: 'AccessSchedules', label: t.tr('HeaderAccessSchedule'), type: 'schedule',
+                    desc: t.tr('AccessScheduleHelp') }
+            ] },
+            { title: t.tr('Profile'), perms: [
+                { key: 'EnableRemoteAccess', label: t.tr('AllowRemoteAccess'), type: 'bool',
+                    desc: t.tr('RemoteAccessHelp') },
+                { key: 'EnableCollectionManagement', label: t.tr('AllowCollectionManagement'), type: 'bool' },
+                { key: 'EnableSubtitleManagement', label: t.tr('AllowSubtitleManagement'), type: 'bool' },
+                { key: 'EnableLyricManagement', label: t.tr('LabelAllowLyricManagement'), type: 'bool' },
+                { key: 'EnableUserPreferenceAccess', label: t.tr('LabelAllowPreferenceAccess'), type: 'bool',
+                    desc: t.tr('PreferenceAccessHelp') },
+                { key: 'EnableContentDownloading', label: t.tr('OptionAllowContentDownload'), type: 'bool',
+                    desc: t.tr('ContentDownloadHelp') },
+                { key: 'EnableMediaConversion', label: t.tr('AllowMediaConversion'), type: 'bool' },
+                { key: 'EnableSyncTranscoding', label: t.tr('LabelAllowSyncTranscoding'), type: 'bool',
+                    desc: t.tr('SyncTranscodingHelp') },
+                { key: 'EnablePublicSharing', label: t.tr('LabelAllowPublicSharing'), type: 'bool',
+                    desc: t.tr('PublicSharingHelp') },
+                { key: 'IsDisabled', label: t.tr('OptionDisableUser'), type: 'bool',
+                    desc: t.tr('DisableUserHelp') },
+                { key: 'IsHidden', label: t.tr('OptionHideUser'), type: 'bool' },
+                { key: 'LoginAttemptsBeforeLockout', label: t.tr('LabelUserLoginAttemptsBeforeLockout'), type: 'int', min: -1,
+                    desc: t.tr('LoginAttemptsHelp') },
+                { key: 'MaxActiveSessions', label: t.tr('LabelUserMaxActiveSessions'), type: 'int',
+                    desc: t.tr('MaxSessionsHelp') }
+            ] }
+        ];
+
+        SUBTITLE_MODES = [
+            ['Default', t.tr('Default'), t.tr('DefaultSubtitlesHelp')],
+            ['Smart', t.tr('Smart'), t.tr('SmartSubtitlesHelp')],
+            ['OnlyForced', t.tr('OnlyForcedSubtitles'), t.tr('OnlyForcedSubtitlesHelp')],
+            ['Always', t.tr('AlwaysPlaySubtitles'), t.tr('AlwaysPlaySubtitlesHelp')],
+            ['None', t.tr('None'), t.tr('NoSubtitlesHelp')]
+        ];
+
+        // Home screen section options for the web client, in the order and wording Jellyfin uses.
+        // The value keys map (case-insensitively) onto the server's HomeSectionType.
+        HOME_SECTIONS = [
+            ['smalllibrarytiles', t.tr('HeaderMyMedia')],
+            ['librarybuttons', t.tr('HeaderMyMediaSmall')],
+            ['activerecordings', t.tr('HeaderActiveRecordings')],
+            ['resume', t.tr('HeaderContinueWatching')],
+            ['resumeaudio', t.tr('HeaderContinueListening')],
+            ['resumebook', t.tr('HeaderContinueReading')],
+            ['latestmedia', t.tr('HeaderLatestMedia')],
+            ['nextup', t.tr('NextUp')],
+            ['livetv', t.tr('LiveTV')],
+            ['none', t.tr('None')]
+        ];
+
+        // Display and playback preferences applied to the Jellyfin user configuration, with the labels of a user's
+        // Subtitles, Playback, Display, and Home preference pages.
+        CONFIG = [
+            { title: t.tr('Subtitles'), perms: [
+                { key: 'SubtitleMode', label: t.tr('LabelSubtitlePlaybackMode'), type: 'submode' },
+                { key: 'SubtitleLanguagePreference', label: t.tr('LabelPreferredSubtitleLanguage'), type: 'culture' },
+                { key: 'RememberSubtitleSelections', label: t.tr('RememberSubtitleSelections'), type: 'bool',
+                    desc: t.tr('RememberSubtitleHelp') }
+            ] },
+            { title: t.tr('TitlePlayback'), perms: [
+                { key: 'AudioLanguagePreference', label: t.tr('LabelAudioLanguagePreference'), type: 'culture' },
+                { key: 'PlayDefaultAudioTrack', label: t.tr('LabelPlayDefaultAudioTrack'), type: 'bool', def: true },
+                { key: 'RememberAudioSelections', label: t.tr('RememberAudioSelections'), type: 'bool',
+                    desc: t.tr('RememberAudioHelp') },
+                { key: 'EnableNextEpisodeAutoPlay', label: t.tr('PlayNextEpisodeAutomatically'), type: 'bool' },
+                { key: 'CastReceiverId', label: t.tr('LabelChromecastVersion'), type: 'castreceiver' }
+            ] },
+            { title: t.tr('Display'), perms: [
+                { key: 'DisplayMissingEpisodes', label: t.tr('DisplayMissingEpisodesWithinSeasons'), type: 'bool',
+                    desc: t.tr('MissingEpisodesHelp') },
+                { key: 'DisplayCollectionsView', label: t.tr('LabelDisplayCollectionsView'), type: 'bool',
+                    desc: t.tr('CollectionsViewHelp') }
+            ] },
+            { title: t.tr('Home'), perms: [
+                { key: 'HomeSections', label: t.tr('LabelHomeScreenSections'), type: 'homesections',
+                    desc: t.tr('HomeScreenSectionsHelp') },
+                { key: 'HidePlayedInLatest', label: t.tr('LabelHideWatchedFromLatest'), type: 'bool', def: true },
+                { key: 'OrderedViews', label: t.tr('LabelMediaLibraryOrder'), type: 'order',
+                    desc: t.tr('MediaLibraryOrderHelp') },
+                { key: 'MyMediaExcludes', label: t.tr('LabelLibrariesOnHomeScreen'), type: 'libgrid', invert: true,
+                    desc: t.tr('LibrariesOnHomeScreenHelp') },
+                { key: 'LatestItemsExcludes', label: t.tr('LabelLibrariesInHomeSections'), type: 'libgrid', invert: true,
+                    desc: t.tr('LibrariesInHomeSectionsHelp') },
+                { key: 'GroupedFolders', label: t.tr('LabelGroupFoldersIntoViews'), type: 'libgrid', invert: false, source: 'groupable',
+                    desc: t.tr('GroupFoldersIntoViewsHelp') }
+            ] }
+        ];
+    }
 
     // fetchCultures
     // Reads the server's languages for the language selects.
@@ -345,7 +353,7 @@ export default function (view) {
             if (saveBar) saveBar.setDirty(false);
             renderUserCards();
         }).catch(function () {
-            if (saveBar) saveBar.setState('failed', 'Could not load the groups. Reload the page.');
+            if (saveBar) saveBar.setState('failed', t.tr('ErrorLoadGroups'));
         });
     }
 
@@ -404,7 +412,7 @@ export default function (view) {
                 + '<span class="base-collapsible-title">' + esc(section.title) + '</span>'
                 + '<span class="base-collapsible-icon"></span></button>'
                 + '<div id="' + id + '" class="base-collapsible-content collapsed">'
-                + '<div class="um-rows" data-label="' + esc(section.title) + '">';
+                + '<div class="um-rows" aria-label="' + esc(section.title) + '">';
 
             section.perms.forEach(function (p) {
                 html += renderPermRow(p, store);
@@ -444,7 +452,7 @@ export default function (view) {
                 items: rows,
                 render: function (row) { return row; },
                 layout: 'rows',
-                label: host.getAttribute('data-label') || null,
+                label: host.getAttribute('aria-label') || null,
                 emptyText: null
             });
             host.appendChild(list.element);
@@ -478,7 +486,7 @@ export default function (view) {
                 field: { element: lead, getValue: function () { return null; }, setValue: function () {} },
                 inheritText: MEMBER_OWN,
                 overrideText: GROUP_SETS,
-                label: 'Who sets ' + row.getAttribute('data-label'),
+                label: t.format('LabelWhoSets', row.getAttribute('data-label')),
                 onChange: function () {
                     refreshRow(row);
                     refreshBadges();
@@ -554,7 +562,7 @@ export default function (view) {
             var count = 0;
             section.querySelectorAll('.perm-row').forEach(function (row) { if (isManaged(row)) count++; });
             setCollapsibleBadge(section.querySelector('.base-collapsible-header'),
-                count ? { label: count + ' Set by Group', color: 'blue' } : null);
+                count ? { label: t.format('BadgeSetByGroup', count), color: 'blue' } : null);
         });
     }
 
@@ -574,12 +582,22 @@ export default function (view) {
         }
     }
 
-    // LIBRARY_TYPES
+    // libraryType
     // Names a library's collection type as Jellyfin's library page does.
-    var LIBRARY_TYPES = {
-        movies: 'Movies', tvshows: 'Shows', music: 'Music', musicvideos: 'Music Videos', books: 'Books',
-        homevideos: 'Home Videos and Photos', boxsets: 'Collections', playlists: 'Playlists', mixed: 'Mixed Content'
-    };
+    //
+    // Inputs
+    // type [string]: The collection type, such as movies.
+    //
+    // Output
+    // [string]: The name, or empty when the library has no type.
+    function libraryType(type) {
+        if (!type) return '';
+        var names = {
+            movies: t.tr('Movies'), tvshows: t.tr('Shows'), music: t.tr('TabMusic'), musicvideos: t.tr('MusicVideos'),
+            books: t.tr('Books'), homevideos: t.tr('HomeVideosPhotos'), boxsets: t.tr('Collections'), playlists: t.tr('Playlists')
+        };
+        return names[type] || t.tr('MixedContent');
+    }
 
     // libraryRow
     // Draws one library in a library list. The sublabel names its type and its first folder.
@@ -592,7 +610,7 @@ export default function (view) {
     function libraryRow(l) {
         var id = libraryId(l);
         var lib = allLibraries.find(function (x) { return x.ItemId === id; }) || l;
-        var type = LIBRARY_TYPES[lib.CollectionType] || (lib.CollectionType ? 'Mixed Content' : '');
+        var type = libraryType(lib.CollectionType);
         var path = (lib.Locations && lib.Locations[0]) || '';
         return { label: l.Name || l.name || id, sublabel: [type, path].filter(Boolean).join(' · ') };
     }
@@ -616,7 +634,7 @@ export default function (view) {
     // Output
     // [object]: The row's { label, sublabel }.
     function channelRow(c) {
-        return { label: c.Name || c.Id, sublabel: 'Channel' + (c.ChannelType ? ' · ' + c.ChannelType : '') };
+        return { label: c.Name || c.Id, sublabel: [t.tr('LabelChannel'), c.ChannelType].filter(Boolean).join(' · ') };
     }
 
     // pickList
@@ -628,7 +646,7 @@ export default function (view) {
     // Output
     // [object]: The Checkbox List handle.
     function pickList(opts) {
-        return createCheckboxList(Object.assign({ maxHeight: 320, onChange: checkDirty }, opts));
+        return createCheckboxList(Object.assign({ maxHeight: 320, onChange: checkDirty, selectAllText: t.tr('SelectAll') }, opts));
     }
 
     // mountRowComponents
@@ -641,30 +659,51 @@ export default function (view) {
             var mount = row.querySelector('.perm-mount');
             var handle = null;
             if (type === 'tags') {
-                handle = createTagInput({ placeholder: 'Kids', onChange: checkDirty });
+                handle = createTagInput({
+                    placeholder: t.tr('Kids'),
+                    inputLabel: t.tr('LabelNewTag'),
+                    removeLabel: t.tr('ButtonRemoveValue'),
+                    duplicateText: t.tr('ErrorAlreadyAdded'),
+                    onChange: checkDirty
+                });
             } else if (type === 'schedule') {
-                handle = createAccessSchedule({ addText: 'Add Schedule', onChange: checkDirty });
+                handle = createAccessSchedule({
+                    addText: t.tr('ButtonAddSchedule'),
+                    removeText: t.tr('ButtonRemove'),
+                    dayLabel: t.tr('LabelScheduleDay'),
+                    startLabel: t.tr('LabelScheduleStart'),
+                    endLabel: t.tr('LabelScheduleEnd'),
+                    emptyText: t.tr('EmptySchedule'),
+                    windowText: t.tr('ScheduleWindow'),
+                    endBeforeStartText: t.tr('ErrorScheduleEndBeforeStart'),
+                    dayLabels: {
+                        Sunday: t.tr('Sunday'), Monday: t.tr('Monday'), Tuesday: t.tr('Tuesday'), Wednesday: t.tr('Wednesday'),
+                        Thursday: t.tr('Thursday'), Friday: t.tr('Friday'), Saturday: t.tr('Saturday'),
+                        Everyday: t.tr('OptionEveryday'), Weekday: t.tr('OptionWeekdays'), Weekend: t.tr('OptionWeekends')
+                    },
+                    onChange: checkDirty
+                });
             } else if (type === 'library' || type === 'deletion') {
                 handle = pickList({
                     items: allLibraries, idKey: 'ItemId', searchKeys: ['Name'],
-                    placeholder: 'Search libraries', emptyMessage: 'No libraries found.', renderRow: libraryRow
+                    placeholder: t.tr('SearchLibraries'), emptyMessage: t.tr('EmptyLibraries'), renderRow: libraryRow
                 });
             } else if (type === 'channels') {
                 handle = pickList({
                     items: allChannels, idKey: 'Id', searchKeys: ['Name'],
-                    placeholder: 'Search channels', emptyMessage: 'No channels found.', renderRow: channelRow
+                    placeholder: t.tr('SearchChannels'), emptyMessage: t.tr('EmptyChannels'), renderRow: channelRow
                 });
             } else if (type === 'devices') {
                 handle = pickList({
                     items: allDevices, idKey: 'Id', searchKeys: ['CustomName', 'Name', 'AppName', 'LastUserName', 'Id'],
-                    placeholder: 'Search devices', emptyMessage: 'No devices found.', renderRow: deviceRow
+                    placeholder: t.tr('SearchDevices'), emptyMessage: t.tr('EmptyDevices'), renderRow: deviceRow
                 });
             } else if (type === 'libgrid') {
                 var source = row.getAttribute('data-source');
                 handle = pickList({
                     fetchItems: function () { return homeLibraries(source); },
                     idKey: libraryId, searchKeys: ['Name', 'name'],
-                    placeholder: 'Search libraries', emptyMessage: 'No libraries found.', renderRow: libraryRow
+                    placeholder: t.tr('SearchLibraries'), emptyMessage: t.tr('EmptyLibraries'), renderRow: libraryRow
                 });
             } else if (type === 'order') {
                 handle = createOrderedList({
@@ -721,7 +760,7 @@ export default function (view) {
     // [object]: The row's { label, sublabel }.
     function deviceRow(d) {
         var app = [d.AppName, d.AppVersion].filter(Boolean).join(' ');
-        var who = d.LastUserName ? 'Last used by ' + d.LastUserName : 'ID ' + d.Id;
+        var who = d.LastUserName ? t.format('LastUsedBy', d.LastUserName) : t.format('DeviceIdValue', d.Id);
         return {
             label: d.CustomName || d.Name || d.AppName || d.Id,
             sublabel: [app, who].filter(Boolean).join(' · ')
@@ -735,7 +774,7 @@ export default function (view) {
     // [string]: The options' HTML.
     function cultureOptions() {
         var esc = Shared.escapeHtml;
-        var opts = '<option value="">Any Language</option>';
+        var opts = '<option value="">' + esc(t.tr('AnyLanguage')) + '</option>';
         allCultures.forEach(function (c) {
             var code = c.ThreeLetterISOLanguageName || c.threeLetterISOLanguageName || '';
             var name = c.DisplayName || c.displayName || code;
@@ -836,7 +875,7 @@ export default function (view) {
             var fields = '';
             for (var hi = 0; hi < HOME_SECTION_COUNT; hi++) {
                 fields += '<div class="selectContainer">'
-                    + '<label class="selectLabel" for="permHomeSection' + hi + '">Home Screen Section ' + (hi + 1) + '</label>'
+                    + '<label class="selectLabel" for="permHomeSection' + hi + '">' + esc(t.format('LabelHomeScreenSectionValue', hi + 1)) + '</label>'
                     + '<select is="emby-select" id="permHomeSection' + hi + '" class="perm-homesection" data-index="' + hi + '">' + secOpts + '</select>'
                     + '</div>';
             }
@@ -925,7 +964,8 @@ export default function (view) {
     // Output
     // [string]: The label.
     function groupLabel(g) {
-        return (g.Name || 'Unnamed group') + (g.Id === fullConfig.DefaultGroupId ? ' (Default)' : '');
+        var name = g.Name || t.tr('UnnamedGroup');
+        return g.Id === fullConfig.DefaultGroupId ? t.format('GroupDefaultSuffix', name) : name;
     }
 
     // refreshGroupLabels
@@ -949,7 +989,9 @@ export default function (view) {
         btn.classList.toggle('secondary', !isDefault);
         var icon = btn.querySelector('.material-icons');
         if (icon) icon.textContent = isDefault ? 'star' : 'star_border';
-        btn.setAttribute('title', isDefault ? 'Unset Default' : 'Set as Default');
+        var title = isDefault ? t.tr('ButtonUnsetDefault') : t.tr('EnableAutoCast');
+        btn.setAttribute('title', title);
+        btn.setAttribute('aria-label', title);
     }
 
     // toggleDefaultGroup
@@ -1252,7 +1294,7 @@ export default function (view) {
         fullConfig.Groups.forEach(function (g) {
             if (g.Id === currentGroupId) return;
             (g.MemberIds || []).forEach(function (id) {
-                notes[id] = g.Name || 'Another group';
+                notes[id] = g.Name || t.tr('AnotherGroup');
                 others.push(id);
             });
         });
@@ -1351,7 +1393,7 @@ export default function (view) {
         var on = box.checked;
         view.querySelectorAll('.' + rowClass).forEach(function (row) { setRowShown(row, on); });
         var section = box.closest('.base-collapsible-section');
-        if (section) setCollapsibleBadge(section.querySelector('.base-collapsible-header'), on ? { label: 'On', color: 'blue' } : null);
+        if (section) setCollapsibleBadge(section.querySelector('.base-collapsible-header'), on ? { label: t.tr('BadgeOn'), color: 'blue' } : null);
     }
 
     // updatePwEnabledState
@@ -1400,11 +1442,18 @@ export default function (view) {
         return out.sort(function (a, b) { return a.localeCompare(b); });
     }
 
-    var SESSION_MODE_OPTIONS = [
-        { value: 'All', label: 'All Clients' },
-        { value: 'Only', label: 'Only These Clients' },
-        { value: 'AllExcept', label: 'All Except These Clients' }
-    ];
+    // sessionModeOptions
+    // Lists the session cleanup rule modes for the Repeater's select.
+    //
+    // Output
+    // [Array]: One { value, label } per mode.
+    function sessionModeOptions() {
+        return [
+            { value: 'All', label: t.tr('OptionAllClients') },
+            { value: 'Only', label: t.tr('OptionOnlyTheseClients') },
+            { value: 'AllExcept', label: t.tr('OptionAllExceptTheseClients') }
+        ];
+    }
 
     // clientField
     // Draws a rule's clients as a Chip Select of the known clients, for the Repeater's custom field.
@@ -1419,8 +1468,9 @@ export default function (view) {
         var chips = createChipSelect({
             options: sessionClients,
             value: value || [],
-            placeholder: 'Search clients',
-            noResultsText: 'No clients match.',
+            placeholder: t.tr('SearchClients'),
+            noResultsText: t.tr('EmptyClientsMatch'),
+            removeText: t.tr('ButtonRemove'),
             onChange: change
         });
         return {
@@ -1438,14 +1488,14 @@ export default function (view) {
         if (sessionRules) return;
         sessionRules = createRepeater({
             layout: 'card',
-            titleText: 'Rule {index}',
-            addText: 'Add Rule',
-            removeText: 'Remove {value}',
-            emptyText: 'No rules yet. Select Add Rule to add one.',
+            titleText: t.tr('RuleTitle'),
+            addText: t.tr('ButtonAddRule'),
+            removeText: t.tr('ButtonRemoveValue'),
+            emptyText: t.tr('EmptyRules'),
             fields: [
-                { key: 'mode', label: 'Applies To', type: 'select', options: SESSION_MODE_OPTIONS },
-                { key: 'clients', label: 'Clients', type: 'custom', render: clientField },
-                { key: 'days', label: 'Days Before Logout', type: 'number', min: 1, placeholder: '30' }
+                { key: 'mode', label: t.tr('LabelAppliesTo'), type: 'select', options: sessionModeOptions() },
+                { key: 'clients', label: t.tr('LabelClients'), type: 'custom', render: clientField },
+                { key: 'days', label: t.tr('LabelDaysBeforeLogout'), type: 'number', min: 1, placeholder: '30' }
             ],
             onChange: function () {
                 updateSessionOverlaps();
@@ -1502,7 +1552,7 @@ export default function (view) {
             if (matches.length > 1) overlapped.push(client);
         });
         warn.textContent = overlapped.length
-            ? 'More than one rule covers ' + overlapped.join(', ') + '. The shortest window applies where rules overlap.'
+            ? t.format('SessionOverlapWarning', overlapped.join(', '))
             : '';
         warn.classList.toggle('hidden', overlapped.length === 0);
     }
@@ -1551,11 +1601,11 @@ export default function (view) {
         });
 
         Shared.renderCards('userCards', [
-            { count: admins, label: 'Admins', color: 'blue' },
-            { count: active, label: 'Active', color: 'green' },
-            { count: inactive, label: 'Inactive', color: 'yellow' },
-            { count: disabled, label: 'Disabled', color: 'red' },
-            { count: Object.keys(expiringIds).length, label: 'Expiring', color: 'purple' }
+            { count: admins, label: t.tr('StatusAdmins'), color: 'blue' },
+            { count: active, label: t.tr('StatusActive'), color: 'green' },
+            { count: inactive, label: t.tr('StatusInactive'), color: 'yellow' },
+            { count: disabled, label: t.tr('Disabled'), color: 'red' },
+            { count: Object.keys(expiringIds).length, label: t.tr('StatusExpiring'), color: 'purple' }
         ]);
     }
 
@@ -1638,7 +1688,8 @@ export default function (view) {
             showAvatars: true,
             maxHeight: 280,
             fetchUsers: function () { return allUsers; },
-            emptyMessage: 'No users available.',
+            emptyMessage: t.tr('EmptyUsers'),
+            selectAllText: t.tr('SelectAll'),
             disabledIds: [],
             noteFor: function (u) { return memberNotes[u.id] || ''; },
             onChange: onMembersChanged
@@ -1669,7 +1720,7 @@ export default function (view) {
         var group = getCurrentGroup();
         var n = group ? (group.MemberIds || []).length : 0;
         var el = view.querySelector('#memberSummary');
-        if (el) el.textContent = Shared.plural(n, 'member') + ' in this group';
+        if (el) el.textContent = n === 1 ? t.tr('MemberCountOne') : t.format('MemberCount', n);
     }
 
     // askName
@@ -1685,13 +1736,13 @@ export default function (view) {
     function askName(title, value, exceptId) {
         return promptDialog([{
             name: 'name',
-            label: 'Name',
+            label: t.tr('LabelName'),
             value: value || '',
             required: true,
             validate: function (v) {
-                return nameExists((v || '').trim(), exceptId) ? 'A group with this name already exists.' : '';
+                return nameExists((v || '').trim(), exceptId) ? t.tr('ErrorGroupNameTaken') : '';
             }
-        }], { title: title }).then(function (result) {
+        }], { title: title, submitText: t.tr('ButtonDone'), cancelText: t.tr('ButtonCancel') }).then(function (result) {
             var name = result ? (result.name || '').trim() : '';
             return name || null;
         });
@@ -1715,7 +1766,7 @@ export default function (view) {
     // newGroup
     // Asks for a name and adds an empty group.
     function newGroup() {
-        askName('New Group', '', null).then(function (name) {
+        askName(t.tr('LabelSyncPlayNewGroup'), '', null).then(function (name) {
             if (!name) return;
             if (currentGroupId) collectCurrentGroup();
             var group = { Id: generateGuid(), Name: name, MemberIds: [], Permissions: {}, Configuration: {} };
@@ -1731,7 +1782,7 @@ export default function (view) {
     function renameGroup() {
         var group = getCurrentGroup();
         if (!group) return;
-        askName('Rename Group', group.Name, group.Id).then(function (name) {
+        askName(t.tr('HeaderRenameGroup'), group.Name, group.Id).then(function (name) {
             if (!name) return;
             group.Name = name;
             populateDropdown();
@@ -1744,9 +1795,10 @@ export default function (view) {
     function deleteGroup() {
         var group = getCurrentGroup();
         if (!group) return;
-        confirmDialog('Delete the group ' + group.Name + '? Its members are unassigned.', {
-            title: 'Delete Group',
-            confirmText: 'Delete',
+        confirmDialog(t.format('ConfirmDeleteGroup', group.Name), {
+            title: t.tr('HeaderDeleteGroup'),
+            confirmText: t.tr('Delete'),
+            cancelText: t.tr('ButtonCancel'),
             destructive: true
         }).then(function (ok) {
             if (!ok) return;
@@ -1766,10 +1818,10 @@ export default function (view) {
     function confirmDeleteExpiry() {
         var cur = getCurrentGroup();
         if (!(cur && cur.ExpiresOn && cur.ExpiryAction === 'Delete')) return Promise.resolve(true);
-        return confirmDialog('Save ' + (cur.Name || 'this group') + '? It deletes its members on '
-            + String(cur.ExpiresOn).slice(0, 10) + ', and this cannot be undone.', {
-            title: 'Delete Members on Expiry',
-            confirmText: 'Save',
+        return confirmDialog(t.format('ConfirmSaveDeleteOnExpiry', cur.Name || t.tr('UnnamedGroup'), String(cur.ExpiresOn).slice(0, 10)), {
+            title: t.tr('HeaderDeleteMembersOnExpiry'),
+            confirmText: t.tr('Save'),
+            cancelText: t.tr('ButtonCancel'),
             destructive: true
         });
     }
@@ -1786,7 +1838,7 @@ export default function (view) {
             if (tracker) tracker.markClean();
             renderUserCards();
         }).catch(function () {
-            throw new Error('Could not save the groups.');
+            throw new Error(t.tr('ErrorSaveGroups'));
         });
     }
 
@@ -1810,8 +1862,9 @@ export default function (view) {
     // Inputs
     // shared [object]: The helper bag from createPage.
     function bind(shared) {
+        defineSettings();
         tracker = shared.createChangeTracker({ serialize: serializeGroups });
-        saveBar = createSaveBar({ fill: true, savedText: 'Saved and applied to members.', onSave: save });
+        saveBar = createSaveBar(saveBarOptions({ fill: true, savedText: t.tr('ToastGroupsSaved'), onSave: save }));
         // A capture listener on the bar runs before the button's own, so the confirm comes before Saving shows.
         saveBar.element.addEventListener('click', function (e) {
             if (e.target.closest('button') === saveBar.button) confirmSave(e);

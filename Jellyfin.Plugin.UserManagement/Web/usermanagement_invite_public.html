@@ -5,150 +5,170 @@
 
 </style>
 
-<div id="loading"><div class="base-spinner" role="status" aria-label="Loading"></div></div>
+<div id="loading"><div class="base-spinner" role="status" aria-label="Loading" data-str-label="LabelLoading"></div></div>
 
 <div id="invalid" class="hidden">
-    <h1>Invite Unavailable</h1>
-    <p id="invalidMsg">This invite link is invalid, expired, or has been fully used.</p>
-    <a class="base-btn" id="backLink" href="../web/">Back to Jellyfin</a>
+    <h1 data-str="HeaderInviteUnavailable">Invite Unavailable</h1>
+    <p id="invalidMsg" data-str="InviteUnavailableMessage">This invite link is invalid, expired, or has been fully used.</p>
+    <a class="base-btn" id="backLink" href="../web/" data-str="ButtonBackToJellyfin">Back to Jellyfin</a>
 </div>
 
 <form id="form" class="hidden base-fields" autocomplete="off">
-    <h1>Create Your Account</h1>
+    <h1 data-str="HeaderCreateYourAccount">Create Your Account</h1>
     <p id="message"></p>
 
     <div id="pinRow" class="hidden">
-        <label for="pin">Invite PIN</label>
+        <label for="pin" data-str="LabelInvitePin">Invite PIN</label>
         <input type="password" id="pin" inputmode="numeric" maxlength="6" autocomplete="off" />
     </div>
 
-    <label for="username">Username</label>
+    <label for="username" data-str="LabelUsername">Username</label>
     <input type="text" id="username" autocomplete="off" />
 
-    <label for="password">Password</label>
+    <label for="password" data-str="LabelPassword">Password</label>
     <input type="password" id="password" autocomplete="new-password" />
 
-    <label for="confirm">Confirm Password</label>
+    <label for="confirm" data-str="LabelConfirmPassword">Confirm Password</label>
     <input type="password" id="confirm" autocomplete="new-password" />
 
-    <button type="submit" id="submit" class="base-submit">Create Account</button>
+    <button type="submit" id="submit" class="base-submit" data-str="ButtonCreateAccount">Create Account</button>
     <div id="msg" class="base-note"></div>
 </form>
 
 <div id="done" class="hidden">
-    <h1 id="doneHeading">Your Account Has Been Created!</h1>
+    <h1 id="doneHeading" data-str="HeaderAccountCreated">Your Account Has Been Created!</h1>
     <p id="doneMsg"></p>
     <div id="resources" class="hidden base-btn-stack"></div>
-    <a class="base-btn" id="signinLink" href="../web/">Go to Sign In</a>
+    <a class="base-btn" id="signinLink" href="../web/" data-str="ButtonGoToSignIn">Go to Sign In</a>
 </div>
 
-<script>
-    (function () {
-        var path = location.pathname.replace(/\/+$/, '');
-        var infoUrl = path + '/Info';
-        var redeemUrl = path + '/Redeem';
+<script type="module">
+    // The signup page script. It loads Base's shared bundle for the strings, reads the invite, and redeems it.
+    var path = location.pathname.replace(/\/+$/, '');
 
-        // This route (/invite/{token}) is deeper than the template's relative paths assume, so point
-        // the base card logo and links at the server root explicitly. The split is case insensitive so
-        // a lowercase link and a mixed case bookmark both resolve the same prefix.
-        var prefix = location.pathname.split(/\/invite\//i)[0];
-        var webBase = prefix + '/web/';
+    // This route (/invite/{token}) is deeper than the template's relative paths assume, so point
+    // the base card logo and links at the server root explicitly. The split is case insensitive so
+    // a lowercase link and a mixed case bookmark both resolve the same prefix.
+    var prefix = location.pathname.split(/\/invite\//i)[0];
+    var webBase = prefix + '/web/';
 
-        var logo = document.querySelector('.base-logo');
-        if (logo) {
-            logo.src = webBase + 'favicons/touchicon.png';
-            logo.onerror = function () { logo.onerror = null; logo.src = prefix + '/favicon.ico'; };
-        }
-        ['backLink', 'signinLink'].forEach(function (id) {
-            var a = document.getElementById(id);
-            if (a) { a.href = webBase; }
-        });
+    var logo = document.querySelector('.base-logo');
+    if (logo) {
+        logo.src = webBase + 'favicons/touchicon.png';
+        logo.onerror = function () { logo.onerror = null; logo.src = prefix + '/favicon.ico'; };
+    }
+    ['backLink', 'signinLink'].forEach(function (id) {
+        var a = document.getElementById(id);
+        if (a) { a.href = webBase; }
+    });
 
-        fetch(prefix + '/System/Info/Public', { headers: { 'Accept': 'application/json' } })
-            .then(function (r) { return r.json(); })
-            .then(function (info) {
-                if (info && info.ServerName) { document.title = info.ServerName + ' - Invite'; }
-            })
-            .catch(function () { /* keep the default title */ });
+    var el = function (id) { return document.getElementById(id); };
+    function show(id) { el(id).classList.remove('hidden'); }
+    function hide(id) { el(id).classList.add('hidden'); }
 
-        var el = function (id) { return document.getElementById(id); };
-        function show(id) { el(id).classList.remove('hidden'); }
-        function hide(id) { el(id).classList.add('hidden'); }
+    // loadStrings
+    // Loads the plugin's strings through Base's shared bundle. The page keeps its English markup when either fails.
+    //
+    // Output
+    // [Promise]: The strings handle, or one with no strings.
+    function loadStrings() {
+        var none = { language: (navigator.language || 'en-us').toLowerCase(), has: function () { return false; }, tr: function (key, fallback) { return fallback; }, format: function (key) { return key; }, apply: function () {} };
+        return import(webBase + 'configurationpage?name=usermanagement_jpkribs_shared.js')
+            .then(function (base) { return base.loadTranslations(prefix + '/UserManagement/Translations'); })
+            .catch(function () { return none; });
+    }
 
-        fetch(infoUrl, { headers: { 'Accept': 'application/json' } })
-            .then(function (r) { return r.json(); })
-            .then(function (info) {
-                hide('loading');
-                if (!info || !info.Valid) {
-                    if (info && info.Throttled && info.Message) { el('invalidMsg').textContent = info.Message; }
-                    show('invalid');
-                    return;
-                }
-                show('form');
-                if (info.Message) { el('message').textContent = info.Message; }
-                if (info.RequiresPin) { show('pinRow'); }
-            })
-            .catch(function () { hide('loading'); show('invalid'); });
+    var t = await loadStrings();
+    t.apply(document.body);
+    var query = '?language=' + encodeURIComponent(t.language);
+    var pageTitle = t.tr('HeaderInvite', 'Invite');
+    document.title = pageTitle;
 
-        function renderResources(list) {
-            var box = el('resources');
-            box.innerHTML = '';
-            (list || []).forEach(function (res) {
-                if (!res || !res.Url || !/^https?:\/\//i.test(res.Url)) { return; }
-                var a = document.createElement('a');
-                a.className = 'base-btn base-btn-secondary';
-                a.href = res.Url;
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.textContent = res.Title || res.Url;
-                box.appendChild(a);
-            });
-            if (box.children.length > 0) { show('resources'); }
-        }
+    fetch(prefix + '/System/Info/Public', { headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (info) {
+            if (info && info.ServerName) { document.title = t.has('InvitePageTitle') ? t.format('InvitePageTitle', info.ServerName) : info.ServerName + ' - ' + pageTitle; }
+        })
+        .catch(function () { /* keep the default title */ });
 
-        el('form').addEventListener('submit', function (e) {
-            e.preventDefault();
-            var msg = el('msg');
-            msg.textContent = '';
-            msg.className = 'base-note';
-
-            var password = el('password').value;
-            if (password !== el('confirm').value) {
-                msg.className = 'base-status-error';
-                msg.textContent = 'Passwords do not match.';
+    fetch(path + '/Info' + query, { headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (info) {
+            hide('loading');
+            if (!info || !info.Valid) {
+                if (info && info.Throttled && info.Message) { el('invalidMsg').textContent = info.Message; }
+                show('invalid');
                 return;
             }
+            show('form');
+            if (info.Message) { el('message').textContent = info.Message; }
+            if (info.RequiresPin) { show('pinRow'); }
+        })
+        .catch(function () { hide('loading'); show('invalid'); });
 
-            el('submit').disabled = true;
-            fetch(redeemUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    Pin: el('pin').value,
-                    Username: el('username').value,
-                    Password: password
-                })
-            })
-                .then(function (r) { return r.json(); })
-                .then(function (res) {
-                    if (res && res.Success) {
-                        hide('form');
-                        var name = (el('username').value || '').trim();
-                        if (name) { el('doneHeading').textContent = name; }
-                        el('doneMsg').textContent = res.Message || '';
-                        renderResources(res.Resources);
-                        show('done');
-                    } else {
-                        msg.className = 'base-status-error';
-                        msg.textContent = (res && res.Message) || 'Something went wrong.';
-                        el('submit').disabled = false;
-                    }
-                })
-                .catch(function () {
-                    msg.className = 'base-status-error';
-                    msg.textContent = 'Network error. Please try again.';
-                    el('submit').disabled = false;
-                });
+    // renderResources
+    // Draws the invite's resource links as buttons under the success message, keeping only http and https links.
+    //
+    // Inputs
+    // list [Array]: The resources from the redeem answer.
+    function renderResources(list) {
+        var box = el('resources');
+        box.innerHTML = '';
+        (list || []).forEach(function (res) {
+            if (!res || !res.Url || !/^https?:\/\//i.test(res.Url)) { return; }
+            var a = document.createElement('a');
+            a.className = 'base-btn base-btn-secondary';
+            a.href = res.Url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = res.Title || res.Url;
+            box.appendChild(a);
         });
-    })();
+        if (box.children.length > 0) { show('resources'); }
+    }
+
+    el('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var msg = el('msg');
+        msg.textContent = '';
+        msg.className = 'base-note';
+
+        var password = el('password').value;
+        if (password !== el('confirm').value) {
+            msg.className = 'base-status-error';
+            msg.textContent = t.tr('ErrorPasswordsDoNotMatch', 'Passwords do not match.');
+            return;
+        }
+
+        el('submit').disabled = true;
+        fetch(path + '/Redeem' + query, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                Pin: el('pin').value,
+                Username: el('username').value,
+                Password: password
+            })
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res && res.Success) {
+                    hide('form');
+                    var name = (el('username').value || '').trim();
+                    if (name) { el('doneHeading').textContent = name; }
+                    el('doneMsg').textContent = res.Message || '';
+                    renderResources(res.Resources);
+                    show('done');
+                } else {
+                    msg.className = 'base-status-error';
+                    msg.textContent = (res && res.Message) || t.tr('ErrorSomethingWentWrong', 'Something went wrong.');
+                    el('submit').disabled = false;
+                }
+            })
+            .catch(function () {
+                msg.className = 'base-status-error';
+                msg.textContent = t.tr('ErrorNetwork', 'Network error. Please try again.');
+                el('submit').disabled = false;
+            });
+    });
 </script>

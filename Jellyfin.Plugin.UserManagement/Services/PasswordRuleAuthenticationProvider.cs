@@ -82,6 +82,8 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
     {
         ArgumentNullException.ThrowIfNull(user);
 
+        // The web client sends no language with a password change, so its messages use the server's.
+        var language = ServerLanguage.Current;
         var isAdmin = user.HasPermission(PermissionKind.IsAdministrator);
 
         // Group rules constrain member self service only: a member changing their own password with
@@ -113,22 +115,22 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                 {
                     _logger.LogInformation("Rejected password change for {UserId}: the group disallows self service changes", user.Id);
                     _activity.Log(
-                        "Password Change Blocked for " + user.Username,
+                        BaseTranslations.Format(TranslationKeys.ActivityPasswordChangeBlocked, language, user.Username),
                         "UserManagement.PasswordChangeBlocked",
-                        overview: "The group disallows self-service password changes",
+                        overview: BaseTranslations.Get(TranslationKeys.ActivityPasswordChangeBlockedOverview, language),
                         severity: LogLevel.Warning,
                         userId: user.Id);
-                    throw new ArgumentException("Password changes are disabled for your account. Ask your server administrator to change it for you.");
+                    throw new ArgumentException(BaseTranslations.Get(TranslationKeys.ErrorPasswordChangesDisabled, language));
                 }
             }
 
-            var errors = PasswordValidator.Validate(newPassword, policy);
+            var errors = PasswordValidator.Validate(newPassword, policy, language);
             if (errors.Count > 0)
             {
                 var reasons = string.Join(" ", errors);
                 _logger.LogWarning("Rejected password change for {UserId}: {Reasons}", user.Id, reasons);
                 _activity.Log(
-                    "Password Change Rejected for " + user.Username,
+                    BaseTranslations.Format(TranslationKeys.ActivityPasswordChangeRejected, language, user.Username),
                     "UserManagement.PasswordChangeRejected",
                     overview: RejectedOverview(errors),
                     severity: LogLevel.Warning,

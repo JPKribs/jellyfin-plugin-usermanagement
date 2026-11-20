@@ -4,7 +4,7 @@ Takes every screenshot in `docs/screenshots/` from the plugin's own pages, drawn
 
 | File | Does |
 | :--- | :--- |
-| `server.py` | Serves the plugin pages, Base from the NuGet cache, and jellyfin-web, the way Jellyfin's `configurationpage` route does. It serves the signup page at `/invite/<token>` through Base's status template, the way `InviteController` does |
+| `server.py` | Serves the plugin pages, Base from the NuGet cache, and jellyfin-web, the way Jellyfin's `configurationpage` route does. It serves the signup page at `/invite/<token>` through Base's status template, the way `InviteController` does, and the plugin's strings at `UserManagement/Translations` in the language a page asks for |
 | `groups.html` | Mounts the Groups tab with a stand-in `ApiClient` holding the sample groups, users, libraries, and devices |
 | `invites.html` | Mounts the Invites tab with a stand-in `ApiClient` holding the sample invites |
 | `resets.html` | Mounts the Resets tab with a stand-in `ApiClient` holding sample reset codes |

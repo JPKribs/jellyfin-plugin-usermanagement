@@ -28,13 +28,13 @@ public class GroupExpiryTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => "Process expired and inactive users";
+    public override string Name => BaseTranslations.Get(TranslationKeys.TaskProcessExpired, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Key => "UserManagementGroupExpiry";
 
     /// <inheritdoc />
-    public override string Description => "Disables or deletes members of expired groups, disables inactive members, and disables expired invites.";
+    public override string Description => BaseTranslations.Get(TranslationKeys.TaskProcessExpiredDescription, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Category => "User Management";

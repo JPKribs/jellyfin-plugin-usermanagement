@@ -17,6 +17,8 @@ User Management uses groups to assign permissions and rules to all users who are
 
 The plugin adds a **User Management** page to the dashboard with Groups, Invites and Resets tabs.
 
+The tabs, the signup page, and the messages they show read in the viewer's language. Labels Jellyfin already has come in every language Jellyfin has, and the plugin's own text reads in US English until it is translated.
+
 ![User Management dashboard page](screenshots/Overview.png)
 
 Next: [Installation](Installation.md).

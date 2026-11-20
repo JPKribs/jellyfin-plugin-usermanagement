@@ -6,6 +6,7 @@ using System.Xml.Serialization;
 using Jellyfin.Plugin.UserManagement.Configuration;
 using Jellyfin.Plugin.UserManagement.Services;
 using MediaBrowser.Controller;
+using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,12 +26,14 @@ public class StartupAndDefaultsTests
     public async Task Registrator_PublishesTheUserManagerAtStartup_WithoutBuildingGroupService()
     {
         UserManagerAccessor.Instance = null;
+        ServerLanguage.Configuration = null;
         var services = new ServiceCollection();
         new PluginServiceRegistrator().RegisterServices(services, Substitute.For<IServerApplicationHost>());
 
         var hosted = services.Single(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(UserManagerAccessorInitializer));
         var um = Substitute.For<IUserManager>();
-        var provider = new ServiceCollection().AddSingleton(um).BuildServiceProvider();
+        var config = Substitute.For<IServerConfigurationManager>();
+        var provider = new ServiceCollection().AddSingleton(um).AddSingleton(config).BuildServiceProvider();
         var initializer = (IHostedService)ActivatorUtilities.CreateInstance(provider, hosted.ImplementationType!);
 
         await initializer.StartAsync(CancellationToken.None);
@@ -38,10 +41,12 @@ public class StartupAndDefaultsTests
         try
         {
             Assert.Same(um, UserManagerAccessor.Instance);
+            Assert.Same(config, ServerLanguage.Configuration);
         }
         finally
         {
             UserManagerAccessor.Instance = null;
+            ServerLanguage.Configuration = null;
         }
     }
 

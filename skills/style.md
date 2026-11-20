@@ -48,7 +48,7 @@ These rules apply to every string a user can see. That includes HTML, JS, C# mes
 
 Title Case capitalizes every word except short articles, conjunctions, and prepositions in the middle, such as "a", "and", "of", "to", and "in". Keep acronyms as written, such as "PIN", "URL", and "Mbps".
 
-The **Groups** tab uses the wording of Jellyfin's own user settings, so a member's settings say the same thing in both places, but writes it in Title Case like every other label in the plugin. Placeholders stay in sentence case.
+The **Groups** tab uses the wording of Jellyfin's own user settings, so a member's settings say the same thing in both places. A label Jellyfin has comes from Jellyfin's string, in Jellyfin's casing and in every language Jellyfin has. A label Jellyfin lacks is Title Case like every other label in the plugin. Placeholders stay in sentence case.
 
 ### Words to Use
 

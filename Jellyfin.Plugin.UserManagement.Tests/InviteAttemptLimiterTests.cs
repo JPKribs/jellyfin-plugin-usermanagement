@@ -227,17 +227,17 @@ public class InviteAttemptLimiterTests
         // Every attempt fails (unknown token), and every one still counts.
         for (var i = 0; i < InviteAttemptLimiter.MaxRedeemAttempts; i++)
         {
-            var ok = Assert.IsType<OkObjectResult>(await controller.Redeem("nope", new RedeemInviteRequest(), CancellationToken.None));
+            var ok = Assert.IsType<OkObjectResult>(await controller.Redeem("nope", new RedeemInviteRequest(), null, CancellationToken.None));
             Assert.Equal(200, ok.StatusCode ?? 200);
         }
 
-        var refused = Assert.IsType<ObjectResult>(await controller.Redeem("nope", new RedeemInviteRequest(), CancellationToken.None));
+        var refused = Assert.IsType<ObjectResult>(await controller.Redeem("nope", new RedeemInviteRequest(), null, CancellationToken.None));
         Assert.Equal(StatusCodes.Status429TooManyRequests, refused.StatusCode);
         Assert.True(controller.Response.Headers.ContainsKey("Retry-After"));
 
         // Another address is unaffected.
         var other = NewController(service, limiter, "198.51.100.8");
-        Assert.IsType<OkObjectResult>(await other.Redeem("nope", new RedeemInviteRequest(), CancellationToken.None));
+        Assert.IsType<OkObjectResult>(await other.Redeem("nope", new RedeemInviteRequest(), null, CancellationToken.None));
     }
 
     [Fact]

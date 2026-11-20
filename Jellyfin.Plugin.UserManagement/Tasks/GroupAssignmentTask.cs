@@ -25,13 +25,13 @@ public class GroupAssignmentTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => "Add users to groups";
+    public override string Name => BaseTranslations.Get(TranslationKeys.TaskAssignUsers, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Key => "UserManagementAssignUsers";
 
     /// <inheritdoc />
-    public override string Description => "Adds users not yet in any group to the default group.";
+    public override string Description => BaseTranslations.Get(TranslationKeys.TaskAssignUsersDescription, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Category => "User Management";

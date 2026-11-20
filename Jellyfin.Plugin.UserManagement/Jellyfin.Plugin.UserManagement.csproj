@@ -28,6 +28,128 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Jellyfin's own strings the pages and messages use, so they come in every language Jellyfin has. -->
+    <JellyfinString Include="AllowCollectionManagement" />
+    <JellyfinString Include="AllowMediaConversion" />
+    <JellyfinString Include="AllowRemoteAccess" />
+    <JellyfinString Include="AllowSubtitleManagement" />
+    <JellyfinString Include="AlwaysPlaySubtitles" />
+    <JellyfinString Include="AlwaysPlaySubtitlesHelp" />
+    <JellyfinString Include="AnyLanguage" />
+    <JellyfinString Include="Books" />
+    <JellyfinString Include="ButtonCancel" />
+    <JellyfinString Include="ButtonRemove" />
+    <JellyfinString Include="ButtonRename" />
+    <JellyfinString Include="Channels" />
+    <JellyfinString Include="Collections" />
+    <JellyfinString Include="Copied" />
+    <JellyfinString Include="Default" />
+    <JellyfinString Include="DefaultSubtitlesHelp" />
+    <JellyfinString Include="Delete" />
+    <JellyfinString Include="DisablePlugin" />
+    <JellyfinString Include="Disabled" />
+    <JellyfinString Include="Display" />
+    <JellyfinString Include="DisplayMissingEpisodesWithinSeasons" />
+    <JellyfinString Include="Download" />
+    <JellyfinString Include="EnableAutoCast" />
+    <JellyfinString Include="Friday" />
+    <JellyfinString Include="HeaderAccessSchedule" />
+    <JellyfinString Include="HeaderActiveRecordings" />
+    <JellyfinString Include="HeaderBlockItemsWithNoRating" />
+    <JellyfinString Include="HeaderContinueListening" />
+    <JellyfinString Include="HeaderContinueReading" />
+    <JellyfinString Include="HeaderContinueWatching" />
+    <JellyfinString Include="HeaderDeviceAccess" />
+    <JellyfinString Include="HeaderLatestMedia" />
+    <JellyfinString Include="HeaderLibraryAccess" />
+    <JellyfinString Include="HeaderMyMedia" />
+    <JellyfinString Include="HeaderMyMediaSmall" />
+    <JellyfinString Include="HeaderPlayback" />
+    <JellyfinString Include="HeaderRemoteControl" />
+    <JellyfinString Include="Hide" />
+    <JellyfinString Include="Home" />
+    <JellyfinString Include="HomeVideosPhotos" />
+    <JellyfinString Include="Kids" />
+    <JellyfinString Include="LabelAllowContentWithTags" />
+    <JellyfinString Include="LabelAudioLanguagePreference" />
+    <JellyfinString Include="LabelBlockContentWithTags" />
+    <JellyfinString Include="LabelChromecastVersion" />
+    <JellyfinString Include="LabelHomeScreenSectionValue" />
+    <JellyfinString Include="LabelMaxParentalRating" />
+    <JellyfinString Include="LabelName" />
+    <JellyfinString Include="LabelPassword" />
+    <JellyfinString Include="LabelPlayDefaultAudioTrack" />
+    <JellyfinString Include="LabelPreferredSubtitleLanguage" />
+    <JellyfinString Include="LabelRemoteClientBitrateLimit" />
+    <JellyfinString Include="LabelStatus" />
+    <JellyfinString Include="LabelSubtitlePlaybackMode" />
+    <JellyfinString Include="LabelSyncPlayAccess" />
+    <JellyfinString Include="LabelSyncPlayAccessCreateAndJoinGroups" />
+    <JellyfinString Include="LabelSyncPlayAccessJoinGroups" />
+    <JellyfinString Include="LabelSyncPlayAccessNone" />
+    <JellyfinString Include="LabelSyncPlayNewGroup" />
+    <JellyfinString Include="LabelTitle" />
+    <JellyfinString Include="LabelUserLoginAttemptsBeforeLockout" />
+    <JellyfinString Include="LabelUserMaxActiveSessions" />
+    <JellyfinString Include="LabelUsername" />
+    <JellyfinString Include="LiveTV" />
+    <JellyfinString Include="MixedContent" Source="server" />
+    <JellyfinString Include="Monday" />
+    <JellyfinString Include="Movies" />
+    <JellyfinString Include="MusicVideos" />
+    <JellyfinString Include="Never" />
+    <JellyfinString Include="New" />
+    <JellyfinString Include="NextUp" />
+    <JellyfinString Include="NoSubtitlesHelp" />
+    <JellyfinString Include="None" />
+    <JellyfinString Include="OnlyForcedSubtitles" />
+    <JellyfinString Include="OnlyForcedSubtitlesHelp" />
+    <JellyfinString Include="OptionAllowAudioPlaybackTranscoding" />
+    <JellyfinString Include="OptionAllowBrowsingLiveTv" />
+    <JellyfinString Include="OptionAllowContentDownload" />
+    <JellyfinString Include="OptionAllowManageLiveTv" />
+    <JellyfinString Include="OptionAllowMediaPlayback" />
+    <JellyfinString Include="OptionAllowRemoteControlOthers" />
+    <JellyfinString Include="OptionAllowRemoteSharedDevices" />
+    <JellyfinString Include="OptionAllowVideoPlaybackRemuxing" />
+    <JellyfinString Include="OptionAllowVideoPlaybackTranscoding" />
+    <JellyfinString Include="OptionDisableUser" />
+    <JellyfinString Include="OptionEnableAccessFromAllDevices" />
+    <JellyfinString Include="OptionEnableAccessToAllChannels" />
+    <JellyfinString Include="OptionEnableAccessToAllLibraries" />
+    <JellyfinString Include="OptionEveryday" />
+    <JellyfinString Include="OptionForceRemoteSourceTranscoding" />
+    <JellyfinString Include="OptionHideUser" />
+    <JellyfinString Include="OptionWeekdays" />
+    <JellyfinString Include="OptionWeekends" />
+    <JellyfinString Include="PlayNextEpisodeAutomatically" />
+    <JellyfinString Include="Playlists" />
+    <JellyfinString Include="Profile" />
+    <JellyfinString Include="RememberAudioSelections" />
+    <JellyfinString Include="RememberSubtitleSelections" />
+    <JellyfinString Include="Saturday" />
+    <JellyfinString Include="Save" />
+    <JellyfinString Include="SelectAll" />
+    <JellyfinString Include="Shows" />
+    <JellyfinString Include="Smart" />
+    <JellyfinString Include="SmartSubtitlesHelp" />
+    <JellyfinString Include="Subtitles" />
+    <JellyfinString Include="Sunday" />
+    <JellyfinString Include="TabMusic" />
+    <JellyfinString Include="TabParentalControl" />
+    <JellyfinString Include="Thursday" />
+    <JellyfinString Include="TitlePlayback" />
+    <JellyfinString Include="Trailers" />
+    <JellyfinString Include="Tuesday" />
+    <JellyfinString Include="Wednesday" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Local strings whose English matches a Jellyfin string with another meaning, such as Start as a time and as a verb. -->
+    <JellyfinTextMatch Include="LabelScheduleStart" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Every file served to a browser, including the public invite page InviteController serves. -->
     <None Remove="Web\**\*" />
     <EmbeddedResource Include="Web\**\*" />

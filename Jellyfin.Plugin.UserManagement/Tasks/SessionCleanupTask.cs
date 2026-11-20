@@ -25,13 +25,13 @@ public class SessionCleanupTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => "Clean Expired Sessions";
+    public override string Name => BaseTranslations.Get(TranslationKeys.TaskCleanSessions, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Key => "UserManagementSessionCleanup";
 
     /// <inheritdoc />
-    public override string Description => "Logs out devices that have not checked back into the server within their group's session cleanup windows.";
+    public override string Description => BaseTranslations.Get(TranslationKeys.TaskCleanSessionsDescription, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Category => "User Management";

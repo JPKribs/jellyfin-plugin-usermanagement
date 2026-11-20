@@ -25,13 +25,13 @@ public class GroupSyncTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => "Apply group permissions";
+    public override string Name => BaseTranslations.Get(TranslationKeys.TaskApplyGroups, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Key => "UserManagementGroupSync";
 
     /// <inheritdoc />
-    public override string Description => "Re-applies each group's permission template to its members.";
+    public override string Description => BaseTranslations.Get(TranslationKeys.TaskApplyGroupsDescription, ServerLanguage.Current);
 
     /// <inheritdoc />
     public override string Category => "User Management";

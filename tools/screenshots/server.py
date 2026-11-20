@@ -1,5 +1,6 @@
-"""User Management screenshot server: serves the plugin pages, Base and jellyfin-web the way Jellyfin does, and the
-invite signup page at /invite/<token> through Base's status template the way InviteController does.
+"""User Management screenshot server: serves the plugin pages, Base and jellyfin-web the way Jellyfin does, the
+invite signup page at /invite/<token> through Base's status template the way InviteController does, and the plugin's
+strings at UserManagement/Translations the way BaseTranslations.Serve does.
 
 Usage: python3 -I server.py [port]   (default 8842)
 Base comes from the NuGet cache at the version the plugin's csproj references. JELLYFIN_WEB picks the jellyfin-web folder.
@@ -29,6 +30,28 @@ def status_page(content):
     values = {'TITLE': 'Invite', 'HEADING': '', 'MESSAGE': '', 'SPINNER': '', 'BUTTON': '', 'CONTENT': content}
     template = open(os.path.join(BASE, '..', 'templates', 'status.html'), encoding='utf-8').read()
     return re.sub(r'\{\{([A-Z_]+)\}\}', lambda m: values.get(m.group(1), m.group(0)), template)
+
+
+def translations(language):
+    """The plugin's strings in a language: the local files and the declared Jellyfin strings, each falling back to the
+    language's base and then to US English, as BaseTranslations.Serve answers."""
+    csproj = open(os.path.join(PLUGIN, 'Jellyfin.Plugin.UserManagement.csproj')).read()
+    declared = re.findall(r'<JellyfinString Include="([^"]+)"( Source="server")? />', csproj)
+    code = re.sub(r'[^a-z0-9-]', '', (language or '').replace('_', '-').lower())
+    chain = ['en-us'] + ([code.split('-')[0]] if '-' in code else []) + ([code] if code else [])
+    strings = {}
+    for lang in dict.fromkeys(chain):
+        for source in ('web', 'server'):
+            path = os.path.join(BASE, '..', 'jellyfin', source, lang + '.json')
+            if os.path.isfile(path):
+                theirs = json.load(open(path, encoding='utf-8'))
+                for key, server in declared:
+                    if (source == 'server') == bool(server) and theirs.get(key):
+                        strings[key] = theirs[key]
+        local = os.path.join(PLUGIN, 'Localization', lang + '.json')
+        if os.path.isfile(local):
+            strings.update({k: v for k, v in json.load(open(local, encoding='utf-8')).items() if v})
+    return strings
 
 
 # What the signup page asks the server for, with a generic invite that needs a PIN.
@@ -66,6 +89,8 @@ class H(http.server.BaseHTTPRequestHandler):
                 return self.send(json.dumps(SIGNUP['Info']).encode(), 'application/json')
             page = status_page(open(os.path.join(CONF, 'usermanagement_invite_public.html'), encoding='utf-8').read())
             return self.send(page.encode(), 'text/html; charset=utf-8')
+        if u.path.endswith('/UserManagement/Translations'):
+            return self.send(json.dumps(translations(q.get('language', [''])[0])).encode(), 'application/json')
         if u.path == '/System/Info/Public':
             return self.send(json.dumps(SIGNUP['System/Info/Public']).encode(), 'application/json')
         if u.path.startswith('/web/'):

@@ -8,10 +8,11 @@ How to write, comment, and test code in this plugin. It covers C#, JavaScript, H
 | :--- | :--- | :--- |
 | `Plugin.cs` | The plugin class and its config pages. | root |
 | `PluginServiceRegistrator.cs` | DI registration. | root |
-| `Api/` | The dashboard API and the anonymous invite routes. | `.Api` |
+| `Api/` | The dashboard API, its strings route, and the anonymous invite routes. | `.Api` |
 | `Configuration/` | `PluginConfiguration.cs` only, with no web files. | `.Configuration` |
 | `Web/` | Every file served to a browser, the config pages and the public invite page. Embedded as `Jellyfin.Plugin.UserManagement.Web.<file>`. | n/a (embedded) |
 | `Assets/` | `Logo.png`, bundled into the release zip. | n/a |
+| `Localization/` | The plugin's own strings, one file per language. See [translations.md](translations.md). | n/a (embedded) |
 | `Models/` | Data classes, records, and enums. | `.Models` |
 | `Services/` | Groups, invites, passwords, sessions, reset codes, and the activity log. | `.Services` |
 | `Tasks/` | `IScheduledTask` implementations. | `.Tasks` |
@@ -173,7 +174,7 @@ export function createPage(view, tabIndex, opts) {
 * Comment every top level function, every function inside a page's default export, and every exported function.
 * Do not comment the methods inside a returned handle. List them in the Output line instead.
 * Open each file with a header naming the file and saying what it holds in one sentence. Use no `// ====` banners.
-* Only `usermanagement_shared.js` imports Base, by the relative path `./configurationpage?name=usermanagement_jpkribs_shared.js`. It exports each Base builder a page uses, and every page imports from `usermanagement_shared.js`.
+* Only `usermanagement_shared.js` imports Base, by the relative path `./configurationpage?name=usermanagement_jpkribs_shared.js`. It exports each Base builder a page uses and the strings handle `t`, and every tab imports from `usermanagement_shared.js`. The signup page is not a tab, so it imports Base's bundle itself for its strings.
 
 ### HTML
 
@@ -235,8 +236,8 @@ export function createPage(view, tabIndex, opts) {
 * Store an invite PIN only as its salted hash in `PinHash`. Never store, log, or return the PIN itself.
 * Compare a token or other secret a caller presents in constant time, with `SecretCompare.FixedTimeEquals` from Base or `CryptographicOperations.FixedTimeEquals`, never `==`.
 * Make tokens from the system's cryptographic generator, such as `SecretCompare.NewTokenHex` from Base.
-* Keep anonymous routes in `InviteController` only. Mark each with `[AllowAnonymous]`, count it against `InviteAttemptLimiter`, and send `PublicPage.ApplyHardeningHeaders`.
-* Guard every dashboard route with `[Authorize(Policy = "RequiresElevation")]`, as `UserManagementController` does.
+* Keep anonymous routes in `InviteController` only. Mark each with `[AllowAnonymous]`, count it against `InviteAttemptLimiter`, and send `PublicPage.ApplyHardeningHeaders`. The one exception is `UserManagement/Translations`, which serves only the plugin's strings.
+* Guard every dashboard route with `[Authorize(Policy = "RequiresElevation")]`, as `UserManagementController` does. Its `Translations` route alone allows anonymous requests, since the signup page has no signed in user.
 * Read a client's address with `ClientAddress.Key`, which counts an IPv6 /64 as one client.
 * Never let group rules, expiry, inactivity, or session cleanup touch an administrator. Check with `AdminExemption.IsExempt`.
 * Accept only absolute http and https URLs for invite resources, so a link on the signup page can never carry another scheme.

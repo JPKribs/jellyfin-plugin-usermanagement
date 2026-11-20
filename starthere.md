@@ -17,6 +17,7 @@ Each guide in [skills](skills/) covers one kind of work. Read the guide that mat
 | [skills/review.md](skills/review.md) | Call any change done. |
 | [skills/release.md](skills/release.md) | Cut a release. |
 | [skills/branches.md](skills/branches.md) | Pick a branch, sync the two, and promote unstable. |
+| [skills/translations.md](skills/translations.md) | Add or change a string a person reads. |
 
 A task that touches several areas needs every matching guide. A new group setting, for example, needs the glossary, style, code, testing, documentation, and review guides.
 
@@ -64,7 +65,8 @@ Explain what you would change, why, and what it risks. Wait for an answer before
 | `Jellyfin.Plugin.UserManagement/` | The plugin source. |
 | `Jellyfin.Plugin.UserManagement/Configuration/` | The plugin configuration. |
 | `Jellyfin.Plugin.UserManagement/Web/` | The dashboard pages and the public invite page, as HTML, JS, and CSS. |
-| `Jellyfin.Plugin.UserManagement/Api/` | The dashboard API and the anonymous invite routes. |
+| `Jellyfin.Plugin.UserManagement/Api/` | The dashboard API, its strings route, and the anonymous invite routes. |
+| `Jellyfin.Plugin.UserManagement/Localization/` | The plugin's own strings, one file per language. |
 | `Jellyfin.Plugin.UserManagement/Services/` | Groups, invites, passwords, sessions, reset codes, and the activity log. |
 | `Jellyfin.Plugin.UserManagement/Tasks/` | The scheduled tasks. |
 | `Jellyfin.Plugin.UserManagement/Models/` | Groups, invites, password rules, and other stored data. |

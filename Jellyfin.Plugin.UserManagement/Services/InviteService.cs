@@ -55,7 +55,7 @@ public sealed class InviteService : IDisposable
     }
 
     private static string DisplayName(Invite invite)
-        => invite.Label.Length > 0 ? invite.Label : "Untitled invite";
+        => invite.Label.Length > 0 ? invite.Label : BaseTranslations.Get(TranslationKeys.UntitledInvite, ServerLanguage.Current);
 
     /// <summary>
     /// The overview of an expiry run's entry, as "2 invites were disabled at their expiry date: Family, Friends".
@@ -65,9 +65,10 @@ public sealed class InviteService : IDisposable
     public static string ExpiredOverview(IReadOnlyList<string> names)
     {
         ArgumentNullException.ThrowIfNull(names);
-        return ActivityText.Sentence(
-            ActivityText.Count(names.Count, "invite") + " " + ActivityText.WasOrWere(names.Count)
-            + " disabled at their expiry date: " + string.Join(", ", names))!;
+        var list = string.Join(", ", names);
+        return names.Count == 1
+            ? BaseTranslations.Format(TranslationKeys.ActivityInvitesExpiredOverviewOne, ServerLanguage.Current, list)
+            : BaseTranslations.Format(TranslationKeys.ActivityInvitesExpiredOverview, ServerLanguage.Current, names.Count, list);
     }
 
     private static InviteStatus StatusFor(InviteStatusData data, Guid id)
@@ -199,7 +200,11 @@ public sealed class InviteService : IDisposable
             return true;
         });
 
-        _activity.Log("Invite Created", "UserManagement.InviteCreated", "The invite " + DisplayName(invite) + " was created");
+        var language = ServerLanguage.Current;
+        _activity.Log(
+            BaseTranslations.Get(TranslationKeys.ActivityInviteCreated, language),
+            "UserManagement.InviteCreated",
+            BaseTranslations.Format(TranslationKeys.ActivityInviteCreatedOverview, language, DisplayName(invite)));
         return invite;
     }
 
@@ -375,7 +380,9 @@ public sealed class InviteService : IDisposable
         if (disabled > 0)
         {
             _activity.Log(
-                ActivityText.SummaryName(disabled, "Expired", "Invite"),
+                disabled == 1
+                    ? BaseTranslations.Get(TranslationKeys.ActivityInvitesExpiredOne, ServerLanguage.Current)
+                    : BaseTranslations.Format(TranslationKeys.ActivityInvitesExpired, ServerLanguage.Current, disabled),
                 "UserManagement.InviteExpired",
                 ExpiredOverview(expiredNames));
             _logger.LogInformation("Disabled {Count} expired invite(s)", disabled);
@@ -499,14 +506,40 @@ public sealed class InviteService : IDisposable
 
     /// <summary>
     /// Validates an invite and, if everything checks out, creates a new (non-admin) account in the
+    /// invite's group, with its message in US English.
+    /// </summary>
+    /// <param name="token">The invite token.</param>
+    /// <param name="pin">The PIN the invitee entered.</param>
+    /// <param name="username">The username to create.</param>
+    /// <param name="password">The new account's password.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The outcome and its message.</returns>
+    public Task<InviteRedeemResult> RedeemAsync(
+        string token,
+        string? pin,
+        string? username,
+        string? password,
+        CancellationToken cancellationToken)
+        => RedeemAsync(token, pin, username, password, null, cancellationToken);
+
+    /// <summary>
+    /// Validates an invite and, if everything checks out, creates a new (non-admin) account in the
     /// invite's group. Runtime counters are only ever changed through atomic store updates, so a
     /// concurrent dashboard action (clearing a PIN lockout, deleting the invite) is never overwritten.
     /// </summary>
+    /// <param name="token">The invite token.</param>
+    /// <param name="pin">The PIN the invitee entered.</param>
+    /// <param name="username">The username to create.</param>
+    /// <param name="password">The new account's password.</param>
+    /// <param name="language">The language of the message, such as de, or <c>null</c> for US English.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The outcome and its message.</returns>
     public async Task<InviteRedeemResult> RedeemAsync(
         string token,
         string? pin,
         string? username,
         string? password,
+        string? language,
         CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -516,24 +549,24 @@ public sealed class InviteService : IDisposable
             var invite = FindByToken(token);
             if (plugin is null || invite is null)
             {
-                return InviteRedeemResult.Fail("This invite link is not valid.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteLinkInvalid, language));
             }
 
             if (!invite.Enabled)
             {
-                return InviteRedeemResult.Fail("This invite is no longer available.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteUnavailable, language));
             }
 
             if (IsExpired(invite))
             {
-                return InviteRedeemResult.Fail("This invite has expired.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteExpired, language));
             }
 
             var status = _statusStore.Find(invite.Id) ?? new InviteStatus();
 
             if (invite.MaxUses > 0 && status.UsedCount >= invite.MaxUses)
             {
-                return InviteRedeemResult.Fail("This invite has already been fully used.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteUsedUp, language));
             }
 
             var (rateLimitCount, rateLimitWindowMinutes) = plugin.ReadConfiguration(c =>
@@ -543,24 +576,24 @@ public sealed class InviteService : IDisposable
                 var cutoff = DateTime.UtcNow.AddMinutes(-rateLimitWindowMinutes);
                 if (status.RecentRedemptions.Count(t => t >= cutoff) >= rateLimitCount)
                 {
-                    return InviteRedeemResult.Fail("This invite was used recently. Please try again later.");
+                    return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteUsedRecently, language));
                 }
             }
 
             if (!string.IsNullOrEmpty(invite.PinHash) && !VerifyPin(invite, pin))
             {
-                return RecordWrongPin(plugin, invite);
+                return RecordWrongPin(plugin, invite, language);
             }
 
             username = username?.Trim() ?? string.Empty;
             if (username.Length == 0)
             {
-                return InviteRedeemResult.Fail("Please choose a username.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorChooseUsername, language));
             }
 
             if (string.IsNullOrEmpty(password))
             {
-                return InviteRedeemResult.Fail("Please choose a password.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorChoosePassword, language));
             }
 
             var targetGroup = ResolveRedemptionGroup(invite);
@@ -569,17 +602,17 @@ public sealed class InviteService : IDisposable
             // after this invite was issued but before the save path disabled it.
             if (targetGroup.BlocksInvites())
             {
-                return InviteRedeemResult.Fail("This invite is no longer available.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteUnavailable, language));
             }
 
             // An expired group would disable or delete the new account on the next expiry run, so the
             // signup is refused up front instead of creating an account that is already dead.
             if (targetGroup.HasExpired())
             {
-                return InviteRedeemResult.Fail("This invite's group has expired, so it can no longer be used to create accounts. Ask the server administrator for a new invite.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteGroupExpired, language));
             }
 
-            var passwordErrors = PasswordValidator.Validate(password, targetGroup?.Password);
+            var passwordErrors = PasswordValidator.Validate(password, targetGroup?.Password, language);
             if (passwordErrors.Count > 0)
             {
                 return InviteRedeemResult.Fail(string.Join(" ", passwordErrors));
@@ -587,7 +620,7 @@ public sealed class InviteService : IDisposable
 
             if (_userManager.GetUserByName(username) is not null)
             {
-                return InviteRedeemResult.Fail("An unknown error occurred. Please check your inputs and try again.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorSignupRefused, language));
             }
 
             Guid userId;
@@ -606,7 +639,7 @@ public sealed class InviteService : IDisposable
                 catch (ArgumentException ex)
                 {
                     _logger.LogWarning(ex, "Invite redemption rejected invalid username");
-                    return InviteRedeemResult.Fail("That username isn't allowed. Try a different one.");
+                    return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorUsernameNotAllowed, language));
                 }
 
                 try
@@ -617,7 +650,7 @@ public sealed class InviteService : IDisposable
                 {
                     _logger.LogError(ex, "Failed to set password for invited user; rolling back");
                     await RollBackAsync(plugin, userId).ConfigureAwait(false);
-                    return InviteRedeemResult.Fail("Could not create the account. Please try again.");
+                    return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorCreateAccount, language));
                 }
             }
 
@@ -632,26 +665,29 @@ public sealed class InviteService : IDisposable
             {
                 _logger.LogError(ex, "Failed to finish setting up invited user {UserId}; rolling back", userId);
                 await RollBackAsync(plugin, userId).ConfigureAwait(false);
-                return InviteRedeemResult.Fail("Could not create the account. Please try again.");
+                return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorCreateAccount, language));
             }
 
             var usedCount = RecordRedemption(plugin, invite.Id, rateLimitWindowMinutes);
 
             _logger.LogInformation("Invite {InviteId} redeemed; created user {UserId}", invite.Id, userId);
+            var serverLanguage = ServerLanguage.Current;
             _activity.Log(
-                "Account Created for " + username,
+                BaseTranslations.Format(TranslationKeys.ActivityAccountCreated, serverLanguage, username),
                 "UserManagement.InviteRedeemed",
-                "The invite " + DisplayName(invite) + " was redeemed by " + username,
+                BaseTranslations.Format(TranslationKeys.ActivityAccountCreatedOverview, serverLanguage, DisplayName(invite), username),
                 userId: userId);
             if (invite.MaxUses > 0 && usedCount >= invite.MaxUses)
             {
                 _activity.Log(
-                    "Invite Used Up",
+                    BaseTranslations.Get(TranslationKeys.ActivityInviteUsedUp, serverLanguage),
                     "UserManagement.InviteConsumed",
-                    "The invite " + DisplayName(invite) + " reached its limit of " + ActivityText.Count(invite.MaxUses, "use"));
+                    invite.MaxUses == 1
+                        ? BaseTranslations.Format(TranslationKeys.ActivityInviteUsedUpOverviewOne, serverLanguage, DisplayName(invite))
+                        : BaseTranslations.Format(TranslationKeys.ActivityInviteUsedUpOverview, serverLanguage, DisplayName(invite), invite.MaxUses));
             }
 
-            var success = InviteRedeemResult.Ok("Your account has been created!");
+            var success = InviteRedeemResult.Ok(BaseTranslations.Get(TranslationKeys.MessageAccountCreated, language));
 
             // Re-validate at serve time so a resource edited through the generic configuration endpoint
             // can never put a non http(s) link in front of the new user.
@@ -671,7 +707,7 @@ public sealed class InviteService : IDisposable
     /// maximum. Anyone holding the link can enter PINs, so a run of wrong guesses from strangers locks it
     /// for everyone until an administrator re-enables it.
     /// </summary>
-    private InviteRedeemResult RecordWrongPin(Plugin plugin, Invite invite)
+    private InviteRedeemResult RecordWrongPin(Plugin plugin, Invite invite, string? language)
     {
         var failed = 0;
         _statusStore.Update(data =>
@@ -684,7 +720,7 @@ public sealed class InviteService : IDisposable
 
         if (failed < Math.Max(1, plugin.ReadConfiguration(c => c.MaxPinAttempts)))
         {
-            return InviteRedeemResult.Fail("Incorrect PIN.");
+            return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorIncorrectPin, language));
         }
 
         // The lockout itself flips the admin facing switch, which is a config write, but it happens at
@@ -702,12 +738,15 @@ public sealed class InviteService : IDisposable
         });
 
         _logger.LogWarning("Invite {InviteId} locked after {Count} wrong PIN attempts", invite.Id, failed);
+        var serverLanguage = ServerLanguage.Current;
         _activity.Log(
-            "Invite Locked",
+            BaseTranslations.Get(TranslationKeys.ActivityInviteLocked, serverLanguage),
             "UserManagement.InviteLocked",
-            "The invite " + DisplayName(invite) + " was locked after " + ActivityText.Count(failed, "incorrect PIN attempt"),
+            failed == 1
+                ? BaseTranslations.Format(TranslationKeys.ActivityInviteLockedOverviewOne, serverLanguage, DisplayName(invite))
+                : BaseTranslations.Format(TranslationKeys.ActivityInviteLockedOverview, serverLanguage, DisplayName(invite), failed),
             LogLevel.Warning);
-        return InviteRedeemResult.Fail("Too many incorrect PIN attempts. This invite has been locked.");
+        return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorInviteLocked, language));
     }
 
     /// <summary>

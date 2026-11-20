@@ -8,27 +8,21 @@
                 <div class="verticalSection verticalSection-extrabottompadding">
 
                     <div class="sectionTitleContainer flex align-items-center">
-                        <h1 class="sectionTitle">Password Resets</h1>
+                        <h1 class="sectionTitle" data-str="HeaderPasswordResets">Password Resets</h1>
                     </div>
 
                     <!-- Intro -->
                     <!-- Says where reset codes come from and why the tab shows them. -->
-                    <div class="fieldDescription um-intro">
-                        When a user starts the <strong>Forgot Password</strong> flow, Jellyfin writes a reset
-                        code to a file on the server. This tab shows those codes so you can pass one to the
-                        user without file access to the server.
-                    </div>
+                    <div class="fieldDescription um-intro" data-str="ResetsIntro">When a user starts the Forgot Password flow, Jellyfin writes a reset code to a file on the server. This tab shows those codes so you can pass one to the user without file access to the server.</div>
 
                     <div class="base-cards compact hidden" id="resetCards"></div>
 
-                    <div class="base-warn">
-                        Reset codes are sent over this connection. Use HTTPS so they cannot be read in transit.
-                    </div>
+                    <div class="base-warn" data-str="ResetsHttpsWarning">Reset codes are sent over this connection. Use HTTPS so they cannot be read in transit.</div>
 
                     <div class="checkboxContainer">
                         <label class="emby-checkbox-label">
                             <input type="checkbox" is="emby-checkbox" id="chkEnableResets" />
-                            <span class="checkboxLabel">Enable Reset Code Extraction</span>
+                            <span class="checkboxLabel" data-str="LabelEnableResetCodeExtraction">Enable Reset Code Extraction</span>
                         </label>
                     </div>
 
@@ -36,13 +30,11 @@
                     <!-- Lists each pending code by user, active first, then expired. -->
                     <div class="base-collapsible-section fixed">
                         <div class="base-collapsible-header">
-                            <span class="base-collapsible-title">Pending Resets</span>
+                            <span class="base-collapsible-title" data-str="HeaderPendingResets">Pending Resets</span>
                         </div>
                         <div class="base-collapsible-content">
                             <span id="resetStatus" class="base-status-text"></span>
-                            <div id="resetDisabled" class="base-empty-section hidden">
-                                Reset code extraction is disabled. Enable it above to list pending codes.
-                            </div>
+                            <div id="resetDisabled" class="base-empty-section hidden" data-str="ResetsDisabled">Reset code extraction is disabled. Enable it above to list pending codes.</div>
                             <div id="resetList"></div>
                         </div>
                     </div>
