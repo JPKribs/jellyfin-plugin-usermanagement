@@ -1366,7 +1366,7 @@ export default function (view) {
     }
 
     // showRuleRows
-    // Shows the rows of an Account Rules section while its first checkbox is on, and marks the section header On.
+    // Shows the rows of an Account rules section while its first checkbox is on, and marks the section header On.
     //
     // Inputs
     // checkboxId [string]: The id of the checkbox that turns the rule on.

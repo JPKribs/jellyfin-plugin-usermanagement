@@ -14,14 +14,14 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | Group | A set of settings applied to every user in it | `GroupDefinition` | Role, template, profile |
 | Member | A user in a group. A user belongs to one group at a time | `MemberIds` | Assignee, participant |
 | Membership | The **Groups** section that picks a group's members | | Users list |
-| Default group | The group new users join, marked **(Default)** in the group select | `DefaultGroupId` | Primary group, fallback group |
+| Default group | The group new users join, marked **(default)** in the group select | `DefaultGroupId` | Primary group, fallback group |
 | Group (pill) | The pill that makes a setting reach members. The group's value is written onto every member | `Manage<Setting>` is `true` | Override, manage, enforce, lock |
 | Member (pill) | The pill that leaves a setting alone, so each member keeps their own value | `Manage<Setting>` is `false` | Inherit, unmanaged |
-| Set by Group | The count of a section's settings on **Group**, shown in its header as **2 Set by Group** | | Overrides, managed |
-| Access and Features | The **Groups** section of Jellyfin user policy settings, such as library access and parental control | `GroupPermissions` | Settings, permissions page, policy |
+| Set by group | The count of a section's settings on **Group**, shown in its header as **2 set by group** | | Overrides, managed |
+| Access and features | The **Groups** section of Jellyfin user policy settings, such as library access and parental control | `GroupPermissions` | Settings, permissions page, policy |
 | Preferences | The **Groups** section of display and playback preferences, such as subtitles and home screen | `GroupConfiguration` | Configuration, preferences page |
-| Account Rules | The **Groups** section of session management, password requirements, expiry, and inactivity | | Other, lifecycle, extras |
-| Access Schedule | The day and time windows when members may use the server | `AccessSchedules`, `AccessScheduleEntry` | Time limit, curfew |
+| Account rules | The **Groups** section of session management, password requirements, expiry, and inactivity | | Other, lifecycle, extras |
+| Access schedule | The day and time windows when members may use the server | `AccessSchedules`, `AccessScheduleEntry` | Time limit, curfew |
 | Media library order | The order libraries appear on the home screen | `OrderedViews` | Library sort |
 | Apply | Writes every group's overridden settings onto its members, on save and on a schedule | `GroupService`, `POST /UserManagement/Apply` | Sync, push |
 
@@ -48,7 +48,7 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | Inactivity | Disabling members who have not been active for a number of days | `DisableInactiveUsers`, `InactiveDays` | Idle, dormancy |
 | Session cleanup | Logging out a member's devices that have not checked in within a rule's window | `CleanupSessions` | Session pruning, logout |
 | Rule | One session cleanup window, with its clients and days | `SessionCleanupRule` | Policy, filter |
-| Clients | Which apps a rule covers, as **All Clients**, **Only These Clients**, or **All Except These Clients** | `SessionCleanupClientMode` | Apps, devices |
+| Clients | Which apps a rule covers, as **All clients**, **Only these clients**, or **All except these clients** | `SessionCleanupClientMode` | Apps, devices |
 
 ## Invites
 
@@ -78,7 +78,7 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | Locked | The invite is disabled, by hand or by PIN lockout | `Enabled` is `false` |
 | Used up | The invite reached its maximum uses. The count card calls these **Consumed** | `MaxUses` |
 | Expired | The invite reached its expiration date | `ExpiresAt` |
-| Group Expired | The invite's group has reached its expiry, so signups are refused | |
+| Group expired | The invite's group has reached its expiry, so signups are refused | |
 
 ## Password Resets
 
@@ -97,4 +97,4 @@ The agreed name for every concept in this plugin. The UI, the docs, messages, an
 | Add users to groups | The scheduled task that puts users without a group into the default group | Assignment task |
 | Apply group permissions | The scheduled task that applies every group to its members | Sync task |
 | Process expired and inactive users | The scheduled task for expiry, inactivity, and expired invites | Expiry task |
-| Clean Expired Sessions | The scheduled task that runs session cleanup | Session task |
+| Clean expired sessions | The scheduled task that runs session cleanup | Session task |

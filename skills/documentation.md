@@ -88,7 +88,7 @@ One sentence that says what the feature does.
 
 ## Rules
 
-* **All Clients** cleans up every client.
+* **All clients** cleans up every client.
 ```
 
 ### Settings References

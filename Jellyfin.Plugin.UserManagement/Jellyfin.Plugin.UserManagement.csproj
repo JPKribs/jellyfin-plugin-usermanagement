@@ -28,12 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Jellyfin's own strings the pages and messages use, so they come in every language Jellyfin has. -->
+    <!-- Jellyfin's own strings the pages and messages use, so they come in every language Jellyfin has. Case="sentence" puts a Title Case heading or label in the Groups tab's sentence case. -->
     <JellyfinString Include="AllowCollectionManagement" />
     <JellyfinString Include="AllowMediaConversion" />
     <JellyfinString Include="AllowRemoteAccess" />
     <JellyfinString Include="AllowSubtitleManagement" />
-    <JellyfinString Include="AlwaysPlaySubtitles" />
+    <JellyfinString Include="AlwaysPlaySubtitles" Case="sentence" />
     <JellyfinString Include="AlwaysPlaySubtitlesHelp" />
     <JellyfinString Include="AnyLanguage" />
     <JellyfinString Include="Books" />
@@ -48,26 +48,26 @@
     <JellyfinString Include="Display" />
     <JellyfinString Include="DisplayMissingEpisodesWithinSeasons" />
     <JellyfinString Include="EnableAutoCast" />
-    <JellyfinString Include="HeaderAccessSchedule" />
+    <JellyfinString Include="HeaderAccessSchedule" Case="sentence" />
     <JellyfinString Include="HeaderActiveRecordings" />
     <JellyfinString Include="HeaderBlockItemsWithNoRating" />
     <JellyfinString Include="HeaderContinueListening" />
     <JellyfinString Include="HeaderContinueReading" />
     <JellyfinString Include="HeaderContinueWatching" />
-    <JellyfinString Include="HeaderDeviceAccess" />
+    <JellyfinString Include="HeaderDeviceAccess" Case="sentence" />
     <JellyfinString Include="HeaderLatestMedia" />
-    <JellyfinString Include="HeaderLibraryAccess" />
+    <JellyfinString Include="HeaderLibraryAccess" Case="sentence" />
     <JellyfinString Include="HeaderMyMedia" />
     <JellyfinString Include="HeaderMyMediaSmall" />
     <JellyfinString Include="HeaderPlayback" />
-    <JellyfinString Include="HeaderRemoteControl" />
+    <JellyfinString Include="HeaderRemoteControl" Case="sentence" />
     <JellyfinString Include="Home" />
     <JellyfinString Include="HomeVideosPhotos" />
     <JellyfinString Include="Kids" />
     <JellyfinString Include="LabelAllowContentWithTags" />
     <JellyfinString Include="LabelAudioLanguagePreference" />
     <JellyfinString Include="LabelBlockContentWithTags" />
-    <JellyfinString Include="LabelChromecastVersion" />
+    <JellyfinString Include="LabelChromecastVersion" Case="sentence" />
     <JellyfinString Include="LabelHomeScreenSectionValue" />
     <JellyfinString Include="LabelMaxParentalRating" />
     <JellyfinString Include="LabelName" />
@@ -95,7 +95,7 @@
     <JellyfinString Include="NextUp" />
     <JellyfinString Include="NoSubtitlesHelp" />
     <JellyfinString Include="None" />
-    <JellyfinString Include="OnlyForcedSubtitles" />
+    <JellyfinString Include="OnlyForcedSubtitles" Case="sentence" />
     <JellyfinString Include="OnlyForcedSubtitlesHelp" />
     <JellyfinString Include="OptionAllowAudioPlaybackTranscoding" />
     <JellyfinString Include="OptionAllowBrowsingLiveTv" />
@@ -123,7 +123,7 @@
     <JellyfinString Include="SmartSubtitlesHelp" />
     <JellyfinString Include="Subtitles" />
     <JellyfinString Include="TabMusic" />
-    <JellyfinString Include="TabParentalControl" />
+    <JellyfinString Include="TabParentalControl" Case="sentence" />
     <JellyfinString Include="TitlePlayback" />
     <JellyfinString Include="Trailers" />
   </ItemGroup>

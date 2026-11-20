@@ -87,8 +87,8 @@ const shots = [
   { file: 'Group Settings', group: 'Kids', section: 'Media Playback', run: groups },
   { file: 'Expiry', group: 'Guests', section: 'Expiry', run: groups },
   { file: 'Inactivity', group: 'Kids', section: 'Inactivity', run: groups },
-  { file: 'Sessions', group: 'Kids', section: 'Session Management', run: groups },
-  { file: 'Password Requirements', group: 'Kids', section: 'Password Requirements', run: groups },
+  { file: 'Sessions', group: 'Kids', section: 'Session management', run: groups },
+  { file: 'Password Requirements', group: 'Kids', section: 'Password requirements', run: groups },
   {
     file: 'Invite List', run: async (s) => {
       const p = await invites(1280, 900);
@@ -109,8 +109,8 @@ const shots = [
       return p;
     }
   },
-  { file: 'Create Invite', section: 'Create Invite', run: inviteSection },
-  { file: 'Manage Access', section: 'Manage Access', run: inviteSection },
+  { file: 'Create Invite', section: 'Create invite', run: inviteSection },
+  { file: 'Manage Access', section: 'Manage access', run: inviteSection },
   {
     file: 'Password Resets', run: async (s) => {
       const p = await b.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
@@ -142,12 +142,12 @@ const shots = [
         localStorage.setItem('jellyfin_credentials', JSON.stringify({ Servers: [{ Id: c.server, ManualAddress: c.url, LocalAddress: c.url, UserId: c.user, AccessToken: c.token, LastConnectionMode: 2, ManualAddressOnly: true, DateLastAccessed: Date.now() }] }));
       }, { server: env.JELLYFIN_SERVER, url: env.JELLYFIN_URL, user: env.JELLYFIN_USER, token: env.JELLYFIN_TOKEN });
       await p.goto(env.JELLYFIN_URL + '/web/#/dashboard/activity');
-      await p.waitForSelector('text=Invite Created', { timeout: 60000 });
+      await p.waitForSelector('text=Invite created', { timeout: 60000 });
       await p.waitForTimeout(1000);
       // The page's own System filter: entries no user made, which leaves out the sign-in and session rows and the
       // network address they carry.
       await p.getByRole('button', { name: 'System', exact: true }).click();
-      await p.waitForSelector('text=Invite Created');
+      await p.waitForSelector('text=Invite created');
       await p.waitForTimeout(800);
       const table = await p.evaluateHandle(() => document.querySelector('.MuiTableContainer-root')?.closest('.MuiPaper-root') || document.querySelector('table'));
       await table.asElement().screenshot({ path: `${OUT}${s.file}.png` });

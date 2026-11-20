@@ -8,6 +8,7 @@ How this plugin shows its text in the viewer's language. Base builds the strings
 | :--- | :--- |
 | Jellyfin's own | `<JellyfinString Include="Key" />` items in `Jellyfin.Plugin.UserManagement/Jellyfin.Plugin.UserManagement.csproj` |
 | This plugin's own | `Jellyfin.Plugin.UserManagement/Localization/en-us.json`, one file per language |
+| Words kept as written | `Jellyfin.Plugin.UserManagement/Localization/casing.json` |
 | The endpoint pages load them from | `GET /UserManagement/Translations`, which answers with `BaseTranslations.Serve` |
 | The handle the dashboard tabs read | `t` in `Web/usermanagement_shared.js`, loaded once before a tab's `bind` and `load` run |
 
@@ -20,7 +21,7 @@ How this plugin shows its text in the viewer's language. Base builds the strings
 * Keep placeholders as `{0}`, `{1}`. Never build a sentence from pieces, since word order differs by language.
 * A key is PascalCase and says what the text is, such as `HeaderQueue`, `LabelApiKey`, `ButtonRetry`, `ToastSaved`, `ErrorServerUnreachable`.
 * Log lines and exception text for admins in the log stay in English and need no key.
-* A Jellyfin string keeps Jellyfin's wording and casing, so a label it supplies can read in sentence case.
+* A Jellyfin string keeps Jellyfin's wording and casing.
 * Base's components translate their own default text, such as a dialog's Cancel and the Save Bar's lines. Load the strings before building a component, which `createPage` does. Pass a text option only when it says something different from Base's default, such as `savedText: t.tr('ToastGroupsSaved')`.
 
 ## Add a String
@@ -36,6 +37,15 @@ How this plugin shows its text in the viewer's language. Base builds the strings
     * Activity summary: an `ActivityOutcome` built with `nameOne` and `nameMany` keys, each with `{0}` for the count, and an overview that takes the language. `UserManagementActivity` gives its summary `ServerLanguage.Current`.
 5. Build. Fix every `JPKT` error and warning.
 6. Run `dotnet test`. `TranslationsTests` fails on a key a page uses that has no string.
+
+## Casing
+
+Every string is in sentence case, mirroring Jellyfin, such as "Allow media playback".
+
+* **Local strings.** Write them in sentence case in `en-us.json`. Capitalize the first word and proper nouns only.
+* **Words kept as written.** Add a product name, service, or acronym this plugin uses to `Localization/casing.json`, a JSON array such as `["PIN", "Quick Connect", "DLNA"]`. Leave out Base's defaults, such as Jellyfin, URL, and HTTPS. The build fails on an empty entry or a word listed twice.
+* **Jellyfin strings.** Keep Jellyfin's casing. Add `Case="sentence"` or `Case="title"` to a `JellyfinString` only when one reads wrong beside its neighbors.
+* **Text built at runtime.** Convert it with `ToSentenceCase` or `ToTitleCase` in C#, and `sentenceCase` or `titleCase` on a page, which keep the words in the casing list.
 
 ## Add a Language
 

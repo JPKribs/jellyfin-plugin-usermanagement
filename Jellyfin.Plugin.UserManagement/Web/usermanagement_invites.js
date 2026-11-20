@@ -512,7 +512,7 @@ export default function (view) {
 
     // openInvite
     // Opens an invite in an editor dialog with its link and QR Code, its details, its expiration, and whether it accepts signups.
-    // Save writes what changed, Delete asks first, and Duplicate copies it into the Create Invite form.
+    // Save writes what changed, Delete asks first, and Duplicate copies it into the Create invite form.
     //
     // Inputs
     // id [string]: The invite.
@@ -635,7 +635,7 @@ export default function (view) {
     }
 
     // openCreateSection
-    // Opens the Create Invite section and scrolls to it.
+    // Opens the Create invite section and scrolls to it.
     function openCreateSection() {
         var header = view.querySelector('.base-collapsible-header[data-target="newInviteContent"]');
         var content = Shared.getEl('newInviteContent');
@@ -648,7 +648,7 @@ export default function (view) {
     }
 
     // duplicateInvite
-    // Copies an invite's settings into the Create Invite form. The PIN is stored hashed, so it is left blank.
+    // Copies an invite's settings into the Create invite form. The PIN is stored hashed, so it is left blank.
     //
     // Inputs
     // id [string]: The invite to copy.

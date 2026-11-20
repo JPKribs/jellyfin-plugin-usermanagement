@@ -36,19 +36,19 @@ These rules apply to every string a user can see. That includes HTML, JS, C# mes
 
 | Text | Case | Example |
 | :--- | :--- | :--- |
-| Tab | Title Case, one word | Groups |
-| Section and collapsible title | Title Case | Password Requirements |
-| Field label | Title Case, no trailing colon | Minimum Length |
-| Checkbox label and dropdown option | Title Case | Allow Media Playback |
-| Button | Title Case, verb first | Add Rule |
-| Dialog title | Title Case | Delete Invite |
-| Badge and status chip | Title Case | Locked |
-| Activity log name | Title Case | 2 Users Disabled |
+| Tab | Sentence case, one word | Groups |
+| Section and collapsible title | Sentence case | Password requirements |
+| Field label | Sentence case, no trailing colon | Minimum length |
+| Checkbox label and dropdown option | Sentence case | Allow media playback |
+| Button | Sentence case, verb first | Add rule |
+| Dialog title | Sentence case | Delete invite |
+| Badge and status chip | Sentence case | Used up |
+| Activity log name | Sentence case | 2 users disabled |
 | Description, message, placeholder sentence | Sentence case | Only shown here, never to the invitee. |
 
-Title Case capitalizes every word except short articles, conjunctions, and prepositions in the middle, such as "a", "and", "of", "to", and "in". Keep acronyms as written, such as "PIN", "URL", and "Mbps".
+Every string is in sentence case, mirroring Jellyfin. Capitalize the first word and proper nouns only. Words this plugin writes with special casing, such as "PIN" and "Quick Connect", are listed in `Localization/casing.json` and stay as written, beside Base's defaults such as "URL" and "HTTPS". See [translations.md](translations.md#casing).
 
-The **Groups** tab uses the wording of Jellyfin's own user settings, so a member's settings say the same thing in both places. A label Jellyfin has comes from Jellyfin's string, in Jellyfin's casing and in every language Jellyfin has. A label Jellyfin lacks is Title Case like every other label in the plugin. Placeholders stay in sentence case.
+The **Groups** tab uses the wording of Jellyfin's own user settings, so a member's settings say the same thing in both places. A label Jellyfin has comes from Jellyfin's string, in Jellyfin's casing and in every language Jellyfin has. A label Jellyfin lacks is in sentence case, so the tab reads in one case.
 
 ### Words to Use
 
@@ -65,7 +65,7 @@ Pick the word on the left every time.
 | Cancel | Close, No | Closes without keeping changes |
 | Add | New, Create | Puts a new entry into a list on the page |
 | New | Add, Create | Starts a new record in a record picker |
-| Run Now | Start, Trigger | Starts a scheduled task right away |
+| Run now | Start, Trigger | Starts a scheduled task right away |
 | Select | Pick, Choose, Tick, Click | Any instruction to make a choice |
 | Turn on, Turn off | Enable, Disable, Tick, Untick | An instruction about a checkbox or toggle |
 | Leave blank | Leave empty | An empty field means the default |
@@ -112,8 +112,8 @@ A placeholder shows an example of a valid value. It is never the only place an i
 
 ### Buttons
 
-* A verb, or a verb and a noun. **Save**, **Add Rule**, **Create Invite**.
-* Name the object when the page has more than one of that action. **Add Schedule** and **Add Rule** sit on the same page.
+* A verb, or a verb and a noun. **Save**, **Add rule**, **Create invite**.
+* Name the object when the page has more than one of that action. **Add schedule** and **Add rule** sit on the same page.
 * Every Save reads **Save**, even when a page has more than one. Never **Save Settings** or another noun.
 * An icon only button carries a `title` of one to three words, such as `Duplicate`, `Delete`, or `Show`. Never a sentence.
 * A button that runs for a while shows progress in place. See [Progress](#progress).
@@ -143,15 +143,15 @@ A message reports what happened in one sentence that ends with a period.
 A confirm asks one question and states the consequence.
 
 ```js
-confirmDialog('Delete this invite? The link stops working.', {
-    title: 'Delete Invite',
-    confirmText: 'Delete',
+confirmDialog(t.tr('ConfirmDeleteInvite'), {
+    title: t.tr('HeaderDeleteInvite'),
+    confirmText: t.tr('Delete'),
     destructive: true
 });
 ```
 
 * The message is a question, then one sentence on the consequence. "Delete the group Family? Its members are unassigned."
-* The title is the action in Title Case, such as **Delete Group**. Never leave the default **Confirm**.
+* The title is the action in sentence case, such as **Delete group**. Never leave the default **Confirm**.
 * The confirm button repeats the action verb, such as **Delete** or **Save**. Never **OK** or **Yes**.
 * Set `destructive: true` for anything that loses data.
 * Never "Are you sure you want to". Ask the question directly.
@@ -173,7 +173,7 @@ Use `shared.emptySection(text)` for a region and `shared.emptySection(text, { in
 
 Use `ActivitySummary` and `ActivityText` from Base.
 
-* The name is short and Title Case. "2 Users Disabled".
+* The name is short and in sentence case. "2 users disabled".
 * The overview is one sentence with no closing period, as Base writes it. "2 users were disabled in Family (2)".
 * Sum a burst or a scheduled run into one entry per outcome. A security event on one account stays its own entry.
 * [Activity Log](../docs/ActivityLog.md) lists every entry. Add a new one there in the same commit.
@@ -261,7 +261,7 @@ Every config page uses Jellyfin's page shell.
 ### Tabs
 
 * One registered page per tab, wired with `createConfigPage` and `setTabs`.
-* Tab names are one Title Case word.
+* Tab names are one word.
 * Keep the tab list in one place, `getTabs` in `usermanagement_shared.js`, never copied into each page.
 * Order tabs from what is used most to what is set once. User Management is **Groups**, **Invites**, **Resets**.
 
@@ -427,7 +427,7 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | One number with a label | `createStatCard` |
 
 * Pick the chart by the question it answers. A single used of total bar is a Usage Meter, never a Bar Chart.
-* Name each slice with a glossary term in Title Case, such as **Locked**.
+* Name each slice with a glossary term in sentence case, such as **Locked**.
 * Take colors from Base's series colors. Set a color only when it carries a [meaning](#meaning).
 * Give every chart a `label`, and an `emptyText` sentence for when it has nothing to draw.
 * Scope a chart to what the page shows. A chart beside the group select counts that group only.
@@ -449,7 +449,7 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/jpkribs.jellyfin.bas
 | A dialog already in the page markup | `bindDialog` |
 
 * Build dialogs in JS with `openDialog` and its wrappers. Use `bindDialog` only when the markup is large and static.
-* A dialog title is Title Case and names what the dialog does.
+* A dialog title is in sentence case and names what the dialog does.
 * Buttons read, from left to right, the destructive action, then **Cancel**, then the primary action.
 
 ## Layout
@@ -486,14 +486,14 @@ Every setting on the **Groups** tab is one row, built the same way in every sect
 * The controls follow in an `um-setting-body`, shown only while the row is on **Group**. A row led by an "all" checkbox shows its Checkbox List only while that checkbox is off, as Jellyfin does.
 * The `fieldDescription` comes last and stays visible either way.
 * A list of libraries, channels, or devices is a `createCheckboxList` whose rows have a label and a sublabel.
-* The section header counts its rows on **Group** with `setCollapsibleBadge`, such as **2 Set by Group**. An **Account Rules** section shows **On** while its first checkbox is on, and its other rows show only then.
+* The section header counts its rows on **Group** with `setCollapsibleBadge`, such as **2 set by group**. An **Account rules** section shows **On** while its first checkbox is on, and its other rows show only then.
 
 ## Invite Cards
 
 Every invite on the **Invites** tab is one card, built the same way.
 
 * The card is a `base-panel`, `openable` and focusable, in a plain `createList` with `wrap: false`, so each panel's own margin spaces the cards. A click, Enter, or Space opens the invite's editor, except inside the QR Code.
-* The `base-panel-header` is an `um-invite-head`, with the name in `um-invite-title` and the status badge in `um-invite-status`. The badge comes from `shared.statusBadge`, Active green, Locked purple, Expired and Group Expired orange, and Used Up gray.
+* The `base-panel-header` is an `um-invite-head`, with the name in `um-invite-title` and the status badge in `um-invite-status`. The badge comes from `shared.statusBadge`, Active green, Locked purple, Expired and Group expired orange, and Used up gray.
 * The `base-panel-body` is an `um-invite-body`, holding a `createDefinitionList` of **Group**, **Uses**, **Expires** or **Expired**, and **PIN** in that order on every card, then the link.
 * Uses read "4 of 10 uses", or "4 uses, no limit". The date is the reader's locale, such as "Jun 12, 2026", or "Never". A PIN reads **Set**, or the list's dimmed **None**.
 * The link is always `createQrCode`: `layout: 'inline'` on the card, and `layout: 'full'` in the editor dialog, so the whole code shows beside the link. Never a bare Copy Field or a hand built QR button.
@@ -512,7 +512,7 @@ Run every new or changed string through this list.
 * [ ] No colon at the end of a label, and none in a sentence unless it introduces a list.
 * [ ] One sentence, or two when the second is the fix or the consequence.
 * [ ] Sentences end with a period. Labels, buttons, and titles do not.
-* [ ] Title Case for labels, buttons, titles, tabs, and badges. Sentence case for sentences.
+* [ ] Sentence case for every string, with the words in `casing.json` kept as written.
 * [ ] No "please", "successfully", exclamation marks, ALL CAPS, "(s)", or contractions.
 * [ ] The word matches [Words to Use](#words-to-use).
 * [ ] Base's typings were searched before any markup was built by hand.

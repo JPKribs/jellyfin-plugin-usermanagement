@@ -309,7 +309,7 @@ public class InviteServiceStatefulTests
 
         Assert.True(result.Success);
         await activityManager.Received().CreateAsync(Arg.Is<Jellyfin.Database.Implementations.Entities.ActivityLog>(
-            e => e.Type == "UserManagement.InviteRedeemed" && e.Name == "Account Created for newuser" && e.ShortOverview == "The invite Family was redeemed by newuser"));
+            e => e.Type == "UserManagement.InviteRedeemed" && e.Name == "Account created for newuser" && e.ShortOverview == "The invite Family was redeemed by newuser"));
     }
 
     [Fact]

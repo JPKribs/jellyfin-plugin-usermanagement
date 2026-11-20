@@ -40,9 +40,14 @@ def translations(language):
     strings are Base's own, the declared Jellyfin strings and Base's, and the local files, each falling back to the
     language's base and then to US English."""
     csproj = open(os.path.join(PLUGIN, 'Jellyfin.Plugin.UserManagement.csproj')).read()
-    declared = [(k, bool(s)) for k, s in re.findall(r'<JellyfinString Include="([^"]+)"( Source="server")? />', csproj)]
+    items = [dict(re.findall(r'(\w+)="([^"]*)"', m)) for m in re.findall(r'<JellyfinString ([^>]*?)/>', csproj)]
+    cases = {i['Include']: i.get('Case') for i in items}
+    declared = [(i['Include'], i.get('Source') == 'server') for i in items]
     base_list = json.load(open(os.path.join(BASE, '..', 'strings', 'jellyfin.json'), encoding='utf-8'))['strings']
-    declared += [(e['key'], e.get('source') == 'server') for e in base_list if e['key'] not in dict(declared)]
+    for e in base_list:
+        if e['key'] not in cases:
+            declared.append((e['key'], e.get('source') == 'server'))
+            cases[e['key']] = e.get('case')
     code = re.sub(r'[^a-z0-9-]', '', (language or '').replace('_', '-').lower())
     chain = ['en-us'] + ([code.split('-')[0]] if '-' in code else []) + ([code] if code else [])
     strings = dict(json.load(open(os.path.join(BASE, '..', 'strings', 'en-us.json'), encoding='utf-8')))
@@ -57,15 +62,16 @@ def translations(language):
         local = os.path.join(PLUGIN, 'Localization', lang + '.json')
         if os.path.isfile(local):
             strings.update({k: v for k, v in json.load(open(local, encoding='utf-8')).items() if v})
-    # Base writes a few Jellyfin strings in sentence case, such as Select all, in English only.
-    if not code or code == 'en' or code.startswith('en-'):
-        mine = set(re.findall(r'<JellyfinString Include="([^"]+)"', csproj))
-        for e in base_list:
-            if e.get('case') == 'sentence' and e['key'] not in mine and strings.get(e['key']):
-                text = strings[e['key']]
-                strings[e['key']] = text[:1] + text[1:].lower()
     casing_file = os.path.join(PLUGIN, 'Localization', 'casing.json')
     casing = BASE_CASING + (json.load(open(casing_file, encoding='utf-8')) if os.path.isfile(casing_file) else [])
+    # A Case on a Jellyfin string, the plugin's or else Base's, recases its English only, keeping the casing list.
+    if not code or code == 'en' or code.startswith('en-'):
+        for key, case in cases.items():
+            if case == 'sentence' and strings.get(key):
+                text = strings[key][:1] + strings[key][1:].lower()
+                for word in sorted(casing, key=len, reverse=True):
+                    text = re.sub(r'\b%s\b' % re.escape(word), word, text, flags=re.I)
+                strings[key] = text
     return {'language': code or 'en-us', 'strings': strings, 'casing': casing}
 
 

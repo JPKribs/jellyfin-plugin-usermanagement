@@ -179,7 +179,7 @@ export function createPage(view, tabIndex, opts) {
 ### HTML
 
 ```html
-<!-- Manage Access -->
+<!-- Manage access -->
 <!-- Sets the public Server URL for links and the per invite rate limit. -->
 <div class="base-collapsible-section">
 ```

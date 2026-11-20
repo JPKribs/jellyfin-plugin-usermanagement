@@ -53,10 +53,10 @@
                             </div>
                         </div>
 
-                        <!-- Access and Features -->
+                        <!-- Access and features -->
                         <!-- The Jellyfin user policy settings, drawn by the script. -->
                         <div class="base-section">
-                            <div class="base-section-title" data-str="HeaderAccessAndFeatures">Access and Features</div>
+                            <div class="base-section-title" data-str="HeaderAccessAndFeatures">Access and features</div>
                             <div class="base-section-content">
                                 <div id="permissionSections"></div>
                             </div>
@@ -71,26 +71,26 @@
                             </div>
                         </div>
 
-                        <!-- Account Rules -->
+                        <!-- Account rules -->
                         <!-- Session cleanup, password requirements, expiry, and inactivity. Each is a list of rows led by the checkbox that turns it on. -->
                         <div class="base-section">
-                            <div class="base-section-title" data-str="HeaderAccountRules">Account Rules</div>
+                            <div class="base-section-title" data-str="HeaderAccountRules">Account rules</div>
                             <div class="base-section-content">
 
-                                <!-- Session Management -->
+                                <!-- Session management -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpSessionContent">
-                                        <span class="base-collapsible-title" data-str="HeaderSessionManagement">Session Management</span>
+                                        <span class="base-collapsible-title" data-str="HeaderSessionManagement">Session management</span>
                                         <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpSessionContent" class="base-collapsible-content collapsed">
-                                        <div class="um-rows" aria-label="Session Management" data-str-label="HeaderSessionManagement">
+                                        <div class="um-rows" aria-label="Session management" data-str-label="HeaderSessionManagement">
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpSessionEnabled" />
-                                                    <span class="checkboxLabel" data-str="LabelCleanUpOldSessions">Clean Up Old Sessions</span>
+                                                    <span class="checkboxLabel" data-str="LabelCleanUpOldSessions">Clean up old sessions</span>
                                                 </label>
-                                                <div class="fieldDescription" data-str="CleanUpOldSessionsHelp">Logs out members' devices that go too long without checking in. The Clean Expired Sessions task does this, so its schedule sets when.</div>
+                                                <div class="fieldDescription" data-str="CleanUpOldSessionsHelp">Logs out members' devices that go too long without checking in. The Clean expired sessions task does this, so its schedule sets when.</div>
                                             </div>
                                             <div class="um-setting um-session-field">
                                                 <span class="um-setting-label" data-str="LabelRules">Rules</span>
@@ -102,40 +102,40 @@
                                     </div>
                                 </div>
 
-                                <!-- Password Requirements -->
+                                <!-- Password requirements -->
                                 <div class="base-collapsible-section">
                                     <button type="button" class="base-collapsible-header collapsed" aria-expanded="false" data-target="grpPwContent">
-                                        <span class="base-collapsible-title" data-str="HeaderPasswordRequirements">Password Requirements</span>
+                                        <span class="base-collapsible-title" data-str="HeaderPasswordRequirements">Password requirements</span>
                                         <span class="base-collapsible-icon"></span>
                                     </button>
                                     <div id="grpPwContent" class="base-collapsible-content collapsed">
-                                        <div class="um-rows" aria-label="Password Requirements" data-str-label="HeaderPasswordRequirements">
+                                        <div class="um-rows" aria-label="Password requirements" data-str-label="HeaderPasswordRequirements">
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwEnabled" />
-                                                    <span class="checkboxLabel" data-str="LabelEnforcePasswordRequirements">Enforce Password Requirements</span>
+                                                    <span class="checkboxLabel" data-str="LabelEnforcePasswordRequirements">Enforce password requirements</span>
                                                 </label>
                                                 <div class="fieldDescription" data-str="EnforcePasswordRequirementsHelp">Holds members' passwords to the rules below.</div>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNoEmpty" />
-                                                    <span class="checkboxLabel" data-str="LabelDisallowEmptyPasswords">Disallow Empty Passwords</span>
+                                                    <span class="checkboxLabel" data-str="LabelDisallowEmptyPasswords">Disallow empty passwords</span>
                                                 </label>
                                                 <div class="fieldDescription" data-str="DisallowEmptyPasswordsHelp">While off, an empty password always passes, since it means the account has no password.</div>
                                             </div>
                                             <div class="um-setting um-pw-field">
-                                                <span class="um-setting-label" id="grpPwLengthLabel" data-str="LabelMinimumLength">Minimum Length</span>
+                                                <span class="um-setting-label" id="grpPwLengthLabel" data-str="LabelMinimumLength">Minimum length</span>
                                                 <div class="inputContainer">
                                                     <input is="emby-input" type="number" id="grpPwLength" min="1" aria-labelledby="grpPwLengthLabel" />
                                                 </div>
                                             </div>
                                             <div class="um-setting um-pw-field">
-                                                <span class="um-setting-label" id="grpPwChangeModeLabel" data-str="LabelPasswordChanges">Password Changes</span>
+                                                <span class="um-setting-label" id="grpPwChangeModeLabel" data-str="LabelPasswordChanges">Password changes</span>
                                                 <div class="selectContainer">
                                                     <select is="emby-select" id="grpPwChangeMode" aria-labelledby="grpPwChangeModeLabel">
                                                         <option value="Allowed" data-str="OptionAllowed">Allowed</option>
-                                                        <option value="InitialOnly" data-str="OptionInitialPasswordOnly">Initial Password Only</option>
+                                                        <option value="InitialOnly" data-str="OptionInitialPasswordOnly">Initial password only</option>
                                                         <option value="Disallowed" data-str="OptionDisallowed">Disallowed</option>
                                                     </select>
                                                 </div>
@@ -144,19 +144,19 @@
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwUpper" />
-                                                    <span class="checkboxLabel" data-str="LabelRequireCapitalLetter">Require a Capital Letter</span>
+                                                    <span class="checkboxLabel" data-str="LabelRequireCapitalLetter">Require a capital letter</span>
                                                 </label>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwNumber" />
-                                                    <span class="checkboxLabel" data-str="LabelRequireNumber">Require a Number</span>
+                                                    <span class="checkboxLabel" data-str="LabelRequireNumber">Require a number</span>
                                                 </label>
                                             </div>
                                             <div class="um-setting um-pw-field">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpPwSymbol" />
-                                                    <span class="checkboxLabel" data-str="LabelRequireSymbol">Require a Symbol</span>
+                                                    <span class="checkboxLabel" data-str="LabelRequireSymbol">Require a symbol</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -174,19 +174,19 @@
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpExpiryEnabled" />
-                                                    <span class="checkboxLabel" data-str="LabelExpireMembersOnDate">Expire Members on a Date</span>
+                                                    <span class="checkboxLabel" data-str="LabelExpireMembersOnDate">Expire members on a date</span>
                                                 </label>
                                                 <div class="fieldDescription" data-str="ExpireMembersOnDateHelp">Disables or deletes every member once the date comes.</div>
                                             </div>
                                             <div class="um-setting um-expiry-field">
-                                                <span class="um-setting-label" id="grpExpiryDateLabel" data-str="LabelExpiryDate">Expiry Date</span>
+                                                <span class="um-setting-label" id="grpExpiryDateLabel" data-str="LabelExpiryDate">Expiry date</span>
                                                 <div class="inputContainer">
                                                     <input type="date" id="grpExpiryDate" aria-labelledby="grpExpiryDateLabel" />
                                                 </div>
                                                 <div class="fieldDescription" data-str="ExpiryDateHelp">The next Process expired and inactive users task run on or after this date expires members.</div>
                                             </div>
                                             <div class="um-setting um-expiry-field">
-                                                <span class="um-setting-label" id="grpExpiryActionLabel" data-str="LabelExpirationMethod">Expiration Method</span>
+                                                <span class="um-setting-label" id="grpExpiryActionLabel" data-str="LabelExpirationMethod">Expiration method</span>
                                                 <div class="selectContainer">
                                                     <select is="emby-select" id="grpExpiryAction" aria-labelledby="grpExpiryActionLabel">
                                                         <option value="Disable" data-str="DisablePlugin">Disable</option>
@@ -210,12 +210,12 @@
                                             <div class="um-setting">
                                                 <label class="emby-checkbox-label">
                                                     <input type="checkbox" is="emby-checkbox" id="grpInactiveEnabled" />
-                                                    <span class="checkboxLabel" data-str="LabelDisableInactiveUsers">Disable Inactive Users</span>
+                                                    <span class="checkboxLabel" data-str="LabelDisableInactiveUsers">Disable inactive users</span>
                                                 </label>
                                                 <div class="fieldDescription" data-str="DisableInactiveUsersHelp">Disables members who stop using the server.</div>
                                             </div>
                                             <div class="um-setting um-inactive-field">
-                                                <span class="um-setting-label" id="grpInactiveDaysLabel" data-str="LabelInactiveDays">Days of Inactivity Before Disabling</span>
+                                                <span class="um-setting-label" id="grpInactiveDaysLabel" data-str="LabelInactiveDays">Days of inactivity before disabling</span>
                                                 <div class="inputContainer">
                                                     <input is="emby-input" type="number" id="grpInactiveDays" min="1" value="30" aria-labelledby="grpInactiveDaysLabel" />
                                                 </div>
@@ -227,7 +227,7 @@
 
                             </div>
                         </div>
-                        <!-- /Account Rules -->
+                        <!-- /Account rules -->
 
                         <!-- Save -->
                         <!-- The page's one Save Bar, drawn by the script. -->
