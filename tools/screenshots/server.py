@@ -7,7 +7,7 @@ Base comes from the NuGet cache at the version the plugin's csproj references. J
 import http.server, json, os, re, sys, urllib.parse
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLUGIN = os.path.join(HERE, '..', '..', 'Jellyfin.Plugin.UserManagement')
-CONF = os.path.join(PLUGIN, 'Configuration')
+CONF = os.path.join(PLUGIN, 'Web')
 JF = os.environ.get('JELLYFIN_WEB', '/Applications/Jellyfin.app/Contents/Resources/jellyfin-web')
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8842
 

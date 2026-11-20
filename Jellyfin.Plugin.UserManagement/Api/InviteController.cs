@@ -180,7 +180,7 @@ public class InviteController : ControllerBase
         }
 
         var assembly = typeof(Plugin).Assembly;
-        var resourceName = typeof(Plugin).Namespace + ".Configuration.usermanagement_invite_public.html";
+        var resourceName = typeof(Plugin).Namespace + ".Web.usermanagement_invite_public.html";
         var content = "Invite page unavailable.";
         using (var stream = assembly.GetManifestResourceStream(resourceName))
         {

@@ -1,7 +1,7 @@
 using System;
-using Jellyfin.Plugin.UserManagement.Utilities;
+using Jellyfin.Plugin.UserManagement.Models;
 
-namespace Jellyfin.Plugin.UserManagement.Models;
+namespace Jellyfin.Plugin.UserManagement.Utilities;
 
 /// <summary>
 /// Small derived values for <see cref="GroupDefinition"/>, kept on the model so callers read intent

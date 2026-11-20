@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Services;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

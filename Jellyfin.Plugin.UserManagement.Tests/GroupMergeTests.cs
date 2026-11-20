@@ -1,6 +1,7 @@
 using System;
 using Jellyfin.Plugin.UserManagement.Models;
 using Jellyfin.Plugin.UserManagement.Services;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using MediaBrowser.Model.Users;
 using Xunit;
 

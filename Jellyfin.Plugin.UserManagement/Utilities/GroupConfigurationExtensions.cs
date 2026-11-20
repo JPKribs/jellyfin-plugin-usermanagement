@@ -1,8 +1,9 @@
 using System;
 using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Plugin.UserManagement.Models;
 using MediaBrowser.Model.Configuration;
 
-namespace Jellyfin.Plugin.UserManagement.Models;
+namespace Jellyfin.Plugin.UserManagement.Utilities;
 
 /// <summary>
 /// Applies a group's managed display and playback preferences onto a Jellyfin user configuration. Only the

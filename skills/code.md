@@ -2,6 +2,23 @@
 
 How to write, comment, and test code in this plugin. It covers C#, JavaScript, HTML, CSS, shell, and YAML.
 
+## Layout
+
+| Path | Holds | Namespace |
+| :--- | :--- | :--- |
+| `Plugin.cs` | The plugin class and its config pages. | root |
+| `PluginServiceRegistrator.cs` | DI registration. | root |
+| `Api/` | The dashboard API and the anonymous invite routes. | `.Api` |
+| `Configuration/` | `PluginConfiguration.cs` only, with no web files. | `.Configuration` |
+| `Web/` | Every file served to a browser, the config pages and the public invite page. Embedded as `Jellyfin.Plugin.UserManagement.Web.<file>`. | n/a (embedded) |
+| `Assets/` | `Logo.png`, bundled into the release zip. | n/a |
+| `Models/` | Data classes, records, and enums. | `.Models` |
+| `Services/` | Groups, invites, passwords, sessions, reset codes, and the activity log. | `.Services` |
+| `Tasks/` | `IScheduledTask` implementations. | `.Tasks` |
+| `Utilities/` | Static helpers and extension methods. | `.Utilities` |
+
+At the repository root, `Jellyfin.Plugin.UserManagement.Tests/` holds the tests, `docs/` the MkDocs site, `skills/` the guides, and `tools/` development tools that never ship.
+
 ## Base First
 
 [JPKribs.Jellyfin.Base](https://github.com/JPKribs/jellyfin-plugin-base) holds everything two plugins could share. Its README lists every component and helper. Read it before you write anything new.

@@ -3,9 +3,10 @@ using System.Linq;
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Plugin.UserManagement.Models;
 using MediaBrowser.Model.Users;
 
-namespace Jellyfin.Plugin.UserManagement.Models;
+namespace Jellyfin.Plugin.UserManagement.Utilities;
 
 /// <summary>
 /// Applies a group's managed permissions onto a Jellyfin user policy. Only the toggles the group

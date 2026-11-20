@@ -97,7 +97,7 @@ dotnet test
 There are no JavaScript tests in this repository yet. Every page script must at least parse, and every name it imports from Base must exist.
 
 ```bash
-for f in Jellyfin.Plugin.UserManagement/Configuration/*.js; do node --check "$f"; done
+for f in Jellyfin.Plugin.UserManagement/Web/*.js; do node --check "$f"; done
 ```
 
 ```bash

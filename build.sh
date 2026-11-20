@@ -70,12 +70,12 @@ validate_resources() {
 
     local missing_files=()
     local config_files=(
-        "$PROJECT_DIR/Configuration/usermanagement_groups.html"
-        "$PROJECT_DIR/Configuration/usermanagement_groups.js"
-        "$PROJECT_DIR/Configuration/usermanagement_invites.html"
-        "$PROJECT_DIR/Configuration/usermanagement_invites.js"
-        "$PROJECT_DIR/Configuration/usermanagement_shared.css"
-        "$PROJECT_DIR/Configuration/usermanagement_shared.js"
+        "$PROJECT_DIR/Web/usermanagement_groups.html"
+        "$PROJECT_DIR/Web/usermanagement_groups.js"
+        "$PROJECT_DIR/Web/usermanagement_invites.html"
+        "$PROJECT_DIR/Web/usermanagement_invites.js"
+        "$PROJECT_DIR/Web/usermanagement_shared.css"
+        "$PROJECT_DIR/Web/usermanagement_shared.js"
     )
 
     for file in "${config_files[@]}"; do

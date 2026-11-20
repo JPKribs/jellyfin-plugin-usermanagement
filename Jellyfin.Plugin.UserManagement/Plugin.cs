@@ -181,7 +181,7 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
         yield return new PluginPageInfo
         {
             Name = "usermanagement_groups",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_groups.html",
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_groups.html",
             MenuSection = "server",
             DisplayName = "User Management",
             EnableInMainMenu = true,
@@ -191,43 +191,43 @@ public class Plugin : PluginBase<Plugin, PluginConfiguration>
         yield return new PluginPageInfo
         {
             Name = "usermanagement_groups.js",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_groups.js"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_groups.js"
         };
 
         yield return new PluginPageInfo
         {
             Name = "usermanagement_invites",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_invites.html"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_invites.html"
         };
 
         yield return new PluginPageInfo
         {
             Name = "usermanagement_invites.js",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_invites.js"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_invites.js"
         };
 
         yield return new PluginPageInfo
         {
             Name = "usermanagement_resets",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_resets.html"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_resets.html"
         };
 
         yield return new PluginPageInfo
         {
             Name = "usermanagement_resets.js",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_resets.js"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_resets.js"
         };
 
         yield return new PluginPageInfo
         {
             Name = "usermanagement_shared.css",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_shared.css"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_shared.css"
         };
 
         yield return new PluginPageInfo
         {
             Name = "usermanagement_shared.js",
-            EmbeddedResourcePath = $"{ns}.Configuration.usermanagement_shared.js"
+            EmbeddedResourcePath = $"{ns}.Web.usermanagement_shared.js"
         };
 
         foreach (var page in GetSharedPages("usermanagement"))

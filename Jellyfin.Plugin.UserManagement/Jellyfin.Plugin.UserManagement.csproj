@@ -28,20 +28,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Groups page -->
-    <EmbeddedResource Include="Configuration\usermanagement_groups.html" />
-    <EmbeddedResource Include="Configuration\usermanagement_groups.js" />
-    <!-- Invites page -->
-    <EmbeddedResource Include="Configuration\usermanagement_invites.html" />
-    <EmbeddedResource Include="Configuration\usermanagement_invites.js" />
-    <!-- Resets page -->
-    <EmbeddedResource Include="Configuration\usermanagement_resets.html" />
-    <EmbeddedResource Include="Configuration\usermanagement_resets.js" />
-    <!-- Public invite redemption page (served by InviteController, not a dashboard page) -->
-    <EmbeddedResource Include="Configuration\usermanagement_invite_public.html" />
-    <!-- Shared resources -->
-    <EmbeddedResource Include="Configuration\usermanagement_shared.css" />
-    <EmbeddedResource Include="Configuration\usermanagement_shared.js" />
+    <!-- Every file served to a browser, including the public invite page InviteController serves. -->
+    <None Remove="Web\**\*" />
+    <EmbeddedResource Include="Web\**\*" />
   </ItemGroup>
 
 </Project>

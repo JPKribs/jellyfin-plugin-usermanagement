@@ -31,7 +31,7 @@ Raising a part sets every part after it to `0`. `12.4.2.6` becomes `12.4.3.0` fo
     ```
 
     ```bash
-    for f in Jellyfin.Plugin.UserManagement/Configuration/*.js; do node --check "$f"; done
+    for f in Jellyfin.Plugin.UserManagement/Web/*.js; do node --check "$f"; done
     ```
 
 5. **Pages.** Install the build on a test server and open every tab, per [testing.md](testing.md#pages-in-a-browser). Redeem an invite on the signup page when invites, passwords, or the signup page changed.

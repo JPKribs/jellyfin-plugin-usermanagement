@@ -1,6 +1,7 @@
 using System;
 using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.UserManagement.Models;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using MediaBrowser.Model.Configuration;
 using Xunit;
 

@@ -61,13 +61,17 @@ Explain what you would change, why, and what it risks. Wait for an answer before
 | Path | What it holds |
 | :--- | :--- |
 | `Jellyfin.Plugin.UserManagement/` | The plugin source. |
-| `Jellyfin.Plugin.UserManagement/Configuration/` | The dashboard pages and the public invite page, as HTML, JS, and CSS, and the plugin configuration. |
+| `Jellyfin.Plugin.UserManagement/Configuration/` | The plugin configuration. |
+| `Jellyfin.Plugin.UserManagement/Web/` | The dashboard pages and the public invite page, as HTML, JS, and CSS. |
 | `Jellyfin.Plugin.UserManagement/Api/` | The dashboard API and the anonymous invite routes. |
 | `Jellyfin.Plugin.UserManagement/Services/` | Groups, invites, passwords, sessions, reset codes, and the activity log. |
 | `Jellyfin.Plugin.UserManagement/Tasks/` | The scheduled tasks. |
+| `Jellyfin.Plugin.UserManagement/Models/` | Groups, invites, password rules, and other stored data. |
+| `Jellyfin.Plugin.UserManagement/Utilities/` | Static helpers and extension methods. |
 | `Jellyfin.Plugin.UserManagement.Tests/` | The unit and controller tests. |
 | `docs/` | The documentation site, built with MkDocs. |
 | `build.yaml` | The version, the artifacts, and the release notes. |
 | `build.sh` | Builds the plugin zip into `dist/`. |
 | `skills/` | The guides. |
+| `tools/` | Development tools that never ship, such as the screenshot harness. |
 | `../Shared/jellyfin-plugin-base/` | A local checkout of Base, when present. Read it, and never change it from work on this plugin. |
