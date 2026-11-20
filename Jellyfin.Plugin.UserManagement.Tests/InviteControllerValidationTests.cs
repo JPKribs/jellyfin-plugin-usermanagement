@@ -26,7 +26,10 @@ public class InviteControllerValidationTests
         var paths = Substitute.For<IApplicationPaths>();
         paths.ProgramDataPath.Returns(System.IO.Path.GetTempPath());
         var resets = new ResetCodeService(paths, Substitute.For<ILogger<ResetCodeService>>());
-        var controller = new UserManagementController(groups, invites, resets, Substitute.For<ILogger<UserManagementController>>());
+        var controller = new UserManagementController(groups, invites, resets, Substitute.For<ILogger<UserManagementController>>())
+        {
+            ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() }
+        };
         return (plugin, controller);
     }
 

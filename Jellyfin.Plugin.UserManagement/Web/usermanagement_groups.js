@@ -17,7 +17,6 @@ import {
     confirmDialog,
     promptDialog,
     createSaveBar,
-    saveBarOptions,
     t
 } from './configurationpage?name=usermanagement_shared.js';
 
@@ -646,7 +645,7 @@ export default function (view) {
     // Output
     // [object]: The Checkbox List handle.
     function pickList(opts) {
-        return createCheckboxList(Object.assign({ maxHeight: 320, onChange: checkDirty, selectAllText: t.tr('SelectAll') }, opts));
+        return createCheckboxList(Object.assign({ maxHeight: 320, onChange: checkDirty }, opts));
     }
 
     // mountRowComponents
@@ -661,26 +660,11 @@ export default function (view) {
             if (type === 'tags') {
                 handle = createTagInput({
                     placeholder: t.tr('Kids'),
-                    inputLabel: t.tr('LabelNewTag'),
-                    removeLabel: t.tr('ButtonRemoveValue'),
-                    duplicateText: t.tr('ErrorAlreadyAdded'),
                     onChange: checkDirty
                 });
             } else if (type === 'schedule') {
                 handle = createAccessSchedule({
                     addText: t.tr('ButtonAddSchedule'),
-                    removeText: t.tr('ButtonRemove'),
-                    dayLabel: t.tr('LabelScheduleDay'),
-                    startLabel: t.tr('LabelScheduleStart'),
-                    endLabel: t.tr('LabelScheduleEnd'),
-                    emptyText: t.tr('EmptySchedule'),
-                    windowText: t.tr('ScheduleWindow'),
-                    endBeforeStartText: t.tr('ErrorScheduleEndBeforeStart'),
-                    dayLabels: {
-                        Sunday: t.tr('Sunday'), Monday: t.tr('Monday'), Tuesday: t.tr('Tuesday'), Wednesday: t.tr('Wednesday'),
-                        Thursday: t.tr('Thursday'), Friday: t.tr('Friday'), Saturday: t.tr('Saturday'),
-                        Everyday: t.tr('OptionEveryday'), Weekday: t.tr('OptionWeekdays'), Weekend: t.tr('OptionWeekends')
-                    },
                     onChange: checkDirty
                 });
             } else if (type === 'library' || type === 'deletion') {
@@ -1470,7 +1454,6 @@ export default function (view) {
             value: value || [],
             placeholder: t.tr('SearchClients'),
             noResultsText: t.tr('EmptyClientsMatch'),
-            removeText: t.tr('ButtonRemove'),
             onChange: change
         });
         return {
@@ -1490,7 +1473,6 @@ export default function (view) {
             layout: 'card',
             titleText: t.tr('RuleTitle'),
             addText: t.tr('ButtonAddRule'),
-            removeText: t.tr('ButtonRemoveValue'),
             emptyText: t.tr('EmptyRules'),
             fields: [
                 { key: 'mode', label: t.tr('LabelAppliesTo'), type: 'select', options: sessionModeOptions() },
@@ -1688,8 +1670,6 @@ export default function (view) {
             showAvatars: true,
             maxHeight: 280,
             fetchUsers: function () { return allUsers; },
-            emptyMessage: t.tr('EmptyUsers'),
-            selectAllText: t.tr('SelectAll'),
             disabledIds: [],
             noteFor: function (u) { return memberNotes[u.id] || ''; },
             onChange: onMembersChanged
@@ -1742,7 +1722,7 @@ export default function (view) {
             validate: function (v) {
                 return nameExists((v || '').trim(), exceptId) ? t.tr('ErrorGroupNameTaken') : '';
             }
-        }], { title: title, submitText: t.tr('ButtonDone'), cancelText: t.tr('ButtonCancel') }).then(function (result) {
+        }], { title: title }).then(function (result) {
             var name = result ? (result.name || '').trim() : '';
             return name || null;
         });
@@ -1798,7 +1778,6 @@ export default function (view) {
         confirmDialog(t.format('ConfirmDeleteGroup', group.Name), {
             title: t.tr('HeaderDeleteGroup'),
             confirmText: t.tr('Delete'),
-            cancelText: t.tr('ButtonCancel'),
             destructive: true
         }).then(function (ok) {
             if (!ok) return;
@@ -1821,7 +1800,6 @@ export default function (view) {
         return confirmDialog(t.format('ConfirmSaveDeleteOnExpiry', cur.Name || t.tr('UnnamedGroup'), String(cur.ExpiresOn).slice(0, 10)), {
             title: t.tr('HeaderDeleteMembersOnExpiry'),
             confirmText: t.tr('Save'),
-            cancelText: t.tr('ButtonCancel'),
             destructive: true
         });
     }
@@ -1864,7 +1842,7 @@ export default function (view) {
     function bind(shared) {
         defineSettings();
         tracker = shared.createChangeTracker({ serialize: serializeGroups });
-        saveBar = createSaveBar(saveBarOptions({ fill: true, savedText: t.tr('ToastGroupsSaved'), onSave: save }));
+        saveBar = createSaveBar({ fill: true, savedText: t.tr('ToastGroupsSaved'), onSave: save });
         // A capture listener on the bar runs before the button's own, so the confirm comes before Saving shows.
         saveBar.element.addEventListener('click', function (e) {
             if (e.target.closest('button') === saveBar.button) confirmSave(e);

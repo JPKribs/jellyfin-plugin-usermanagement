@@ -10,8 +10,6 @@ import {
     openEditorDialog,
     confirmDialog,
     createSaveBar,
-    saveBarOptions,
-    withLanguage,
     t
 } from './configurationpage?name=usermanagement_shared.js';
 
@@ -221,13 +219,7 @@ export default function (view) {
             layout: layout,
             value: inviteUrl(inv.Token),
             label: t.format('InviteLinkOf', inv.Label || t.tr('UntitledInvite')),
-            fileName: 'invite-qr-code.png',
-            showText: t.tr('ButtonShowQrCode'),
-            copyImageText: t.tr('ButtonCopyImage'),
-            downloadText: t.tr('Download'),
-            copiedText: t.tr('Copied'),
-            copyFailedText: t.tr('ToastCopyFailed'),
-            tooLongText: t.tr('ErrorQrTooLong')
+            fileName: 'invite-qr-code.png'
         });
     }
 
@@ -298,7 +290,6 @@ export default function (view) {
             keyPlaceholder: t.tr('ResourceTitlePlaceholder'),
             valuePlaceholder: 'https://requests.example.com',
             addText: t.tr('ButtonAddResource'),
-            removeLabel: t.tr('ButtonRemove'),
             requiredText: t.tr('ErrorEnterTitle'),
             duplicateKeys: true,
             validate: function (key, value) {
@@ -458,7 +449,7 @@ export default function (view) {
             + '<div class="base-panel-body um-invite-body"></div>';
         el.querySelector('.um-invite-title').textContent = inv.Label || t.tr('UntitledInvite');
         el.querySelector('.um-invite-status').appendChild(statusBadge(inv));
-        var details = createDefinitionList({ items: card.details, emptyText: t.tr('None') });
+        var details = createDefinitionList({ items: card.details });
         var qr = linkQr(inv, 'inline');
         var body = el.querySelector('.um-invite-body');
         body.appendChild(details.element);
@@ -550,8 +541,7 @@ export default function (view) {
                 { label: t.tr('LabelGroup'), value: groupText(inv) || null },
                 { label: t.tr('LabelUses'), value: usesText(inv) },
                 { label: t.tr('LabelPin'), value: inv.HasPin ? t.tr('PinSet') : null }
-            ],
-            emptyText: t.tr('None')
+            ]
         });
         body.querySelector('[data-mount="details"]').appendChild(details.element);
 
@@ -568,7 +558,6 @@ export default function (view) {
             page: Page,
             doneText: t.tr('Save'),
             removeText: t.tr('Delete'),
-            cancelText: t.tr('ButtonCancel'),
             serialize: function () { return expiryInput.value + '|' + enabledInput.checked; },
             onDone: function () { return saveInvite(inv, expiryInput.value, enabledInput.checked); },
             onRemove: function (close) { deleteInvite(inv.Id).then(function (ok) { if (ok) close(); }); },
@@ -612,12 +601,12 @@ export default function (view) {
         var chain = Promise.resolve();
         if (expiryChanged) {
             chain = chain.then(function () {
-                return Shared.apiRequest(withLanguage('Invites/' + inv.Id + '/Expiry'), 'POST', { ExpiresAt: dateStr ? dateStr + 'T00:00:00' : null });
+                return Shared.apiRequest('Invites/' + inv.Id + '/Expiry', 'POST', { ExpiresAt: dateStr ? dateStr + 'T00:00:00' : null });
             });
         }
         if (enabledChanged) {
             chain = chain.then(function () {
-                return Shared.apiRequest(withLanguage('Invites/' + inv.Id + '/Enabled'), 'POST', { Enabled: enabled });
+                return Shared.apiRequest('Invites/' + inv.Id + '/Enabled', 'POST', { Enabled: enabled });
             });
         }
         return chain.then(function () {
@@ -743,7 +732,7 @@ export default function (view) {
         };
 
         var expiredGroup = groupExpired(selectedGroup());
-        Shared.apiRequest(withLanguage('Invites'), 'POST', payload)
+        Shared.apiRequest('Invites', 'POST', payload)
             .then(function () {
                 Shared.setStatus('inviteStatus', expiredGroup ? t.tr('ToastInviteCreatedGroupExpired') : t.tr('ToastInviteCreated'), expiredGroup);
                 Shared.getEl('txtLabel').value = '';
@@ -805,11 +794,10 @@ export default function (view) {
         return confirmDialog(t.tr('ConfirmDeleteInvite'), {
             title: t.tr('HeaderDeleteInvite'),
             confirmText: t.tr('Delete'),
-            cancelText: t.tr('ButtonCancel'),
             destructive: true
         }).then(function (ok) {
             if (!ok) return false;
-            return Shared.apiRequest(withLanguage('Invites/' + id), 'DELETE')
+            return Shared.apiRequest('Invites/' + id, 'DELETE')
                 .then(function () {
                     Shared.setStatus('inviteStatus', t.tr('ToastInviteDeleted'), false);
                     loadAll();
@@ -829,11 +817,11 @@ export default function (view) {
         ensureResourceEditor();
         var btn = Shared.getEl('btnCreateInvite');
         if (btn) btn.addEventListener('click', createInvite);
-        _urlSaveBar = createSaveBar(saveBarOptions({
+        _urlSaveBar = createSaveBar({
             fill: true,
             savedText: t.tr('ToastInviteSettingsSaved'),
             onSave: saveBaseUrl
-        }));
+        });
         Shared.getEl('inviteUrlSaveBar').appendChild(_urlSaveBar.element);
         var access = Shared.getEl('manageAccessContent');
         if (access) {

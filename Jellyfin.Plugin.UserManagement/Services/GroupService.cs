@@ -509,8 +509,8 @@ public class GroupService
         finally
         {
             // A deleted account no longer exists, so its id is not attached to the entry.
-            deletedTally.Log(_activity, "Deleted", "deleted when their group expired", "UserManagement.GroupExpiryDeleted", attachUser: false);
-            disabledTally.Log(_activity, "Disabled", "disabled when their group expired", "UserManagement.GroupExpiryDisabled");
+            deletedTally.Log(_activity, UserRunWording.ExpiryDeleted, "UserManagement.GroupExpiryDeleted", attachUser: false);
+            disabledTally.Log(_activity, UserRunWording.ExpiryDisabled, "UserManagement.GroupExpiryDisabled");
         }
 
         if (deleted.Count > 0)
@@ -558,7 +558,7 @@ public class GroupService
         {
             foreach (var (groupId, groupName, days, members) in work)
             {
-                var source = groupName + " after " + ActivityText.Count(days, "day");
+                var source = BaseTranslations.Format(days == 1 ? TranslationKeys.ActivityInactiveSourceOne : TranslationKeys.ActivityInactiveSourceMany, ServerLanguage.Current, groupName, days);
                 var cutoff = now.AddDays(-days);
                 foreach (var userId in members)
                 {
@@ -596,7 +596,7 @@ public class GroupService
         }
         finally
         {
-            disabledTally.Log(_activity, "Disabled", "disabled for inactivity", "UserManagement.InactiveDisabled");
+            disabledTally.Log(_activity, UserRunWording.InactiveDisabled, "UserManagement.InactiveDisabled");
         }
     }
 }

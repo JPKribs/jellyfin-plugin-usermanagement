@@ -100,10 +100,11 @@ public class TranslationsTests
         };
 
         var result = Assert.IsType<Microsoft.AspNetCore.Mvc.FileContentResult>(controller.Translations("en-us"));
-        var strings = JsonSerializer.Deserialize<Dictionary<string, string>>(result.FileContents)!;
+        using var body = JsonDocument.Parse(result.FileContents);
+        var strings = body.RootElement.GetProperty("strings");
 
-        Assert.Equal("Invites", strings["HeaderInvites"]);
-        Assert.Equal("Save", strings["Save"]);
+        Assert.Equal("Invites", strings.GetProperty("HeaderInvites").GetString());
+        Assert.Equal("Save", strings.GetProperty("Save").GetString());
     }
 
     private static string ProjectFolder()

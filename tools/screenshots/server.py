@@ -32,26 +32,41 @@ def status_page(content):
     return re.sub(r'\{\{([A-Z_]+)\}\}', lambda m: values.get(m.group(1), m.group(0)), template)
 
 
+BASE_CASING = ['Jellyfin', 'TV', 'ID', 'API', 'URL', 'HTTP', 'HTTPS', 'IP', 'DNS', 'HDR', 'SDR', '4K']
+
+
 def translations(language):
-    """The plugin's strings in a language: the local files and the declared Jellyfin strings, each falling back to the
-    language's base and then to US English, as BaseTranslations.Serve answers."""
+    """The plugin's strings in a language, as BaseTranslations.Serve answers: { language, strings, casing }. The
+    strings are Base's own, the declared Jellyfin strings and Base's, and the local files, each falling back to the
+    language's base and then to US English."""
     csproj = open(os.path.join(PLUGIN, 'Jellyfin.Plugin.UserManagement.csproj')).read()
-    declared = re.findall(r'<JellyfinString Include="([^"]+)"( Source="server")? />', csproj)
+    declared = [(k, bool(s)) for k, s in re.findall(r'<JellyfinString Include="([^"]+)"( Source="server")? />', csproj)]
+    base_list = json.load(open(os.path.join(BASE, '..', 'strings', 'jellyfin.json'), encoding='utf-8'))['strings']
+    declared += [(e['key'], e.get('source') == 'server') for e in base_list if e['key'] not in dict(declared)]
     code = re.sub(r'[^a-z0-9-]', '', (language or '').replace('_', '-').lower())
     chain = ['en-us'] + ([code.split('-')[0]] if '-' in code else []) + ([code] if code else [])
-    strings = {}
+    strings = dict(json.load(open(os.path.join(BASE, '..', 'strings', 'en-us.json'), encoding='utf-8')))
     for lang in dict.fromkeys(chain):
         for source in ('web', 'server'):
             path = os.path.join(BASE, '..', 'jellyfin', source, lang + '.json')
             if os.path.isfile(path):
                 theirs = json.load(open(path, encoding='utf-8'))
                 for key, server in declared:
-                    if (source == 'server') == bool(server) and theirs.get(key):
+                    if (source == 'server') == server and theirs.get(key):
                         strings[key] = theirs[key]
         local = os.path.join(PLUGIN, 'Localization', lang + '.json')
         if os.path.isfile(local):
             strings.update({k: v for k, v in json.load(open(local, encoding='utf-8')).items() if v})
-    return strings
+    # Base writes a few Jellyfin strings in sentence case, such as Select all, in English only.
+    if not code or code == 'en' or code.startswith('en-'):
+        mine = set(re.findall(r'<JellyfinString Include="([^"]+)"', csproj))
+        for e in base_list:
+            if e.get('case') == 'sentence' and e['key'] not in mine and strings.get(e['key']):
+                text = strings[e['key']]
+                strings[e['key']] = text[:1] + text[1:].lower()
+    casing_file = os.path.join(PLUGIN, 'Localization', 'casing.json')
+    casing = BASE_CASING + (json.load(open(casing_file, encoding='utf-8')) if os.path.isfile(casing_file) else [])
+    return {'language': code or 'en-us', 'strings': strings, 'casing': casing}
 
 
 # What the signup page asks the server for, with a generic invite that needs a PIN.

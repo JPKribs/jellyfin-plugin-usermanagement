@@ -66,12 +66,11 @@ var _loading = null;
 // Reads the plugin's strings in the viewer's language. Before they load, tr gives the key.
 //
 // Output
-// [object]: { tr(key), format(key, ...values), apply(root), language() }.
+// [object]: { tr(key), format(key, ...values), apply(root) }.
 export var t = {
     tr: function (key) { return _strings.tr(key); },
     format: function () { return _strings.format.apply(_strings, arguments); },
-    apply: function (root) { _strings.apply(root); },
-    language: function () { return _strings.language; }
+    apply: function (root) { _strings.apply(root); }
 };
 
 // loadStrings
@@ -87,37 +86,6 @@ export function loadStrings() {
         });
     }
     return _loading;
-}
-
-// withLanguage
-// Adds the viewer's language to an API path, so a message the server returns reads in it.
-//
-// Inputs
-// path [string]: The API path under UserManagement.
-//
-// Output
-// [string]: The path with its language query.
-export function withLanguage(path) {
-    return path + (path.indexOf('?') === -1 ? '?' : '&') + 'language=' + encodeURIComponent(t.language());
-}
-
-// saveBarOptions
-// Fills the Save Bar's text in the viewer's language.
-//
-// Inputs
-// opts [object]: The createSaveBar options the page adds, such as onSave and savedText.
-//
-// Output
-// [object]: The options with every text filled.
-export function saveBarOptions(opts) {
-    return Object.assign({
-        saveText: t.tr('Save'),
-        pendingText: t.tr('SaveBarUnsaved'),
-        savingText: t.tr('SaveBarSaving'),
-        savedText: t.tr('SaveBarSaved'),
-        failedText: t.tr('SaveBarFailed'),
-        invalidText: t.tr('SaveBarInvalid')
-    }, opts);
 }
 
 // getTabs
@@ -156,7 +124,7 @@ export function createPage(view, tabIndex, opts) {
             loadStrings().then(function () {
                 t.apply(view);
                 setTabs(TABS_KEY, tabIndex, getTabs);
-                if (opts.isDirty) page.guardUnsaved(opts.isDirty, t.tr('MessageLeaveUnsaved'));
+                if (opts.isDirty) page.guardUnsaved(opts.isDirty);
                 if (opts.bind) opts.bind(shared, page);
             });
         },

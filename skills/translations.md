@@ -21,7 +21,7 @@ How this plugin shows its text in the viewer's language. Base builds the strings
 * A key is PascalCase and says what the text is, such as `HeaderQueue`, `LabelApiKey`, `ButtonRetry`, `ToastSaved`, `ErrorServerUnreachable`.
 * Log lines and exception text for admins in the log stay in English and need no key.
 * A Jellyfin string keeps Jellyfin's wording and casing, so a label it supplies can read in sentence case.
-* Give a Base component its text through its options, such as `saveBarOptions` for the Save Bar and `cancelText` for a dialog. Its own defaults are US English.
+* Base's components translate their own default text, such as a dialog's Cancel and the Save Bar's lines. Load the strings before building a component, which `createPage` does. Pass a text option only when it says something different from Base's default, such as `savedText: t.tr('ToastGroupsSaved')`.
 
 ## Add a String
 
@@ -32,7 +32,8 @@ How this plugin shows its text in the viewer's language. Base builds the strings
     * Markup: `data-str="Key"`, `data-str-title`, `data-str-label`, or `data-str-placeholder`, with the English as the element's own text.
     * Script: `t.tr('Key')` or `t.format('Key', value)` on the `t` that `usermanagement_shared.js` exports, which `loadTranslations('UserManagement/Translations')` fills. Write the key as a literal in the call, never in a variable, so the key test finds it.
     * Signup page: it imports Base's bundle itself and loads `/UserManagement/Translations` with no signed in user. Script text uses `t.tr('Key', 'English')`, so the page still reads when the strings fail to load.
-    * C#: `BaseTranslations.Get(TranslationKeys.Key, language)` or `BaseTranslations.Format(...)`. A dashboard route takes `language` from the query, which a page adds with `withLanguage(path)`. Text for everyone, such as an activity log entry, a task name, or a password change message, uses `ServerLanguage.Current`.
+    * C#: `BaseTranslations.Get(TranslationKeys.Key, language)` or `BaseTranslations.Format(...)`. A route reads the page's language with `BaseTranslations.RequestLanguage(Request)`, which takes the `language` query, then the `X-Jellyfin-Plugin-Language` header that `Shared.apiRequest` sends, then `Accept-Language`. Text for everyone, such as an activity log entry, a task name, or a password change message, uses `ServerLanguage.Current`.
+    * Activity summary: an `ActivityOutcome` built with `nameOne` and `nameMany` keys, each with `{0}` for the count, and an overview that takes the language. `UserManagementActivity` gives its summary `ServerLanguage.Current`.
 5. Build. Fix every `JPKT` error and warning.
 6. Run `dotnet test`. `TranslationsTests` fails on a key a page uses that has no string.
 

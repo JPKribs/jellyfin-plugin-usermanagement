@@ -8,7 +8,7 @@ Plugin entries show up alongside Jellyfin's own, with warnings flagged in the Le
 
 Entries share one shape: a short title case name over one sentence saying what happened. Bursts and scheduled runs are summed into one entry per outcome that counts what changed and names who, instead of one entry per user or attempt. Security events on a single account stay as their own entries.
 
-Entries read in the server's display language (**Dashboard → General → Preferred display language**). The summed entries for password rule enrollment, failed PINs, expired or inactive members, and session cleanup read in US English.
+Entries read in the server's display language (**Dashboard → General → Preferred display language**).
 
 * **Group Created / Group Deleted**: A group was added to or removed from the configuration. The overview names the group.
 * **3 Users Enrolled in Password Rules / 3 Users Removed from Password Rules**: Users were placed under, or released from, a group's password rules. Changes that arrive together, such as a group save applying to every member, are summed into one entry that names each user.

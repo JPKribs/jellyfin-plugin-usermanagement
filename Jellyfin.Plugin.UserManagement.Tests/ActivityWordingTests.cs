@@ -48,7 +48,7 @@ public class ActivityWordingTests
         activity.Summary.Flush();
 
         var entry = Assert.Single(await WaitForAsync(entries, 1));
-        Assert.Equal("2 Users Enrolled in Password Rules", entry.Name);
+        Assert.Equal("2 users enrolled in password rules", entry.Name);
         Assert.Equal("2 users were enrolled in group password rules: alice, bob", entry.ShortOverview);
         Assert.Equal("UserManagement.PasswordRulesEnrolled", entry.Type);
     }
@@ -62,7 +62,7 @@ public class ActivityWordingTests
         activity.Summary.Flush();
 
         var entry = Assert.Single(await WaitForAsync(entries, 1));
-        Assert.Equal("1 User Removed from Password Rules", entry.Name);
+        Assert.Equal("1 user removed from password rules", entry.Name);
         Assert.Equal("1 user was removed from group password rules: alice", entry.ShortOverview);
     }
 
@@ -77,7 +77,7 @@ public class ActivityWordingTests
         activity.Summary.Flush();
 
         var entry = Assert.Single(await WaitForAsync(entries, 1));
-        Assert.Equal("3 PIN Attempts Failed", entry.Name);
+        Assert.Equal("3 PIN attempts failed", entry.Name);
         Assert.Equal("3 incorrect PINs were entered for Family (2), Friends (1)", entry.ShortOverview);
         Assert.Equal("Warning", entry.LogSeverity.ToString());
     }
@@ -90,10 +90,10 @@ public class ActivityWordingTests
         tally.Add("Guests", "alice");
         tally.Add("Kids", "bob");
 
-        Assert.Equal("3 Users Disabled", tally.Name("Disabled"));
+        Assert.Equal("3 users disabled", tally.Name(UserRunWording.ExpiryDisabled, null));
         Assert.Equal(
             "3 users were disabled when their group expired in Kids (2), Guests (1): alice, bob, carol",
-            tally.Overview("disabled when their group expired"));
+            tally.Overview(UserRunWording.ExpiryDisabled, null));
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public class ActivityWordingTests
         await svc.DisableInactiveMembersAsync(CancellationToken.None);
 
         var entry = Assert.Single(await WaitForAsync(entries, 1));
-        Assert.Equal("2 Users Disabled", entry.Name);
+        Assert.Equal("2 users disabled", entry.Name);
         Assert.Equal("2 users were disabled for inactivity in Kids after 30 days (2): alice, bob", entry.ShortOverview);
         Assert.Equal("UserManagement.InactiveDisabled", entry.Type);
         Assert.Equal(Guid.Empty, entry.UserId);
@@ -151,7 +151,7 @@ public class ActivityWordingTests
         await svc.ExpireGroupsAsync(null, CancellationToken.None);
 
         var entry = Assert.Single(await WaitForAsync(entries, 1));
-        Assert.Equal("1 User Disabled", entry.Name);
+        Assert.Equal("1 user disabled", entry.Name);
         Assert.Equal("1 user was disabled when their group expired in Guests (1): alice", entry.ShortOverview);
         Assert.Equal("UserManagement.GroupExpiryDisabled", entry.Type);
         Assert.Equal(alice.Id, entry.UserId);

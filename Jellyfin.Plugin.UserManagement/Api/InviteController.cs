@@ -72,16 +72,15 @@ public class InviteController : ControllerBase
 
     /// <summary>Reports whether an invite can be redeemed, without revealing why if it cannot.</summary>
     /// <param name="token">The invite token.</param>
-    /// <param name="language">The language of the message, such as de.</param>
     /// <returns>Validity, label, and whether a PIN is required.</returns>
     [HttpGet("{token}/Info")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public ActionResult Info(string token, [FromQuery] string? language = null)
+    public ActionResult Info(string token)
     {
         PublicPage.ApplyHardeningHeaders(Response);
-        if (Throttled(InviteEndpoint.Info, language) is { } throttled)
+        if (Throttled(InviteEndpoint.Info) is { } throttled)
         {
             return throttled;
         }
@@ -104,7 +103,6 @@ public class InviteController : ControllerBase
     /// <summary>Redeems an invite, creating a new account on success.</summary>
     /// <param name="token">The invite token.</param>
     /// <param name="request">The PIN, username, and password.</param>
-    /// <param name="language">The language of the message, such as de.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>Success flag and a user-facing message.</returns>
     [HttpPost("{token}/Redeem")]
@@ -114,17 +112,16 @@ public class InviteController : ControllerBase
     public async Task<ActionResult> Redeem(
         string token,
         [FromBody] RedeemInviteRequest request,
-        [FromQuery] string? language,
         CancellationToken cancellationToken)
     {
         PublicPage.ApplyHardeningHeaders(Response);
-        if (Throttled(InviteEndpoint.Redeem, language) is { } throttled)
+        if (Throttled(InviteEndpoint.Redeem) is { } throttled)
         {
             return throttled;
         }
 
         var result = await _inviteService
-            .RedeemAsync(token, request?.Pin, request?.Username, request?.Password, language, cancellationToken)
+            .RedeemAsync(token, request?.Pin, request?.Username, request?.Password, BaseTranslations.RequestLanguage(Request), cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(new { result.Success, result.Message, result.Resources });
@@ -136,7 +133,7 @@ public class InviteController : ControllerBase
     /// other failure. The client is the remote address as the server resolved it, which behind a reverse
     /// proxy is only the real client when the proxy is listed in the server's known proxies.
     /// </summary>
-    private ObjectResult? Throttled(InviteEndpoint endpoint, string? language)
+    private ObjectResult? Throttled(InviteEndpoint endpoint)
     {
         var remote = HttpContext?.Connection.RemoteIpAddress;
         WarnIfProxyIsNotTrusted(remote);
@@ -147,7 +144,7 @@ public class InviteController : ControllerBase
         }
 
         Response.Headers.RetryAfter = _limiter.RetryAfterSeconds(endpoint, client).ToString(CultureInfo.InvariantCulture);
-        var tooManyAttempts = BaseTranslations.Get(TranslationKeys.ErrorTooManyAttempts, language);
+        var tooManyAttempts = BaseTranslations.Get(TranslationKeys.ErrorTooManyAttempts, BaseTranslations.RequestLanguage(Request));
         object body = endpoint == InviteEndpoint.Info
             ? new { Valid = false, Throttled = true, Message = tooManyAttempts }
             : new { Success = false, Message = tooManyAttempts, Resources = new List<InviteResource>() };

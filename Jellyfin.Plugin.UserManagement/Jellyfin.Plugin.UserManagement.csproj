@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="JPKribs.Jellyfin.Base" Version="12.4.0" />
+    <PackageReference Include="JPKribs.Jellyfin.Base" Version="12.4.1" />
     <PackageReference Include="Jellyfin.Controller" Version="12.4.0">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
@@ -37,12 +37,9 @@
     <JellyfinString Include="AlwaysPlaySubtitlesHelp" />
     <JellyfinString Include="AnyLanguage" />
     <JellyfinString Include="Books" />
-    <JellyfinString Include="ButtonCancel" />
-    <JellyfinString Include="ButtonRemove" />
     <JellyfinString Include="ButtonRename" />
     <JellyfinString Include="Channels" />
     <JellyfinString Include="Collections" />
-    <JellyfinString Include="Copied" />
     <JellyfinString Include="Default" />
     <JellyfinString Include="DefaultSubtitlesHelp" />
     <JellyfinString Include="Delete" />
@@ -50,9 +47,7 @@
     <JellyfinString Include="Disabled" />
     <JellyfinString Include="Display" />
     <JellyfinString Include="DisplayMissingEpisodesWithinSeasons" />
-    <JellyfinString Include="Download" />
     <JellyfinString Include="EnableAutoCast" />
-    <JellyfinString Include="Friday" />
     <JellyfinString Include="HeaderAccessSchedule" />
     <JellyfinString Include="HeaderActiveRecordings" />
     <JellyfinString Include="HeaderBlockItemsWithNoRating" />
@@ -66,7 +61,6 @@
     <JellyfinString Include="HeaderMyMediaSmall" />
     <JellyfinString Include="HeaderPlayback" />
     <JellyfinString Include="HeaderRemoteControl" />
-    <JellyfinString Include="Hide" />
     <JellyfinString Include="Home" />
     <JellyfinString Include="HomeVideosPhotos" />
     <JellyfinString Include="Kids" />
@@ -94,7 +88,6 @@
     <JellyfinString Include="LabelUsername" />
     <JellyfinString Include="LiveTV" />
     <JellyfinString Include="MixedContent" Source="server" />
-    <JellyfinString Include="Monday" />
     <JellyfinString Include="Movies" />
     <JellyfinString Include="MusicVideos" />
     <JellyfinString Include="Never" />
@@ -117,36 +110,22 @@
     <JellyfinString Include="OptionEnableAccessFromAllDevices" />
     <JellyfinString Include="OptionEnableAccessToAllChannels" />
     <JellyfinString Include="OptionEnableAccessToAllLibraries" />
-    <JellyfinString Include="OptionEveryday" />
     <JellyfinString Include="OptionForceRemoteSourceTranscoding" />
     <JellyfinString Include="OptionHideUser" />
-    <JellyfinString Include="OptionWeekdays" />
-    <JellyfinString Include="OptionWeekends" />
     <JellyfinString Include="PlayNextEpisodeAutomatically" />
     <JellyfinString Include="Playlists" />
     <JellyfinString Include="Profile" />
     <JellyfinString Include="RememberAudioSelections" />
     <JellyfinString Include="RememberSubtitleSelections" />
-    <JellyfinString Include="Saturday" />
     <JellyfinString Include="Save" />
-    <JellyfinString Include="SelectAll" />
     <JellyfinString Include="Shows" />
     <JellyfinString Include="Smart" />
     <JellyfinString Include="SmartSubtitlesHelp" />
     <JellyfinString Include="Subtitles" />
-    <JellyfinString Include="Sunday" />
     <JellyfinString Include="TabMusic" />
     <JellyfinString Include="TabParentalControl" />
-    <JellyfinString Include="Thursday" />
     <JellyfinString Include="TitlePlayback" />
     <JellyfinString Include="Trailers" />
-    <JellyfinString Include="Tuesday" />
-    <JellyfinString Include="Wednesday" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Local strings whose English matches a Jellyfin string with another meaning, such as Start as a time and as a verb. -->
-    <JellyfinTextMatch Include="LabelScheduleStart" />
   </ItemGroup>
 
   <ItemGroup>

@@ -151,10 +151,11 @@ public class SessionCleanupService
 
         if (removed > 0)
         {
+            var language = ServerLanguage.Current;
             _activity.Log(
-                ActivityText.SummaryName(removed, "Logged Out", "Session"),
+                BaseTranslations.Format(removed == 1 ? TranslationKeys.ActivitySessionsLoggedOutOne : TranslationKeys.ActivitySessionsLoggedOutMany, language, removed),
                 "UserManagement.SessionCleanup",
-                CleanupOverview(removed, removedByApp));
+                CleanupOverview(removed, removedByApp, language));
         }
 
         return removed;
@@ -165,9 +166,12 @@ public class SessionCleanupService
     /// </summary>
     /// <param name="removed">How many sessions were logged out.</param>
     /// <param name="removedByApp">How many from each client app.</param>
+    /// <param name="language">The language, or null for US English.</param>
     /// <returns>The overview.</returns>
-    public static string CleanupOverview(int removed, IReadOnlyDictionary<string, int> removedByApp)
-        => ActivityText.Sentence(
-            ActivityText.Count(removed, "stale session") + " " + ActivityText.WasOrWere(removed)
-            + " logged out from " + ActivityText.CountedList(removedByApp))!;
+    public static string CleanupOverview(int removed, IReadOnlyDictionary<string, int> removedByApp, string? language = null)
+        => ActivityText.Sentence(BaseTranslations.Format(
+            removed == 1 ? TranslationKeys.ActivitySessionsLoggedOutOverviewOne : TranslationKeys.ActivitySessionsLoggedOutOverviewMany,
+            language,
+            removed,
+            ActivityText.CountedList(removedByApp)))!;
 }

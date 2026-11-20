@@ -74,10 +74,7 @@ export default function (view) {
                 size: 'small',
                 label: t.format('ResetCodeFor', name),
                 copyLabel: t.tr('ButtonCopyCode'),
-                copiedText: t.tr('ToastCodeCopied'),
-                failedText: t.tr('ToastCopyFailed'),
-                revealLabel: t.tr('ButtonShow'),
-                hideLabel: t.tr('Hide')
+                copiedText: t.tr('ToastCodeCopied')
             })
         };
     }
