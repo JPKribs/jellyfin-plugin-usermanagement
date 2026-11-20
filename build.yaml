@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "12.4.3.0"
+version: "12.4.4.0"
 targetAbi: "12.4.0.0"
 framework: "net10.0"
 overview: "Groups, password rules, and invites for your users."
@@ -13,18 +13,5 @@ owner: "JPKribs"
 artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
-  added:
-  - Translations for the Groups, Invites and Resets tabs and the signup page, in the viewer's language, with the labels Jellyfin already has in every language Jellyfin has
-  changed:
-  - Every label, heading, button and option reads in sentence case, as Jellyfin writes its own, so the Groups tab reads in one case
-  - Messages the server returns to a page, such as an error when an invite cannot be created, read in the page's language
-  - Activity log entries, task names and password change messages read in the server's display language, including the summed entries for password rule enrollment, failed PINs, expired or inactive members and session cleanup
-  - Activity log entry names are in sentence case, such as "2 users disabled"
-  - The Save Bar, dialogs, copy fields, QR codes, tag inputs and access schedules take their default text from Base, in the viewer's language
   developer:
-  - Uses JPKribs.Jellyfin.Base 12.4.1 in place of 2026.11.21, whose translated default text replaces the plugin's own Save Bar, dialog, copy field, QR code, tag input and access schedule text
-  - The project is organized into Api, Configuration, Web, Assets, Models, Services, Tasks, Utilities and tools, and every served file lives in Web
-  - Strings live in Localization/en-us.json, words kept as written in Localization/casing.json, and Jellyfin strings are declared as JellyfinString items in the csproj
-  - GET UserManagement/Translations serves the plugin's strings as { language, strings, casing } to the tabs and the signup page, with no signed in user needed
-  - The dashboard and invite routes read the page's language from the language query, then the X-Jellyfin-Plugin-Language header, then Accept-Language, and no longer take a language parameter of their own
-  - The screenshot kit serves translations the way the plugin does
+  - Uses JPKribs.Jellyfin.Base 12.4.2, after 12.4.1
