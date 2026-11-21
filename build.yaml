@@ -16,4 +16,4 @@ changelog:
   changed:
   - The signup error for a username that is not allowed reads without a contraction
   developer:
-  - Uses JPKribs.Jellyfin.Base 12.4.2, after 12.4.1
+  - Uses JPKribs.Jellyfin.Base 12.4.3, after 12.4.1
