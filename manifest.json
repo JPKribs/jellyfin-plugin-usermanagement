@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "12.4.4.1",
+        "changelog": "\n## Changed\n- Activity log entries have a generic name with no count, and an overview that names the user and states each count once, such as Logged out Johnny's stale session on Jellyfin Web\n\n## Developer\n- skills/logging.md sets how activity entries and server log lines are written",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v12.4.4.1/jellyfin-plugin-usermanagement-12.4.4.1.zip",
+        "checksum": "be9621d2d6c3a2d947ee17fd947a6d54",
+        "timestamp": "2026-11-21T05:54:55Z"
+      },
+      {
         "version": "12.4.4.0",
         "changelog": "\n## Changed\n- The signup error for a username that is not allowed reads without a contraction\n\n## Developer\n- Uses JPKribs.Jellyfin.Base 12.4.3, after 12.4.1",
         "targetAbi": "12.4.0.0",
