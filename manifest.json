@@ -9,6 +9,14 @@
     "category": "Administration",
     "versions": [
       {
+        "version": "12.4.4.0",
+        "changelog": "\n## Changed\n- The signup error for a username that is not allowed reads without a contraction\n\n## Developer\n- Uses JPKribs.Jellyfin.Base 12.4.3, after 12.4.1",
+        "targetAbi": "12.4.0.0",
+        "sourceUrl": "https://github.com/JPKribs/jellyfin-plugin-usermanagement/releases/download/v12.4.4.0/jellyfin-plugin-usermanagement-12.4.4.0.zip",
+        "checksum": "4677971256f3db7ecb767785881e5e58",
+        "timestamp": "2026-11-21T02:15:21Z"
+      },
+      {
         "version": "12.4.3.0",
         "changelog": "\n## Added\n- Translations for the Groups, Invites and Resets tabs and the signup page, in the viewer's language, with the labels Jellyfin already has in every language Jellyfin has\n\n## Changed\n- Every label, heading, button and option reads in sentence case, as Jellyfin writes its own, so the Groups tab reads in one case\n- Messages the server returns to a page, such as an error when an invite cannot be created, read in the page's language\n- Activity log entries, task names and password change messages read in the server's display language, including the summed entries for password rule enrollment, failed PINs, expired or inactive members and session cleanup\n- Activity log entry names are in sentence case, such as 2 users disabled\n- The Save Bar, dialogs, copy fields, QR codes, tag inputs and access schedules take their default text from Base, in the viewer's language\n\n## Developer\n- Uses JPKribs.Jellyfin.Base 12.4.1 in place of 2026.11.21, whose translated default text replaces the plugin's own Save Bar, dialog, copy field, QR code, tag input and access schedule text\n- The project is organized into Api, Configuration, Web, Assets, Models, Services, Tasks, Utilities and tools, and every served file lives in Web\n- Strings live in Localization/en-us.json, words kept as written in Localization/casing.json, and Jellyfin strings are declared as JellyfinString items in the csproj\n- GET UserManagement/Translations serves the plugin's strings as { language, strings, casing } to the tabs and the signup page, with no signed in user needed\n- The dashboard and invite routes read the page's language from the language query, then the X-Jellyfin-Plugin-Language header, then Accept-Language, and no longer take a language parameter of their own\n- The screenshot kit serves translations the way the plugin does",
         "targetAbi": "12.4.0.0",
