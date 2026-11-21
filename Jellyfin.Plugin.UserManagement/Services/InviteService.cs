@@ -58,7 +58,7 @@ public sealed class InviteService : IDisposable
         => invite.Label.Length > 0 ? invite.Label : BaseTranslations.Get(TranslationKeys.UntitledInvite, ServerLanguage.Current);
 
     /// <summary>
-    /// The overview of an expiry run's entry, as "2 invites were disabled at their expiry date: Family, Friends".
+    /// The overview of an expiry run's entry, as "2 invites were disabled at their expiration date: Family, Friends".
     /// </summary>
     /// <param name="names">The expired invites' names.</param>
     /// <returns>The overview.</returns>
@@ -638,7 +638,7 @@ public sealed class InviteService : IDisposable
                 }
                 catch (ArgumentException ex)
                 {
-                    _logger.LogWarning(ex, "Invite redemption rejected invalid username");
+                    _logger.LogDebug(ex, "Invite redemption rejected invalid username");
                     return InviteRedeemResult.Fail(BaseTranslations.Get(TranslationKeys.ErrorUsernameNotAllowed, language));
                 }
 
@@ -673,7 +673,7 @@ public sealed class InviteService : IDisposable
             _logger.LogInformation("Invite {InviteId} redeemed; created user {UserId}", invite.Id, userId);
             var serverLanguage = ServerLanguage.Current;
             _activity.Log(
-                BaseTranslations.Format(TranslationKeys.ActivityAccountCreated, serverLanguage, username),
+                BaseTranslations.Get(TranslationKeys.ActivityAccountCreated, serverLanguage),
                 "UserManagement.InviteRedeemed",
                 BaseTranslations.Format(TranslationKeys.ActivityAccountCreatedOverview, serverLanguage, DisplayName(invite), username),
                 userId: userId);

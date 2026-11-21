@@ -34,7 +34,7 @@ How this plugin shows its text in the viewer's language. Base builds the strings
     * Script: `t.tr('Key')` or `t.format('Key', value)` on the `t` that `usermanagement_shared.js` exports, which `loadTranslations('UserManagement/Translations')` fills. Write the key as a literal in the call, never in a variable, so the key test finds it.
     * Signup page: it imports Base's bundle itself and loads `/UserManagement/Translations` with no signed in user. Script text uses `t.tr('Key', 'English')`, so the page still reads when the strings fail to load.
     * C#: `BaseTranslations.Get(TranslationKeys.Key, language)` or `BaseTranslations.Format(...)`. A route reads the page's language with `BaseTranslations.RequestLanguage(Request)`, which takes the `language` query, then the `X-Jellyfin-Plugin-Language` header that `Shared.apiRequest` sends, then `Accept-Language`. Text for everyone, such as an activity log entry, a task name, or a password change message, uses `ServerLanguage.Current`.
-    * Activity summary: an `ActivityOutcome` built with `nameOne` and `nameMany` keys, each with `{0}` for the count, and an overview that takes the language. `UserManagementActivity` gives its summary `ServerLanguage.Current`.
+    * Activity summary: an `ActivityOutcome` built with `nameOne` and `nameMany` keys, which hold no count, and an overview that takes the language. `UserManagementActivity` gives its summary `ServerLanguage.Current`.
 5. Build. Fix every `JPKT` error and warning.
 6. Run `dotnet test`. `TranslationsTests` fails on a key a page uses that has no string.
 

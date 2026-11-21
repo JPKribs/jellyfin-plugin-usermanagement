@@ -55,6 +55,7 @@ The check to run on your own changes before you call them done. People and AI as
 * [ ] No commented out code, TODO, or debug output.
 * [ ] The [security](code.md#security) rules hold.
 * [ ] `dotnet build` shows no warnings.
+* [ ] Activity entries and server log lines pass the [logging checklist](logging.md#checklist).
 
 ## Tests
 

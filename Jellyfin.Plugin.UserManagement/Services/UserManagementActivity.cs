@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Jellyfin.Plugin.UserManagement.Utilities;
 using JPKribs.Jellyfin.Base;
 using Microsoft.Extensions.Logging;
 
@@ -45,7 +46,7 @@ public sealed class UserManagementActivity : IDisposable
             t.Total == 1 ? TranslationKeys.ActivityPinFailedOverviewOne : TranslationKeys.ActivityPinFailedOverviewMany,
             language,
             t.Total,
-            ActivityText.CountedList(t.Sources)),
+            ActivityLists.Counted(t.Sources)),
         LogLevel.Warning);
 
     /// <summary>
@@ -112,17 +113,17 @@ public sealed class UserRunTally
         _lastUserId = userId;
     }
 
-    /// <summary>The entry's name, as "3 users disabled".</summary>
+    /// <summary>The entry's name, as "Users disabled".</summary>
     /// <param name="wording">The keys the entry reads from.</param>
     /// <param name="language">The language, or null for US English.</param>
     /// <returns>The name.</returns>
     public string Name(UserRunWording wording, string? language)
     {
         ArgumentNullException.ThrowIfNull(wording);
-        return BaseTranslations.Format(Count == 1 ? wording.NameOne : wording.NameMany, language, Count);
+        return BaseTranslations.Get(Count == 1 ? wording.NameOne : wording.NameMany, language);
     }
 
-    /// <summary>The entry's overview, as "2 users were disabled when their group expired in Kids (2): alice, bob".</summary>
+    /// <summary>The entry's overview, as "Disabled 3 users when their group expired in Kids (2), Guests: alice, bob, carol".</summary>
     /// <param name="wording">The keys the entry reads from.</param>
     /// <param name="language">The language, or null for US English.</param>
     /// <returns>The overview.</returns>
@@ -133,7 +134,7 @@ public sealed class UserRunTally
             Count == 1 ? wording.OverviewOne : wording.OverviewMany,
             language,
             Count,
-            ActivityText.CountedList(_groups),
+            ActivityLists.Counted(_groups),
             string.Join(", ", _usernames.OrderBy(u => u, StringComparer.OrdinalIgnoreCase))))!;
     }
 

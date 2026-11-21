@@ -137,7 +137,7 @@ public class GroupService
         // can still carry one until the next save, so the apply path skips them on their own account.
         if (AdminExemption.IsExempt(user))
         {
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Skipping group {GroupId} for {Username}: administrators are exempt from group enforcement",
                 group.Id,
                 user.Username);
@@ -192,7 +192,7 @@ public class GroupService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to apply home screen sections for {UserId}", userId);
+            _logger.LogWarning(ex, "Failed to apply home screen sections for {UserId}", userId);
         }
     }
 
@@ -266,7 +266,7 @@ public class GroupService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to apply group {GroupId} to user {UserId}", group.Id, userId);
+                    _logger.LogWarning(ex, "Failed to apply group {GroupId} to user {UserId}", group.Id, userId);
                 }
             }
 
@@ -480,7 +480,7 @@ public class GroupService
                                 var username = user.Username;
                                 await _userManager.DeleteUserAsync(userId).ConfigureAwait(false);
                                 deleted.Add(userId);
-                                _logger.LogInformation("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
+                                _logger.LogDebug("Deleted expired user {UserId} from group {GroupId}", userId, groupId);
                                 deletedTally.Add(groupName, username);
                             }
                             else
@@ -490,14 +490,14 @@ public class GroupService
                                 {
                                     policy.IsDisabled = true;
                                     await _userManager.UpdatePolicyAsync(userId, policy).ConfigureAwait(false);
-                                    _logger.LogInformation("Disabled expired user {UserId} from group {GroupId}", userId, groupId);
+                                    _logger.LogDebug("Disabled expired user {UserId} from group {GroupId}", userId, groupId);
                                     disabledTally.Add(groupName, user.Username, userId);
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Failed to expire user {UserId} from group {GroupId}", userId, groupId);
+                            _logger.LogWarning(ex, "Failed to expire user {UserId} from group {GroupId}", userId, groupId);
                         }
                     }
 
@@ -583,13 +583,13 @@ public class GroupService
                         {
                             dto.Policy.IsDisabled = true;
                             await _userManager.UpdatePolicyAsync(userId, dto.Policy).ConfigureAwait(false);
-                            _logger.LogInformation("Disabled inactive user {UserId} from group {GroupId}", userId, groupId);
+                            _logger.LogDebug("Disabled inactive user {UserId} from group {GroupId}", userId, groupId);
                             disabledTally.Add(source, user.Username, userId);
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to disable inactive user {UserId} from group {GroupId}", userId, groupId);
+                        _logger.LogWarning(ex, "Failed to disable inactive user {UserId} from group {GroupId}", userId, groupId);
                     }
                 }
             }

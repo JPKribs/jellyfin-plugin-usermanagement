@@ -160,7 +160,7 @@ public sealed class InviteStatusStore
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
-            _logger.LogWarning(ex, "Could not read the invite status store; keeping changes in memory until it can be read.");
+            _logger.LogWarning(ex, "Could not read the invite status store; keeping changes in memory until it can be read");
             return false;
         }
     }
@@ -179,7 +179,7 @@ public sealed class InviteStatusStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _logger.LogWarning(ex, "Could not write the invite status store.");
+            _logger.LogWarning(ex, "Could not write the invite status store");
         }
 
         // Taken after the write, successful or not, so the next read keeps this in memory value rather

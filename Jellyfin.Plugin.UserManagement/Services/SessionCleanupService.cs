@@ -100,7 +100,7 @@ public class SessionCleanupService
 
         var now = DateTime.UtcNow;
         var removed = 0;
-        var removedByApp = new Dictionary<string, int>(StringComparer.Ordinal);
+        var removedByUser = new Dictionary<Guid, (string Username, Dictionary<string, int> Apps)>();
         var processed = 0;
         foreach (var (groupId, rules, members) in work)
         {
@@ -130,8 +130,14 @@ public class SessionCleanupService
                         await _sessionManager.Logout(device).ConfigureAwait(false);
                         removed++;
                         var app = string.IsNullOrWhiteSpace(device.AppName) ? "Unknown app" : device.AppName;
-                        removedByApp[app] = removedByApp.GetValueOrDefault(app) + 1;
-                        _logger.LogInformation(
+                        if (!removedByUser.TryGetValue(userId, out var counted))
+                        {
+                            counted = (user.Username, new Dictionary<string, int>(StringComparer.Ordinal));
+                            removedByUser[userId] = counted;
+                        }
+
+                        counted.Apps[app] = counted.Apps.GetValueOrDefault(app) + 1;
+                        _logger.LogDebug(
                             "Logged out stale device {DeviceName} ({AppName}) of user {UserName} from group {GroupId}",
                             device.DeviceName,
                             device.AppName,
@@ -140,7 +146,7 @@ public class SessionCleanupService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to log out device {DeviceId} of user {UserName}", device.DeviceId, user.Username);
+                        _logger.LogWarning(ex, "Failed to log out device {DeviceId} of user {UserName}", device.DeviceId, user.Username);
                     }
                 }
 
@@ -153,25 +159,49 @@ public class SessionCleanupService
         {
             var language = ServerLanguage.Current;
             _activity.Log(
-                BaseTranslations.Format(removed == 1 ? TranslationKeys.ActivitySessionsLoggedOutOne : TranslationKeys.ActivitySessionsLoggedOutMany, language, removed),
+                BaseTranslations.Get(removed == 1 ? TranslationKeys.ActivitySessionsLoggedOutOne : TranslationKeys.ActivitySessionsLoggedOutMany, language),
                 "UserManagement.SessionCleanup",
-                CleanupOverview(removed, removedByApp, language));
+                CleanupOverview(removedByUser.Values.ToDictionary(u => u.Username, u => (IReadOnlyDictionary<string, int>)u.Apps, StringComparer.Ordinal), language),
+                userId: removedByUser.Count == 1 ? removedByUser.Keys.First() : default);
         }
 
         return removed;
     }
 
     /// <summary>
-    /// The overview of a cleanup run's entry, as "3 stale sessions were logged out from Infuse (2), Swiftfin (1)".
+    /// The overview of a cleanup run's entry, as "Logged out alice's stale session on Jellyfin Web" for one session, or
+    /// "Logged out 3 stale sessions for alice on Infuse (2) and bob on Swiftfin" for more.
     /// </summary>
-    /// <param name="removed">How many sessions were logged out.</param>
-    /// <param name="removedByApp">How many from each client app.</param>
+    /// <param name="removedByUser">How many sessions were logged out from each client app, by username.</param>
     /// <param name="language">The language, or null for US English.</param>
     /// <returns>The overview.</returns>
-    public static string CleanupOverview(int removed, IReadOnlyDictionary<string, int> removedByApp, string? language = null)
-        => ActivityText.Sentence(BaseTranslations.Format(
-            removed == 1 ? TranslationKeys.ActivitySessionsLoggedOutOverviewOne : TranslationKeys.ActivitySessionsLoggedOutOverviewMany,
+    public static string CleanupOverview(IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> removedByUser, string? language = null)
+    {
+        ArgumentNullException.ThrowIfNull(removedByUser);
+        var users = removedByUser
+            .Select(u => (Username: u.Key, Apps: u.Value, Total: u.Value.Values.Where(v => v > 0).Sum()))
+            .Where(u => u.Total > 0)
+            .OrderByDescending(u => u.Total)
+            .ThenBy(u => u.Username, StringComparer.Ordinal)
+            .ToList();
+        var removed = users.Sum(u => u.Total);
+        if (removed == 1)
+        {
+            var only = users[0];
+            return ActivityText.Sentence(BaseTranslations.Format(
+                TranslationKeys.ActivitySessionsLoggedOutOverviewOne,
+                language,
+                only.Username,
+                ActivityLists.Counted(only.Apps)))!;
+        }
+
+        var parts = users
+            .Select(u => BaseTranslations.Format(TranslationKeys.ActivitySessionsUserApps, language, u.Username, ActivityLists.Counted(u.Apps, dropSingle: users.Count == 1)))
+            .ToList();
+        return ActivityText.Sentence(BaseTranslations.Format(
+            TranslationKeys.ActivitySessionsLoggedOutOverviewMany,
             language,
             removed,
-            ActivityText.CountedList(removedByApp)))!;
+            ActivityLists.JoinAnd(parts, language)))!;
+    }
 }

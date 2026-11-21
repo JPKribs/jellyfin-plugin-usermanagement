@@ -3,7 +3,7 @@ using JPKribs.Jellyfin.Base;
 namespace Jellyfin.Plugin.UserManagement.Services;
 
 /// <summary>
-/// The keys a <see cref="UserRunTally"/> entry reads from. Each name has <c>{0}</c> for the count, and each overview
+/// The keys a <see cref="UserRunTally"/> entry reads from. Each name holds no count, and each overview
 /// has <c>{0}</c> for the count, <c>{1}</c> for the groups, and <c>{2}</c> for the usernames.
 /// </summary>
 /// <param name="NameOne">The name for one user.</param>

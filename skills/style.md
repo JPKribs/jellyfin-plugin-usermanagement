@@ -43,7 +43,7 @@ These rules apply to every string a user can see. That includes HTML, JS, C# mes
 | Button | Sentence case, verb first | Add rule |
 | Dialog title | Sentence case | Delete invite |
 | Badge and status chip | Sentence case | Used up |
-| Activity log name | Sentence case | 2 users disabled |
+| Activity log name | Sentence case | Users disabled |
 | Description, message, placeholder sentence | Sentence case | Only shown here, never to the invitee. |
 
 Every string is in sentence case, mirroring Jellyfin. Capitalize the first word and proper nouns only. Words this plugin writes with special casing, such as "PIN" and "Quick Connect", are listed in `Localization/casing.json` and stay as written, beside Base's defaults such as "URL" and "HTTPS". See [translations.md](translations.md#casing).
@@ -171,10 +171,10 @@ Use `shared.emptySection(text)` for a region and `shared.emptySection(text, { in
 
 ### Activity Log
 
-Use `ActivitySummary` and `ActivityText` from Base.
+Use `ActivitySummary` and `ActivityText` from Base, and follow [logging.md](logging.md).
 
-* The name is short and in sentence case. "2 users disabled".
-* The overview is one sentence with no closing period, as Base writes it. "2 users were disabled in Family (2)".
+* The name is generic and in sentence case, with no user or count. "Users disabled".
+* The overview is one sentence with no closing period that names who and where. "Disabled 2 users when their group expired in Family: alice, bob".
 * Sum a burst or a scheduled run into one entry per outcome. A security event on one account stays its own entry.
 * [Activity Log](../docs/ActivityLog.md) lists every entry. Add a new one there in the same commit.
 * Use the same verb the UI uses for the action.

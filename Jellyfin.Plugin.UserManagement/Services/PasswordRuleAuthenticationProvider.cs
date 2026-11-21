@@ -113,11 +113,11 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
                     && (policy.ChangeMode == PasswordChangeMode.InitialOnly || InviteRedemptionScope.IsActive);
                 if (!allowed)
                 {
-                    _logger.LogInformation("Rejected password change for {UserId}: the group disallows self service changes", user.Id);
+                    _logger.LogDebug("Rejected password change for {UserId}: the group disallows self service changes", user.Id);
                     _activity.Log(
-                        BaseTranslations.Format(TranslationKeys.ActivityPasswordChangeBlocked, language, user.Username),
+                        BaseTranslations.Get(TranslationKeys.ActivityPasswordChangeBlocked, language),
                         "UserManagement.PasswordChangeBlocked",
-                        overview: BaseTranslations.Get(TranslationKeys.ActivityPasswordChangeBlockedOverview, language),
+                        overview: BaseTranslations.Format(TranslationKeys.ActivityPasswordChangeBlockedOverview, language, user.Username),
                         severity: LogLevel.Warning,
                         userId: user.Id);
                     throw new ArgumentException(BaseTranslations.Get(TranslationKeys.ErrorPasswordChangesDisabled, language));
@@ -128,11 +128,11 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
             if (errors.Count > 0)
             {
                 var reasons = string.Join(" ", errors);
-                _logger.LogWarning("Rejected password change for {UserId}: {Reasons}", user.Id, reasons);
+                _logger.LogDebug("Rejected password change for {UserId}: {Reasons}", user.Id, reasons);
                 _activity.Log(
-                    BaseTranslations.Format(TranslationKeys.ActivityPasswordChangeRejected, language, user.Username),
+                    BaseTranslations.Get(TranslationKeys.ActivityPasswordChangeRejected, language),
                     "UserManagement.PasswordChangeRejected",
-                    overview: RejectedOverview(errors),
+                    overview: RejectedOverview(user.Username, errors, language),
                     severity: LogLevel.Warning,
                     userId: user.Id);
 
@@ -162,14 +162,20 @@ public class PasswordRuleAuthenticationProvider : IAuthenticationProvider, IRequ
     }
 
     /// <summary>
-    /// The overview of a rejected change's entry: the rules the password broke, as one sentence such as
-    /// "Password must contain at least one number; Password must contain at least one symbol".
+    /// The overview of a rejected change's entry, naming the user and the rules the password broke, as
+    /// "Rejected alice's new password because it breaks the group's rules: Password must contain at least one number".
     /// </summary>
+    /// <param name="username">The user who chose the password.</param>
     /// <param name="errors">The validation errors.</param>
+    /// <param name="language">The language, or null for US English.</param>
     /// <returns>The overview.</returns>
-    public static string RejectedOverview(IReadOnlyList<string> errors)
+    public static string RejectedOverview(string username, IReadOnlyList<string> errors, string? language = null)
     {
         ArgumentNullException.ThrowIfNull(errors);
-        return ActivityText.Sentence(string.Join("; ", errors.Select(e => e.Trim().TrimEnd('.')))) ?? string.Empty;
+        return ActivityText.Sentence(BaseTranslations.Format(
+            TranslationKeys.ActivityPasswordChangeRejectedOverview,
+            language,
+            username,
+            string.Join(", ", errors.Select(e => e.Trim().TrimEnd('.'))))) ?? string.Empty;
     }
 }

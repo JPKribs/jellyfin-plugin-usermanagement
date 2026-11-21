@@ -15,5 +15,6 @@ artifacts:
 changelog:
   changed:
   - The signup error for a username that is not allowed reads without a contraction
+  - Activity log entries have a generic name with no count, and an overview that names the user and states each count once
   developer:
   - Uses JPKribs.Jellyfin.Base 12.4.3, after 12.4.1

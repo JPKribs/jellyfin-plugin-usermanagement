@@ -167,7 +167,7 @@ public class InviteController : ControllerBase
         }
 
         _logger.LogWarning(
-            "Invite requests arrive from {Address} with an X-Forwarded-For header, which looks like a reverse proxy that is not in Jellyfin's Known proxies. Every invitee then shares that address and one attempt limit, so a few failed signups can block invites for everyone for 15 minutes. Add the proxy under Dashboard > Networking > Known proxies.",
+            "Invite requests arrive from {Address} with an X-Forwarded-For header, which looks like a reverse proxy that is not in Jellyfin's Known proxies. Every invitee then shares that address and one attempt limit, so a few failed signups can block invites for everyone for 15 minutes. Add the proxy under Dashboard > Networking > Known proxies",
             remote);
     }
 
