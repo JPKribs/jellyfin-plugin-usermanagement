@@ -141,7 +141,7 @@
   "ErrorSignupRefused": "An unknown error occurred. Please check your inputs and try again.",
   "ErrorSomethingWentWrong": "Something went wrong.",
   "ErrorTooManyAttempts": "Too many attempts from your network. Please wait a few minutes and try again.",
-  "ErrorUsernameNotAllowed": "That username isn't allowed. Try a different one.",
+  "ErrorUsernameNotAllowed": "That username is not allowed. Try a different one.",
   "ExpirationMethodHelp": "Disable can be undone. Delete removes each member and their data for good.",
   "ExpireMembersOnDateHelp": "Disables or deletes every member once the date comes.",
   "ExpiredOnDate": "Expired {0}",
