@@ -1,7 +1,7 @@
 ---
 name: "User Management"
 guid: "670167bd-e7f8-4549-98e2-5ab2e11bc89f"
-version: "12.4.4.0"
+version: "12.4.4.1"
 targetAbi: "12.4.0.0"
 framework: "net10.0"
 overview: "Groups, password rules, and invites for your users."
@@ -14,7 +14,6 @@ artifacts:
 - "Jellyfin.Plugin.UserManagement.dll"
 changelog:
   changed:
-  - The signup error for a username that is not allowed reads without a contraction
-  - Activity log entries have a generic name with no count, and an overview that names the user and states each count once
+  - Activity log entries have a generic name with no count, and an overview that names the user and states each count once, such as Logged out Johnny's stale session on Jellyfin Web
   developer:
-  - Uses JPKribs.Jellyfin.Base 12.4.3, after 12.4.1
+  - skills/logging.md sets how activity entries and server log lines are written
